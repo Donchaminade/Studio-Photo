@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart'; // SQLite
 import 'package:path/path.dart'; // Pour localiser la base de données
 import 'package:image_picker/image_picker.dart'; // Pour choisir une image
+import 'utils/colors.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userName;
@@ -105,13 +106,14 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profil"),
-        backgroundColor: Colors.grey[900],
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
         elevation: 0,
       ),
       body: isDatabaseInitialized
           ? Container(
+              color: AppColors.background,
               padding: const EdgeInsets.all(16.0),
-              color: Colors.grey[200],
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -129,7 +131,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ? const Icon(
                               Icons.add_a_photo,
                               size: 30,
-                              color: Colors.white,
+                              color: AppColors.textOnPrimary,
                             )
                           : null,
                     ),
@@ -141,7 +143,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -150,7 +152,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     userEmail ?? 'Email introuvable',
                     style: const TextStyle(
                       fontSize: 16,
-                      color: Colors.black54,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -162,7 +164,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           context,
                           icon: Icons.edit,
                           label: "Modifier le profil",
-                          color: Colors.blue,
+                          color: AppColors.accent,
                           onPressed: () {
                             // Ajoutez ici l'action pour modifier le profil
                           },
@@ -171,7 +173,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           context,
                           icon: Icons.lock,
                           label: "Changer le mot de passe",
-                          color: Colors.orange,
+                          color: AppColors.accent,
                           onPressed: () {
                             // Ajoutez ici l'action pour changer le mot de passe
                           },
@@ -180,7 +182,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           context,
                           icon: Icons.logout,
                           label: "Se déconnecter",
-                          color: Colors.red,
+                          color: AppColors.error,
                           onPressed: () {
                             // Ajoutez ici l'action pour se déconnecter
                           },
@@ -201,9 +203,9 @@ class _ProfilePageState extends State<ProfilePage> {
             Navigator.pop(context); // Retour à HomeScreen pour changer d'onglet
           }
         },
-        backgroundColor: Colors.grey[900],
-        selectedItemColor: const Color.fromARGB(255, 77, 1, 1),
-        unselectedItemColor: const Color.fromARGB(255, 53, 1, 1),
+        backgroundColor: AppColors.primary,
+        selectedItemColor: AppColors.textOnPrimary,
+        unselectedItemColor: AppColors.textOnPrimary.withOpacity(0.7),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.photo_library),
@@ -246,11 +248,11 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 24, color: Colors.white),
+            Icon(icon, size: 24, color: AppColors.textOnPrimary),
             const SizedBox(width: 10),
             Text(
               label,
-              style: const TextStyle(fontSize: 16, color: Colors.white),
+              style: const TextStyle(fontSize: 16, color: AppColors.textOnPrimary),
             ),
           ],
         ),

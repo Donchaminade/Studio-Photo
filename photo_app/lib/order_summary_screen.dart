@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'payment_selection_screen.dart'; // Assurez-vous d'importer la page PaymentSelectionScreen.
+import 'payment_selection_screen.dart'; 
+import 'utils/colors.dart';
 
 class OrderSummaryScreen extends StatelessWidget {
   final Map<String, Map<String, dynamic>> orderDetails;
@@ -15,17 +16,12 @@ class OrderSummaryScreen extends StatelessWidget {
           'Récapitulatif de la commande',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
-        backgroundColor: Colors.deepPurple, // Couleur de fond de la barre
-        elevation: 5, // Ajouter de l'ombre à la barre
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
+        elevation: 5, 
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.purple.shade200, Colors.deepPurple.shade300],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        color: AppColors.background,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: ListView(
@@ -55,12 +51,12 @@ class OrderSummaryScreen extends StatelessWidget {
                       Text(
                         'Taille : ${details['size']}',
                         style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w500),
+                            fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
                       ),
                       Text(
                         'Quantité : ${details['quantity']}',
                         style:
-                            const TextStyle(fontSize: 16, color: Colors.grey),
+                            const TextStyle(fontSize: 16, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -74,16 +70,15 @@ class OrderSummaryScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.deepPurple, // Couleur du texte
-            elevation: 8, // Ajoute une ombre au bouton
+            foregroundColor: AppColors.textOnPrimary,
+            backgroundColor: AppColors.primary,
+            elevation: 8, 
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12), // Coins arrondis
+              borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
           onPressed: () {
-            // Naviguer vers PaymentSelectionScreen avec les détails de la commande
             Navigator.push(
               context,
               MaterialPageRoute(

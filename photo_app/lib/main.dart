@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
+import 'utils/colors.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,8 +16,20 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Photo App',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[200],
+        primarySwatch: MaterialColor(AppColors.primary.value, const <int, Color>{
+          50: Color(0xFFE8EAF6),
+          100: Color(0xFFC5CAE9),
+          200: Color(0xFF9FA8DA),
+          300: Color(0xFF7986CB),
+          400: Color(0xFF5C6BC0),
+          500: AppColors.primary,
+          600: Color(0xFF3F51B5),
+          700: Color(0xFF303F9F),
+          800: Color(0xFF283593),
+          900: Color(0xFF1A237E),
+        }),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+        scaffoldBackgroundColor: AppColors.background,
       ),
       debugShowCheckedModeBanner: false,
       initialRoute: '/login',

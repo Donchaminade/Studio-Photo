@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'confirmation_screen.dart';
+import 'utils/colors.dart';
 
 class PaymentSelectionScreen extends StatelessWidget {
   final Map<String, Map<String, dynamic>> orderDetails;
@@ -21,17 +22,12 @@ class PaymentSelectionScreen extends StatelessWidget {
           'Choisir le mode de paiement',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
-        backgroundColor: Colors.deepPurple, // Couleur de fond de la barre
-        elevation: 5, // Ajouter de l'ombre à la barre
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
+        elevation: 5,
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.purple.shade200, Colors.deepPurple.shade300],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        color: AppColors.background,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: ListView.builder(
@@ -75,15 +71,15 @@ class PaymentSelectionScreen extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Colors.deepPurple,
+                        color: AppColors.primary,
                       ),
                     ),
                     subtitle: const Text(
                       'Cliquez pour choisir ce mode de paiement',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                      style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                     ),
                     trailing:
-                        Icon(Icons.arrow_forward_ios, color: Colors.deepPurple),
+                        const Icon(Icons.arrow_forward_ios, color: AppColors.primary),
                   ),
                 ),
               );
