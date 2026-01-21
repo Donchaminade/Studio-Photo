@@ -78,19 +78,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildHeader() {
-    return const SizedBox(
+    return SizedBox(
       height: 220,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(height: 40),
-          CircleAvatar(
-            radius: 62,
-            backgroundColor: AppColors.primary,
-            child: CircleAvatar(
-              radius: 60,
-              backgroundImage: AssetImage('assets/images/pro.png'),
-            ),
+          const SizedBox(height: 25),
+          Image.asset(
+            'assets/images/pro.png',
+            height: 180, // Adjust height as needed
+            width: 180, // Adjust width as needed
+            fit: BoxFit.contain,
           ),
         ],
       ),

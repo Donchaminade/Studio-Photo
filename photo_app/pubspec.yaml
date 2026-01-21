@@ -37,6 +37,7 @@ dependencies:
   flutter_animate: ^4.5.0
   pinput: ^6.0.1
   country_code_picker: ^3.4.1
+  video_player: ^2.8.6
 
 dev_dependencies:
   flutter_test:
@@ -51,7 +52,8 @@ flutter:
     - assets/logos/mastercard.png
     - assets/logos/flooz.webp
     - assets/logos/mixbyyass.jpg
-    
+    - assets/splash.mp4
+    - assets/splash1.mp4
 
 
     

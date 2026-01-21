@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'signup_screen.dart';
-import 'home_screen.dart';
-import 'utils/colors.dart';
+import 'package:photo_app/home_screen.dart';
+import 'package:photo_app/login_screen.dart';
+import 'package:photo_app/signup_screen.dart';
+import 'package:photo_app/splash_screen.dart';
+import 'package:photo_app/utils/colors.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,9 +33,13 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.background,
       ),
       debugShowCheckedModeBanner: false,
-      initialRoute: '/login',
+      initialRoute: '/splash',
       onGenerateRoute: (settings) {
         switch (settings.name) {
+          case '/splash':
+            return MaterialPageRoute(
+              builder: (context) => const SplashScreen(),
+            );
           case '/login':
             return MaterialPageRoute(
               builder: (context) => const LoginScreen(),
