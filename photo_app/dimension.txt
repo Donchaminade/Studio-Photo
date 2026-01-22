@@ -1,0 +1,19 @@
+Dimension et Prix :
+9x13 =150 fcfa
+10x15 = 300 fcfa
+13x18 = 250
+15x21 = 350
+20x25 = 750
+20x30 = 1000
+24x30 = 1500
+30x40 = 2500
+30x45 = 3000
+30x90 = 4000
+40x50 = 5000
+40x60 = 6500
+50x60 = 7500
+60x90= 9000
+60x120 =12500
+
+note bien : les prix sont diviser par 2
+c'est la demande du client et je ne sais pas pourquoi

@@ -77,4 +77,13 @@ class ApiService {
     final data = _handleResponse(response);
     return List<String>.from(data['images']);
   }
+
+  /// Méthode pour récupérer les tarifs des tirages
+  static Future<List<Map<String, dynamic>>> getPrices() async {
+    final url = '$baseUrl/get_prices.php';
+    final response = await _safeGet(url);
+    final data = _handleResponse(response);
+    // Assumes the API returns a list of objects under the 'prices' key
+    return List<Map<String, dynamic>>.from(data['prices']);
+  }
 }

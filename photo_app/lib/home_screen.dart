@@ -21,6 +21,7 @@ import 'package:photo_app/contact_screen.dart';
 import 'package:photo_app/booking_screen.dart';
 import 'package:photo_app/history_screen.dart';
 import 'package:photo_app/utils/geometric_background.dart';
+import 'package:photo_app/profile_page.dart';
 import 'login_screen.dart';
 import 'order_summary_screen.dart';
 import 'package:photo_app/utils/lines_background.dart';
@@ -62,6 +63,10 @@ class _HomeScreenState extends State<HomeScreen> {
   late StreamSubscription<ConnectivityResult> _connectivitySubscription;
   bool _isOffline = false;
 
+  // --- Updatable profile info ---
+  late String _currentUserName;
+  late String _currentUserEmail;
+
   // --- New state variables for cart ---
   CartMode _selectedMode = CartMode.detail;
   bool _isExpress = false;
@@ -101,6 +106,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _currentUserName = widget.userName;
+    _currentUserEmail = 'user-test@email.com'; // Initialize placeholder
     _albumImagesFuture = ApiService.getAlbumImages(widget.userId);
     _connectivitySubscription =
         _connectivityService.connectivityStream.listen((result) {
@@ -130,9 +137,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+    if (index == 3) { // Index 3 is for Profile
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfilePage(
+            userName: _currentUserName,
+            userEmail: _currentUserEmail,
+            avatar: _avatar,
+            onAvatarChanged: (newAvatar) {
+              setState(() {
+                _avatar = newAvatar;
+              });
+            },
+            onProfileUpdated: (newName, newEmail) {
+              setState(() {
+                _currentUserName = newName;
+                _currentUserEmail = newEmail;
+              });
+            },
+          ),
+        ),
+      );
+    } else {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
   void _changeAvatar() async {
@@ -233,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(
                         height: 4), // Petit espace entre le logo et le texte
                     Text(
-                      'Ravi de vous revoir, ${widget.userName}',
+                      'Ravi de vous revoir, $_currentUserName',
                       textAlign: TextAlign.center, // Centrer le texte
                       style: const TextStyle(
                         color: Colors.white,
@@ -256,7 +287,51 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                     icon: const Icon(Icons.notifications_none,
-                        color: Colors.white, size: 20),
+                        color: Colors.white, size: 24),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProfilePage(
+                            userName: _currentUserName,
+                            userEmail: _currentUserEmail,
+                            avatar: _avatar,
+                            onAvatarChanged: (newAvatar) {
+                              setState(() {
+                                _avatar = newAvatar;
+                              });
+                            },
+                            onProfileUpdated: (newName, newEmail) {
+                              setState(() {
+                                _currentUserName = newName;
+                                _currentUserEmail = newEmail;
+                              });
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                    icon: CircleAvatar(
+                      radius: 18,
+                      backgroundImage: _avatar != null ? FileImage(_avatar!) as ImageProvider : null,
+                      backgroundColor: _avatar == null ? AppColors.accent : Colors.transparent,
+                      child: _avatar == null
+                          ? Text(
+                              _currentUserName.trim().split(' ').where((s) => s.isNotEmpty).map((s) => s[0]).take(2).join().toUpperCase(),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14),
+                            )
+                          : null,
+                    ),
                   ),
                 ),
               ],
@@ -865,44 +940,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProfileTab() {
-    return Container(
-      color: AppColors.background,
-      padding: const EdgeInsets.only(top: 100),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            GestureDetector(
-              onTap: _changeAvatar,
-              child: CircleAvatar(
-                radius: 60,
-                backgroundImage: _avatar != null
-                    ? FileImage(_avatar!) as ImageProvider
-                    : const AssetImage('assets/images/pro1.png'),
-                child: _avatar == null
-                    ? const Icon(Icons.camera_alt,
-                        size: 30, color: AppColors.textOnPrimary)
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(widget.userName,
-                style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary)),
-            const SizedBox(height: 30),
-            ElevatedButton.icon(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-              label: const Text('Déconnexion'),
-            ),
-          ],
-        ),
-      ),
-    );
+    return Container(); // This tab is no longer shown, replaced by ProfilePage
   }
 
   Widget _buildTopCard() {
@@ -993,28 +1031,6 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.flash_on,
             label: 'Commande rapide',
             onTap: () => _onTabTapped(1), // Switch to Photos tab
-          ),
-          _buildQuickActionButton(
-            icon: Icons.help_outline,
-            label: 'Aide',
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text("Comment ça marche ?"),
-                  content: const Text("1️⃣ Choisissez vos photos\n"
-                      "2️⃣ Sélectionnez la dimension et la quantité\n"
-                      "3️⃣ Payez en toute sécurité\n"
-                      "4️⃣ Recevez vos souvenirs !"),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text("Fermer"),
-                    )
-                  ],
-                ),
-              );
-            },
           ),
           _buildQuickActionButton(
             icon: Icons.chat_bubble_outline,
