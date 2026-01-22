@@ -1033,28 +1033,6 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => _onTabTapped(1), // Switch to Photos tab
           ),
           _buildQuickActionButton(
-            icon: Icons.help_outline,
-            label: 'Aide',
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text("Comment ça marche ?"),
-                  content: const Text("1️⃣ Choisissez vos photos\n"
-                      "2️⃣ Sélectionnez la dimension et la quantité\n"
-                      "3️⃣ Payez en toute sécurité\n"
-                      "4️⃣ Recevez vos souvenirs !"),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text("Fermer"),
-                    )
-                  ],
-                ),
-              );
-            },
-          ),
-          _buildQuickActionButton(
             icon: Icons.chat_bubble_outline,
             label: 'Nous contacter',
             onTap: () => Navigator.push(context,
