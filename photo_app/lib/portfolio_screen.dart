@@ -107,9 +107,15 @@ class PortfolioScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CircleAvatar(
+            backgroundColor: Colors.white,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
         ),
       ),
       body: Stack(
@@ -337,9 +343,12 @@ class _DimensionDetailDialogState extends State<DimensionDetailDialog> {
           Positioned(
             top: 6,
             right: 6,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: AppColors.primary), // Use primary color for icon
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
           ),
         ],
