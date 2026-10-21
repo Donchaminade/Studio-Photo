@@ -889,6 +889,14 @@ class ApiService {
         .toList();
   }
 
+  /// GET /orders/{id} brut (paymentStatus, preuve, dates…) pour les reçus.
+  static Future<Map<String, dynamic>> fetchOrderRaw(int orderId) async {
+    final response = await _safeGet('$baseUrl/orders/$orderId');
+    final data = _handleApiResponse(response);
+    if (data is! Map) throw AppError.server();
+    return Map<String, dynamic>.from(data);
+  }
+
   // fetch order by id
   static Future<Order?> fetchOrderById(String orderId) async {
     final url = '$baseUrl/orders/$orderId';

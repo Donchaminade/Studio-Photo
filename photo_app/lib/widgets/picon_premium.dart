@@ -452,7 +452,10 @@ class PrintedReceipt extends StatefulWidget {
   final Widget ticket;
   final String stampLabel;
   final VoidCallback? onPrinted;
-  const PrintedReceipt({super.key, required this.ticket, this.stampLabel = 'PAYÉ', this.onPrinted});
+  /// v7 : le bon de commande (paiement non validé) n'a jamais de tampon PAYÉ.
+  final bool showStamp;
+  const PrintedReceipt(
+      {super.key, required this.ticket, this.stampLabel = 'PAYÉ', this.onPrinted, this.showStamp = true});
   @override
   State<PrintedReceipt> createState() => _PrintedReceiptState();
 }
@@ -539,6 +542,7 @@ class _PrintedReceiptState extends State<PrintedReceipt> with TickerProviderStat
             },
             child: Stack(children: [
               widget.ticket,
+              if (widget.showStamp)
               Positioned(
                 right: 14,
                 bottom: 120,
