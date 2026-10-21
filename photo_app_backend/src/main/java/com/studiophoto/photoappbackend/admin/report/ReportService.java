@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -26,7 +25,7 @@ public class ReportService {
         long totalOrders = orderRepository.countByCreatedAtBetween(startDate, endDate);
         long totalBookings = bookingRepository.countByStartTimeBetween(startDate, endDate);
 
-        List<OrderStatus> completedOrProcessing = Arrays.asList(OrderStatus.COMPLETED, OrderStatus.PROCESSING);
+        List<OrderStatus> completedOrProcessing = com.studiophoto.photoappbackend.order.OrderTotals.confirmedPaidStatuses();
         BigDecimal totalRevenue = orderRepository.sumTotalAmountByStatusInAndCreatedAtBetween(
                 completedOrProcessing, startDate, endDate);
         if (totalRevenue == null) {

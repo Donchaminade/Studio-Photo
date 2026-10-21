@@ -26,8 +26,8 @@ public class ReportApiController {
             @RequestParam(name = "startDate", required = false) String startDateStr,
             @RequestParam(name = "endDate", required = false) String endDateStr) {
 
-        LocalDateTime startDate = parseDate(startDateStr, LocalDate.now().minusMonths(1));
-        LocalDateTime endDate = parseDate(endDateStr, LocalDate.now());
+        LocalDateTime startDate = parseStart(startDateStr, LocalDate.now().minusMonths(1));
+        LocalDateTime endDate = parseEnd(endDateStr, LocalDate.now());
 
         ReportDTO reportData = reportService.generateReport(startDate, endDate);
 
@@ -45,8 +45,8 @@ public class ReportApiController {
             @RequestParam(name = "startDate", required = false) String startDateStr,
             @RequestParam(name = "endDate", required = false) String endDateStr) {
 
-        LocalDateTime startDate = parseDate(startDateStr, LocalDate.now().minusMonths(1));
-        LocalDateTime endDate = parseDate(endDateStr, LocalDate.now());
+        LocalDateTime startDate = parseStart(startDateStr, LocalDate.now().minusMonths(1));
+        LocalDateTime endDate = parseEnd(endDateStr, LocalDate.now());
 
         ReportDTO reportData = reportService.generateReport(startDate, endDate); // Generates all data, but we only need orders here
         return ResponseEntity.ok(reportData.getRecentOrders());
@@ -57,21 +57,29 @@ public class ReportApiController {
             @RequestParam(name = "startDate", required = false) String startDateStr,
             @RequestParam(name = "endDate", required = false) String endDateStr) {
 
-        LocalDateTime startDate = parseDate(startDateStr, LocalDate.now().minusMonths(1));
-        LocalDateTime endDate = parseDate(endDateStr, LocalDate.now());
+        LocalDateTime startDate = parseStart(startDateStr, LocalDate.now().minusMonths(1));
+        LocalDateTime endDate = parseEnd(endDateStr, LocalDate.now());
 
         ReportDTO reportData = reportService.generateReport(startDate, endDate); // Generates all data, but we only need users here
         return ResponseEntity.ok(reportData.getRecentUsers());
     }
 
-    private LocalDateTime parseDate(String dateStr, LocalDate defaultValue) {
+    private LocalDate parseLocalDate(String dateStr, LocalDate defaultValue) {
         if (dateStr != null && !dateStr.isEmpty()) {
             try {
-                return LocalDate.parse(dateStr).atStartOfDay();
+                return LocalDate.parse(dateStr);
             } catch (DateTimeParseException e) {
-                // Log parsing error
+                // keep default
             }
         }
-        return defaultValue.atStartOfDay();
+        return defaultValue;
+    }
+
+    private LocalDateTime parseStart(String dateStr, LocalDate defaultValue) {
+        return parseLocalDate(dateStr, defaultValue).atStartOfDay();
+    }
+
+    private LocalDateTime parseEnd(String dateStr, LocalDate defaultValue) {
+        return parseLocalDate(dateStr, defaultValue).atTime(23, 59, 59);
     }
 }
