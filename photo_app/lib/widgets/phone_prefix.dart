@@ -4,7 +4,12 @@ import 'package:photo_app/utils/africa_countries.dart';
 import 'package:photo_app/utils/colors.dart';
 
 class AfricanPhonePrefix extends StatelessWidget {
-  const AfricanPhonePrefix({super.key});
+  /// Indicatif sélectionné (ex. « +228 »).
+  final ValueChanged<String>? onChanged;
+  final String initialSelection;
+
+  const AfricanPhonePrefix(
+      {super.key, this.onChanged, this.initialSelection = 'TG'});
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +21,11 @@ class AfricanPhonePrefix extends StatelessWidget {
         border: Border.all(color: AppColors.line),
       ),
       child: CountryCodePicker(
-        onChanged: (_) {},
-        initialSelection: 'TG',
+        onChanged: (code) {
+          final dial = code.dialCode;
+          if (dial != null) onChanged?.call(dial);
+        },
+        initialSelection: initialSelection,
         favorite: kFavoriteDialCodes,
         countryFilter: kAfricanIsoCodes,
         padding: EdgeInsets.zero,
