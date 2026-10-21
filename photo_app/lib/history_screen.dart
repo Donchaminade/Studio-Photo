@@ -25,6 +25,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   late Future<void> _fetchDataFuture;
   List<Order> _allOrders = [];
+  Object? _loadError; // v6 : erreur réseau affichée à la place d'un faux « vide »
   Map<int, Map<String, dynamic>> _ordersMeta = {};
   String? _selectedFilter;
 
@@ -69,12 +70,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
         }
       }
       setState(() {
+        _loadError = null;
         _allOrders = orders;
         _ordersMeta = metaMap;
       });
     } catch (e) {
       if (mounted) {
-        await showAppError(context, e, endSession: false);
+        setState(() => _loadError = e);
+        if (_allOrders.isNotEmpty) await showAppError(context, e, endSession: false);
       }
     }
   }
@@ -146,7 +149,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     _buildOrderStats(),
                     _buildOrderFilters(),
                     Expanded(
-                      child: filteredOrders.isEmpty
+                      child: filteredOrders.isEmpty && _loadError != null
+                          ? AppInlineError(
+                              error: _loadError!,
+                              onRetry: () => setState(() => _fetchDataFuture = _fetchAllHistory()),
+                            )
+                          : filteredOrders.isEmpty
                           ? _buildEmptyState(_selectedFilter == null
                               ? 'Aucune commande'
                               : 'Aucune commande avec ce statut')
