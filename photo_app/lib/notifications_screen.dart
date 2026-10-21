@@ -4,6 +4,7 @@ import 'package:Picon/utils/colors.dart';
 import 'package:Picon/widgets/app_error_feedback.dart';
 import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/order_receipt_screen.dart';
 import 'package:intl/intl.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -154,6 +155,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
         actions: [
+          if (notification.relatedOrderId != null)
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                // Recharge le statut de paiement depuis l'API → bonne variante de reçu.
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => OrderReceiptScreen(orderId: notification.relatedOrderId!),
+                ));
+              },
+              child: const Text('Voir le reçu'),
+            ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('Fermer'),

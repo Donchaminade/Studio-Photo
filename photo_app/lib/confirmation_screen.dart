@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:Picon/order_receipt_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -237,10 +238,12 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       );
 
       // Redirige vers WhatsApp avec le récapitulatif complet de la commande.
+      final sentAt = DateTime.now();
       await _sendWhatsAppRecap();
       if (!mounted) return;
 
-      _goToHistory();
+      // v7 : le bon de commande est disponible tout de suite.
+      await _showProofSentSheet(sentAt);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -904,6 +907,45 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showProofSentSheet(DateTime sentAt) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Icon(Icons.mark_email_read_rounded, color: AppColors.success, size: 44),
+            const SizedBox(height: 10),
+            const Text('Preuve envoyée',
+                textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            const Text('Votre paiement est en vérification. Votre bon de commande est prêt.',
+                textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
+            const SizedBox(height: 18),
+            PiconButton(
+              label: 'Voir le bon de commande',
+              icon: Icons.receipt_long_rounded,
+              onPressed: () => Navigator.of(ctx).push(MaterialPageRoute(
+                builder: (_) => OrderReceiptScreen(orderId: widget.orderId, proofSentAt: sentAt),
+              )),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _goToHistory();
+              },
+              child: const Text('Mes commandes'),
+            ),
+          ]),
+        ),
       ),
     );
   }

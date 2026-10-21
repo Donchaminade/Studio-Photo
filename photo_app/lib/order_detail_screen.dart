@@ -10,6 +10,7 @@ import 'package:Picon/widgets/picon_premium.dart';
 import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/order_receipt_screen.dart';
 import 'package:Picon/widgets/photo_lightbox.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -174,9 +175,21 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
   bool _downloading = false;
   bool _downloaded = false;
 
+  Map<String, dynamic>? _raw; // v7 : statut de paiement pour les reçus
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
   Future<void> _refresh() async {
     final fresh = await ApiService.fetchOrderById('${_order.id}');
     if (fresh != null && mounted) setState(() => _order = fresh);
+    try {
+      final raw = await ApiService.fetchOrderRaw(_order.id);
+      if (mounted) setState(() => _raw = raw);
+    } catch (_) {}
   }
 
   // ignore: unused_element
@@ -310,6 +323,17 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
           ),
         ),
         // v6 : plus de téléchargement ZIP sur mobile (_download conservé, inutilisé).
+        if (_raw != null && hasReceipt(_raw!)) ...[
+          const SizedBox(height: 16),
+          PiconButton(
+            label: receiptVariantFor(_raw!) == ReceiptVariant.paid ? 'Reçu de paiement' : 'Bon de commande',
+            icon: receiptVariantFor(_raw!) == ReceiptVariant.paid ? Icons.verified_rounded : Icons.receipt_long_rounded,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => OrderReceiptScreen(orderId: _order.id, initialOrder: _raw)),
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
       ]),
     );

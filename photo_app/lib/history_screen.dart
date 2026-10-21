@@ -12,6 +12,7 @@ import 'package:Picon/widgets/safe_photo_thumbnail.dart';
 import 'package:Picon/widgets/app_error_feedback.dart';
 import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/order_receipt_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 
@@ -414,9 +415,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       icon: const Icon(Icons.open_in_full_rounded, size: 18),
-                      label: const Text('Voir le détail et télécharger les photos'),
+                      label: const Text('Voir le détail et les photos'),
                     ),
                   ),
+                  if (hasReceipt({...?_ordersMeta[order.id], 'status': order.status})) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrderReceiptScreen(
+                                orderId: order.id,
+                                initialOrder: _ordersMeta[order.id],
+                              ),
+                            ),
+                          );
+                          _fetchAllHistory();
+                        },
+                        icon: Icon(
+                          receiptVariantFor({...?_ordersMeta[order.id], 'status': order.status}) == ReceiptVariant.paid
+                              ? Icons.verified_rounded
+                              : Icons.receipt_long_rounded,
+                          size: 18,
+                        ),
+                        label: Text(
+                          receiptVariantFor({...?_ordersMeta[order.id], 'status': order.status}) == ReceiptVariant.paid
+                              ? 'Reçu de paiement'
+                              : 'Bon de commande',
+                        ),
+                      ),
+                    ),
+                  ],
                   if (_shouldShowFinalizePaymentButton(order)) ...[
                     const SizedBox(height: 14),
                     SizedBox(
