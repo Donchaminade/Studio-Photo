@@ -228,12 +228,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _fetchPrices() async {
     try {
-      final results = await Future.wait([
-        ApiService.fetchDimensions(),
-        ApiService.fetchFrames(),
-      ]);
-      final fetchedDimensions = results[0] as List<PhotoFormat>;
-      final fetchedFrames = results[1] as List<PhotoFrame>;
+      final fetchedDimensions = await ApiService.fetchDimensions();
+      List<PhotoFrame> fetchedFrames = [];
+      try {
+        fetchedFrames = await ApiService.fetchFrames();
+      } catch (e) {
+        debugPrint('fetchFrames: $e');
+      }
       if (mounted) {
         setState(() {
           _prices = {
@@ -373,34 +374,48 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final compressedFiles = compressedPaths.map((p) => File(p)).toList();
         final uploadedUrls = await ApiService.uploadPhotos(compressedFiles);
 
-        if (_prices != null && _prices!.isNotEmpty) {
-          // Copies temporaires : n'affectent le panier QUE si l'utilisateur confirme
-          final tempImages = uploadedUrls.toList();
-          final tempDetails = <String, Map<String, dynamic>>{};
-
-          final confirmed = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PhotoPreviewScreen(
-                images: tempImages,
-                photoDetails: tempDetails,
-                prices: _prices!,
-                framePrices: _framePrices ?? const {},
-                frames: _frames,
+        if (_prices == null || _prices!.isEmpty) {
+          await _fetchPrices();
+        }
+        if (!mounted) return;
+        if (_prices == null || _prices!.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Les formats ne sont pas disponibles. Réessayez dans un instant.',
               ),
+              backgroundColor: Colors.red,
             ),
           );
+          return;
+        }
 
-          if (confirmed == true && mounted) {
-            setState(() {
-              _selectedImages.addAll(tempImages);
-              for (final e in tempDetails.entries) {
-                _photoDetails[e.key] = e.value;
-              }
-              _calculateTotal();
-              _currentIndex = 1; // Onglet Commandes
-            });
-          }
+        // Toujours passer par l'aperçu (format, qualité DPI, cadre) avant le panier.
+        final tempImages = uploadedUrls.toList();
+        final tempDetails = <String, Map<String, dynamic>>{};
+
+        final confirmed = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PhotoPreviewScreen(
+              images: tempImages,
+              photoDetails: tempDetails,
+              prices: _prices!,
+              framePrices: _framePrices ?? const {},
+              frames: _frames,
+            ),
+          ),
+        );
+
+        if (confirmed == true && mounted) {
+          setState(() {
+            _selectedImages.addAll(tempImages);
+            for (final e in tempDetails.entries) {
+              _photoDetails[e.key] = e.value;
+            }
+            _calculateTotal();
+            _currentIndex = 1; // Onglet Commandes
+          });
         }
       } catch (e) {
         String errorMessage = e.toString();

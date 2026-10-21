@@ -166,6 +166,19 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
   bool _offersFrame(String dimension) =>
       OrderLinePricing.offersFrame(widget.framePrices[dimension]);
 
+  String? _firstFramedFormat() {
+    for (final dim in widget.prices.keys) {
+      if (_offersFrame(dim)) return dim;
+    }
+    return null;
+  }
+
+  void _selectDimension(String imageUrl, String dimension) {
+    _localDetails[imageUrl]!['size'] = dimension;
+    _localDetails[imageUrl]!['_autoAssigned'] = true;
+    _syncFrameDefaults(imageUrl, dimension);
+  }
+
   void _syncFrameDefaults(String imageUrl, String dimension) {
     final details = _localDetails[imageUrl];
     if (details == null) return;
@@ -496,14 +509,23 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                   future: _loadImageSize(selectedImage),
                   builder: (context, snap) {
                     final imageSize = snap.data;
-                    return _buildFormatDropdown(
-                      selectedImage: selectedImage,
-                      selectedDimension: selectedDimension,
-                      imageSize: imageSize,
+                    return Column(
+                      children: [
+                        _buildFormatDropdown(
+                          selectedImage: selectedImage,
+                          selectedDimension: selectedDimension,
+                          imageSize: imageSize,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildQualityBanner(
+                          dimension: selectedDimension,
+                          snapshot: snap,
+                        ),
+                      ],
                     );
                   },
                 ),
-                if (_offersFrame(selectedDimension) && widget.frames.isNotEmpty) ...[
+                if (widget.frames.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   _buildFrameSelector(
                     selectedImage: selectedImage,
@@ -728,10 +750,158 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
     );
   }
 
+  Widget _buildQualityBanner({
+    required String dimension,
+    required AsyncSnapshot<Size> snapshot,
+  }) {
+    if (!snapshot.hasData) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: LinearProgressIndicator(minHeight: 3),
+        );
+      }
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Text(
+          'Qualité d\'impression indisponible pour cette photo.',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      );
+    }
+
+    final analysis = analyzePrintFit(snapshot.data!, dimension);
+    final color = qualityColor(analysis.quality);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: qualityLightColor(analysis.quality),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Icon(qualityIcon(analysis.quality), color: color, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${qualityLabelForAnalysis(analysis)} · ${analysis.dpi.round()} DPI · ${cropSummary(analysis)}',
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFrameFormatHint(String selectedImage, String selectedDimension) {
+    final framed = widget.prices.keys.where(_offersFrame).toList();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.photo_size_select_large, color: AppColors.primary, size: 20),
+                SizedBox(width: 8),
+                Text('Cadre photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              framed.isEmpty
+                  ? 'Aucun format ne propose de cadre pour le moment.'
+                  : 'Le format $selectedDimension n\'a pas de tarif cadre. Touchez un cadre pour passer au premier format qui en propose un.',
+              style: const TextStyle(fontSize: 12, height: 1.35),
+            ),
+            if (framed.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 118,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: widget.frames.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (context, index) {
+                    final frame = widget.frames[index];
+                    final imageUrl = frame.primaryImage;
+                    return GestureDetector(
+                      onTap: () {
+                        final dim = _firstFramedFormat();
+                        if (dim == null) return;
+                        setState(() {
+                          _selectDimension(selectedImage, dim);
+                          final details = _localDetails[selectedImage]!;
+                          details['withFrame'] = true;
+                          _applyFrameSelection(details, frame);
+                        });
+                      },
+                      child: SizedBox(
+                        width: 96,
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: imageUrl != null
+                                    ? AuthNetworkImage(imageUrl, width: 96, fit: BoxFit.cover)
+                                    : const ColoredBox(
+                                        color: Color(0xFFEEEEEE),
+                                        child: Icon(Icons.image_outlined),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              frame.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFrameSelector({
     required String selectedImage,
     required String selectedDimension,
   }) {
+    if (!_offersFrame(selectedDimension)) {
+      return _buildFrameFormatHint(selectedImage, selectedDimension);
+    }
     final details = _localDetails[selectedImage] ?? {};
     final withFrame = details['withFrame'] == true;
     final framePrice = widget.framePrices[selectedDimension] ?? 0;
@@ -957,6 +1127,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
           child: DropdownButton<String>(
             value: selectedDimension,
             isExpanded: true,
+            itemHeight: 64,
             icon: const Icon(Icons.expand_more, color: AppColors.primary),
             items: options.map((opt) {
               return DropdownMenuItem<String>(
@@ -966,12 +1137,26 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                     Icon(opt.icon, color: opt.color, size: 20),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        opt.dimension,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            opt.dimension,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          Text(
+                            '${opt.label} · ${opt.analysis.dpi.round()} DPI',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: opt.color,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (opt.isRecommended)
@@ -1160,9 +1345,8 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
     var total = 0.0;
     var count = 0;
     for (final d in _localDetails.values) {
-      final q = (d['quantity'] as num?)?.toInt() ?? 1;
-      total += (widget.prices[d['size']] ?? 0) * q;
-      count += q;
+      total += OrderLinePricing.lineTotal(d, widget.prices, widget.framePrices);
+      count += (d['quantity'] as num?)?.toInt() ?? 1;
     }
     return PiconPayBar(
       amountLabel: '$count tirage${count > 1 ? 's' : ''} • estimation',

@@ -9,10 +9,11 @@ Future<void> showAppError(
   BuildContext context,
   Object error, {
   VoidCallback? onRetry,
+  bool endSession = true,
 }) async {
   final app = AppError.from(error);
 
-  if (app.kind == AppErrorKind.session) {
+  if (app.kind == AppErrorKind.session && endSession) {
     await SessionController.expireToLogin(message: app.message);
     return;
   }

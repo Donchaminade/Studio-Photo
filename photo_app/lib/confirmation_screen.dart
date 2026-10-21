@@ -13,7 +13,6 @@ import 'utils/geometric_background.dart';
 import 'utils/google_play_tester.dart';
 import 'utils/mobile_operator_utils.dart';
 import 'utils/phone_payment_permissions.dart';
-import 'widgets/app_error_feedback.dart';
 import 'widgets/picon_premium.dart';
 import 'widgets/picon_ui.dart';
 
@@ -227,6 +226,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       );
 
       if (!mounted) return;
+      ApiService.clearPendingPayment();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -340,8 +340,16 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         await launchUrl(whatsappWebUrl, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
+      // Un échec WhatsApp ne doit jamais fermer la session.
       if (mounted) {
-        await showAppError(context, e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Paiement enregistré. Le récapitulatif WhatsApp n\'a pas pu s\'ouvrir.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
     }
   }

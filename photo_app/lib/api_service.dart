@@ -81,6 +81,10 @@ class ApiService {
   static String? _authToken;
   static String? _refreshToken;
   static bool _refreshing = false;
+
+  /// Résultat du dernier essai de renouvellement. Un 401 n'est une session
+  /// morte que si le serveur a explicitement rejeté le jeton de renouvellement.
+  static _RefreshOutcome _lastRefreshOutcome = _RefreshOutcome.skipped;
   static int? _userId;
   static String? _userName;
   static String? _userLastName;
@@ -154,6 +158,7 @@ class ApiService {
   }
 
   static Future<void> saveAuthDetails(Map<String, dynamic> authData) async {
+    _lastRefreshOutcome = _RefreshOutcome.skipped;
     _authToken = authData['token'];
     _refreshToken = authData['refreshToken'] as String? ?? _refreshToken;
     _userId = authData['id'];
@@ -247,6 +252,7 @@ class ApiService {
 
   static Future<bool> _tryRefreshToken() async {
     if (_refreshing || _refreshToken == null || _refreshToken!.isEmpty) {
+      _lastRefreshOutcome = _RefreshOutcome.skipped;
       return false;
     }
     _refreshing = true;
@@ -262,16 +268,32 @@ class ApiService {
         final data = _decodeJson(response);
         if (data is Map<String, dynamic> && data['token'] is String) {
           await saveAuthDetails(data);
+          _lastRefreshOutcome = _RefreshOutcome.refreshed;
           return true;
         }
       }
+      // 404/405 : l'API prod n'a pas encore /auth/refresh. On garde la session.
+      if (response.statusCode == 404 ||
+          response.statusCode == 405 ||
+          response.statusCode == 501) {
+        _lastRefreshOutcome = _RefreshOutcome.unavailable;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        _lastRefreshOutcome = _RefreshOutcome.rejected;
+      } else {
+        _lastRefreshOutcome = _RefreshOutcome.skipped;
+      }
     } catch (_) {
-      // Le renouvellement a échoué : la session sera clôturée plus bas.
+      // Réseau ou réponse illisible : ce n'est pas la preuve que le jeton est mort.
+      _lastRefreshOutcome = _RefreshOutcome.skipped;
     } finally {
       _refreshing = false;
     }
     return false;
   }
+
+  /// Vrai seulement si /auth/refresh a répondu que le jeton est invalide.
+  static bool get _sessionReallyExpired =>
+      _lastRefreshOutcome == _RefreshOutcome.rejected;
 
   /// Vérifie le jeton au démarrage. Renvoie false si l’utilisateur doit se reconnecter.
   static Future<bool> ensureSession() async {
@@ -282,8 +304,11 @@ class ApiService {
       if (await _tryRefreshToken()) {
         return await getAuthDetails() != null;
       }
-      await clearAuthDetails();
-      return false;
+      if (_sessionReallyExpired) {
+        await clearAuthDetails();
+        return false;
+      }
+      return _authToken != null;
     } catch (e) {
       final err = AppError.from(e);
       if (err.kind == AppErrorKind.session) {
@@ -310,9 +335,34 @@ class ApiService {
     }
   }
 
+  static String? _messageFromBody(http.Response response) {
+    try {
+      final decoded = _decodeJson(response);
+      if (decoded is Map) {
+        final message = decoded['message'] ?? decoded['detail'] ?? decoded['error'];
+        if (message is String && message.trim().isNotEmpty) {
+          return message.trim();
+        }
+      }
+      if (decoded is String && decoded.trim().isNotEmpty) return decoded.trim();
+    } catch (_) {}
+    return null;
+  }
+
   static dynamic _handleApiResponse(http.Response response) {
     if (response.statusCode == 401 && _authToken != null) {
-      throw AppError.session();
+      final message = _messageFromBody(response);
+      if (_sessionReallyExpired) {
+        throw AppError.session();
+      }
+      throw AppError.generic(
+        message ?? 'Action refusée. Votre connexion est conservée.',
+      );
+    }
+    if (response.statusCode == 403) {
+      throw AppError.generic(
+        _messageFromBody(response) ?? 'Accès refusé pour cette action.',
+      );
     }
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return null;
@@ -383,7 +433,8 @@ class ApiService {
     try {
       final response = await _safeGet(url);
       if (response.statusCode == 401) {
-        throw AppError.session();
+        if (_sessionReallyExpired) throw AppError.session();
+        throw AppError.generic('Session conservée.');
       }
       if (response.statusCode == 200) {
         final details = _handleApiResponse(response);
@@ -717,18 +768,43 @@ class ApiService {
       if (paymentProofImageUrl != null && paymentProofImageUrl.trim().isNotEmpty)
         'paymentProofImageUrl': paymentProofImageUrl.trim(),
     });
-    return Order.fromJson(_handleApiResponse(response));
+    final data = _handleApiResponse(response);
+    if (data is Map<String, dynamic>) {
+      try {
+        return Order.fromJson(Map<String, Object?>.from(data));
+      } catch (e) {
+        debugPrint('confirmOrderPayment: réponse 2xx illisible ($e)');
+      }
+    }
+    // Le serveur a accepté la confirmation : on ne bloque pas le parcours
+    // si le JSON de la commande ne correspond pas au modèle local.
+    return Order(
+      id: orderId,
+      orderItems: const [],
+      status: 'PENDING_PAYMENT',
+      totalAmount: 0,
+      paymentMethod: paymentReference ?? '',
+      deliveryType: 'Standard',
+      createdAt: DateTime.now(),
+    );
   }
 
   static Future<String> uploadPaymentProof(int orderId, File imageFile) async {
     final url = '$baseUrl/orders/$orderId/payment-proof/upload';
-    final request = http.MultipartRequest('POST', Uri.parse(url));
-    request.headers.addAll({'Authorization': 'Bearer $_authToken'});
-    request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+    Future<http.Response> send() async {
+      final request = http.MultipartRequest('POST', Uri.parse(url));
+      if (_authToken != null && _authToken!.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $_authToken';
+      }
+      request.files.add(
+        await http.MultipartFile.fromPath('file', imageFile.path),
+      );
+      final streamedResponse =
+          await request.send().timeout(const Duration(seconds: 30));
+      return http.Response.fromStream(streamedResponse);
+    }
 
-    final streamedResponse =
-        await request.send().timeout(const Duration(seconds: 30));
-    final response = await http.Response.fromStream(streamedResponse);
+    final response = await _withAuthRetry(send);
     final responseData = _handleApiResponse(response) as Map<String, dynamic>;
     final fileUrl = responseData['url']?.toString();
     if (fileUrl == null || fileUrl.isEmpty) {
@@ -912,3 +988,5 @@ class ApiService {
   }
 
 }
+
+enum _RefreshOutcome { refreshed, rejected, unavailable, skipped }

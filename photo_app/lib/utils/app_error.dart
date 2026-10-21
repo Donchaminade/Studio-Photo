@@ -32,8 +32,10 @@ class AppError implements Exception {
 
     final raw = '${body ?? ''} ${error.toString()}'.toLowerCase();
 
-    // Jeton expiré : même si le serveur répond 500 avec le texte JWT brut.
-    if (_looksLikeExpiredSession(raw) || statusCode == 401 || statusCode == 403) {
+    // Uniquement un jeton JWT réellement expiré. Un 401, un 403, « non autorisé »
+    // ou un message de confirmation ne ferment pas la session : ces textes
+    // reviennent aussi pour un accès refusé ou une commande confirmée.
+    if (_looksLikeExpiredSession(raw)) {
       return AppError.session();
     }
 
@@ -100,10 +102,7 @@ class AppError implements Exception {
     return raw.contains('jwt expired') ||
         raw.contains('expiredjwt') ||
         raw.contains('token expired') ||
-        raw.contains('allowed clock skew') ||
-        (raw.contains('jwt') && raw.contains('expired')) ||
-        raw.contains('unauthorized') ||
-        raw.contains('non autorisé');
+        raw.contains('allowed clock skew');
   }
 
   static bool _isTechnical(String text) {

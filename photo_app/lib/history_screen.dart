@@ -73,7 +73,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       });
     } catch (e) {
       if (mounted) {
-        await showAppError(context, e);
+        await showAppError(context, e, endSession: false);
       }
     }
   }
