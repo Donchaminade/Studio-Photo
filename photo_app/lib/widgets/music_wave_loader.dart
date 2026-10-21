@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:photo_app/utils/colors.dart';
+import 'package:Picon/utils/colors.dart';
 
 class MusicWaveLoader extends StatefulWidget {
   const MusicWaveLoader({super.key});

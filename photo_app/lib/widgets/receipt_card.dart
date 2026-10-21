@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class ReceiptCard extends StatelessWidget {
   final String title;

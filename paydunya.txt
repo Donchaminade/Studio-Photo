@@ -1,0 +1,49 @@
+ Configuration d'une nouvelle application
+Intégrer notre API au sein de vos applications en générant vos clés API ici.
+Applications
+Clients fictifs
+Données internes fictives
+
+* Nom de l'application
+picon
+* Petite Description
+commande des impressions de photos en ligne
+URL du site Web
+http://www.exemple.com
+ServicesPayin Payout
+Activer le mode production
+Mode test, je veux faire des tests de paiements.
+Envoyer Facture apres paiement
+Ne pas envoyer de facture au client
+
+
+Moyens de paiements à afficher sur la page de paiement
+ Il s'agit des méthodes de paiement que vous souhaitez activer au niveau de cette intégration.
+
+
+Carte Bancaire
+CARD     
+Sénégal
+ORANGE MONEY SENEGAL WAVE SENEGAL
+Bénin
+MOOV BENIN MTN BENIN
+Burkina Faso
+ORANGE MONEY BURKINA MOOV BURKINA FASO
+Cote d'ivoire
+ORANGE MONEY CI MTN CI MOOV CI Wave CI
+Togo
+T MONEY TOGO MOOV TOGO
+Mali
+ORANGE MONEY MALI
+Cameroun
+
+
+Instant Payment Notification (IPN)
+ Il s'agit d'une adresse URL sur laquelle vous serez notifié une fois que le client aura confirmé le paiement.
+
+
+Endpoint IPN
+Ex: http://votresite.com/payment-status.php
+Activer
+Non
+ ou Annuler

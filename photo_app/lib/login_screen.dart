@@ -1,11 +1,12 @@
+import 'package:Picon/api_service.dart';
+import 'package:Picon/home_screen.dart';
+import 'package:Picon/recovery_screen.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/phone_prefix.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_app/home_screen.dart';
-import 'package:photo_app/recovery_screen.dart';
-import 'package:photo_app/services/session_store.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/utils/geometric_background.dart';
-import 'package:photo_app/widgets/phone_prefix.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,30 +17,16 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'test@example.com');
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController(text: 'password123');
+  final _passwordController = TextEditingController();
   bool _obscureText = true;
   bool _isLoading = false;
   bool _success = false;
   bool _error = false;
   int _shake = 0;
   bool _isLoginWithPhone = true;
-  String _dialCode = '+228';
-
-  String? _savedDial;
-
-  @override
-  void initState() {
-    super.initState();
-    SessionStore.instance.signupDialCode().then((code) {
-      if (!mounted || code == null || code.isEmpty) return;
-      setState(() {
-        _savedDial = code;
-        _dialCode = code;
-      });
-    }).catchError((Object _) {});
-  }
+  String _selectedDialCode = '+228';
 
   Future<void> _login() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
@@ -51,44 +38,67 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => _error = false);
       return;
     }
+
     setState(() {
       _isLoading = true;
       _error = false;
       _success = false;
     });
 
-    await Future.delayed(const Duration(seconds: 3));
+    try {
+      final Map<String, dynamic> responseData = _isLoginWithPhone
+          ? await ApiService.login(
+              phone: _buildFullPhoneNumber(_phoneController.text),
+              password: _passwordController.text,
+            )
+          : await ApiService.login(
+              email: _emailController.text,
+              password: _passwordController.text,
+            );
 
-    // Session persistante : l'utilisateur reste connecté après une mise en
-    // arrière-plan ou un redémarrage de l'application.
-    await SessionStore.instance.save(
-      UserSession(
-        userId: 1,
-        userName: 'Test User',
-        email: _isLoginWithPhone ? '' : _emailController.text.trim(),
-        dialCode: _isLoginWithPhone ? _dialCode : '',
-        phone: _isLoginWithPhone ? _phoneController.text.trim() : '',
-        token: SessionStore.newToken(),
-      ),
-    );
+      if (!mounted) return;
+      await ApiService.saveAuthDetails(responseData);
+      if (!mounted) return;
 
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-      _success = true;
-    });
-    if (!reduceMotion(context)) {
-      await Future<void>.delayed(const Duration(milliseconds: 380));
-    }
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const HomeScreen(
-          userName: 'Test User',
-          userId: 1,
+      setState(() => _success = true);
+      if (!reduceMotion(context)) {
+        await Future<void>.delayed(const Duration(milliseconds: 280));
+      }
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(
+            userName: responseData['firstname'] ?? '',
+            userLastName: responseData['lastname'] ?? '',
+            userEmail: responseData['email'] ?? '',
+            userId: responseData['id'] ?? 0,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = true;
+        _shake++;
+      });
+      await showAppError(context, e, onRetry: _login);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  String _buildFullPhoneNumber(String rawPhone) {
+    var cleaned = rawPhone.trim().replaceAll(RegExp(r'[\s.\-()]'), '');
+    if (cleaned.startsWith('+')) return cleaned;
+    if (cleaned.startsWith('00')) return '+${cleaned.substring(2)}';
+    if (cleaned.startsWith('228') && cleaned.length >= 11) return '+$cleaned';
+    if (cleaned.startsWith('0') && cleaned.length == 9) {
+      cleaned = cleaned.substring(1);
+    }
+    return '$_selectedDialCode$cleaned';
   }
 
   @override
@@ -143,9 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 12),
-            const Center(child: _SecureBadge()),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             PillToggle(
               labels: const ['Téléphone', 'Email'],
               index: _isLoginWithPhone ? 0 : 1,
@@ -157,9 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AfricanPhonePrefix(
-                    key: ValueKey(_savedDial),
-                    initialSelection: _savedDial ?? 'TG',
-                    onChanged: (code) => _dialCode = code,
+                    onChanged: (dial) => _selectedDialCode = dial,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -218,7 +224,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const RecoveryScreen()),
+                      builder: (context) => const RecoveryScreen(),
+                    ),
                   );
                 },
                 child: const Text('Mot de passe oublié ?'),
@@ -236,56 +243,21 @@ class _LoginScreenState extends State<LoginScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('Pas de compte ?',
-                    style: TextStyle(color: AppColors.textPrimary)),
+                const Text(
+                  'Pas de compte ?',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
                 TextButton(
                   onPressed: () => Navigator.pushNamed(context, '/signup'),
-                  child: const Text("S'inscrire",
-                      style: TextStyle(color: AppColors.primary)),
+                  child: const Text(
+                    "S'inscrire",
+                    style: TextStyle(color: AppColors.primary),
+                  ),
                 ),
               ],
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Badge « connexion sécurisée » (réf. login secure DcOUIemTImO) : le cadenas
-/// s'ouvre une fois, puis reste fixe.
-class _SecureBadge extends StatelessWidget {
-  const _SecureBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    final reduced = reduceMotion(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: reduced ? 1 : 0, end: 1),
-            duration: const Duration(milliseconds: 900),
-            curve: Curves.easeOutBack,
-            builder: (context, t, _) => Icon(
-              t < 0.6 ? Icons.lock_outline_rounded : Icons.verified_user_outlined,
-              size: 16,
-              color: Color.lerp(AppColors.textSecondary, AppColors.primary, t),
-            ),
-          ),
-          const SizedBox(width: 6),
-          const Text(
-            'Connexion sécurisée',
-            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700, fontSize: 12),
-          ),
-        ],
       ),
     );
   }

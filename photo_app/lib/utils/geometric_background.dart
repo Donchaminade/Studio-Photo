@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photo_app/utils/colors.dart';
+import 'package:Picon/utils/colors.dart';
 
 /// Fond clair de marque : dégradé statique, sans animation continue.
 class GeometricBackground extends StatelessWidget {

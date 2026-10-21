@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:photo_app/utils/colors.dart';
+import 'package:Picon/utils/colors.dart';
 
 bool reduceMotion(BuildContext context) {
   final media = MediaQuery.of(context);

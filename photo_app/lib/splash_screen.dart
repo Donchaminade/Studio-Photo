@@ -1,11 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:photo_app/home_screen.dart';
-import 'package:photo_app/login_screen.dart';
-import 'package:photo_app/services/session_store.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:Picon/screens/app_bootstrap_screen.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:video_player/video_player.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -62,46 +60,13 @@ class _SplashScreenState extends State<SplashScreen> {
     });
   }
 
-  late final Future<UserSession?> _session = SessionStore.instance.restore();
-
-  /// Ouvre l'accueil si une session est enregistrée, sinon la connexion.
   void _navigateToHome() {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      UserSession? session;
-      try {
-        session = await _session;
-      } catch (_) {
-        session = null;
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => session == null
-              ? const LoginScreen()
-              : HomeScreen(userName: session.userName, userId: session.userId),
-        ),
+        MaterialPageRoute(builder: (context) => const AppBootstrapScreen()),
       );
     });
-  }
-
-  bool _precached = false;
-
-  /// Précharge les visuels de la connexion et de l'accueil pendant le splash
-  /// (mêmes tailles de décodage que les widgets : pas de second décodage).
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_precached) return;
-    _precached = true;
-    const logo = AssetImage('assets/images/pro.png');
-    for (final width in const [288, 264, 192, 120]) {
-      precacheImage(ResizeImage(logo, width: width), context)
-          .catchError((Object _) {});
-    }
-    for (final asset in kPromoImages) {
-      precacheImage(ResizeImage(AssetImage(asset), width: 800), context)
-          .catchError((Object _) {});
-    }
   }
 
   @override
@@ -115,8 +80,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
-    final showVideo =
-        _ready && controller != null && controller.value.isInitialized;
+    final showVideo = _ready && controller != null && controller.value.isInitialized;
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -154,8 +118,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   height: 28,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.4,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                   ),
                 ),
               ),

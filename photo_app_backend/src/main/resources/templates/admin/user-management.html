@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title>Gestion des Utilisateurs - Studio Photo Admin</title>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <style>
+        :root {
+            --primary-color: #4567b7;
+            --primary-dark: #3455a0;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
+            --dark-color: #2c3e50;
+            --light-color: #f8f9fa;
+            --gray-light: #ecf0f1;
+            --input-border: #94a3b8;
+            --input-border-hover: #64748b;
+            --input-bg: #ffffff;
+            --shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fb;
+            color: var(--dark-color);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            background: rgba(255, 255, 255, 0.2);
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-links {
+            padding: 20px 0;
+        }
+
+        .nav-links li {
+            list-style: none;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: white;
+        }
+
+        .nav-links i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 0;
+            transition: var(--transition);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border: 2px solid var(--gray-light);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(69, 103, 183, 0.15);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .user-details {
+            margin-right: 20px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        .user-role {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        /* Content Wrapper */
+        .content-wrapper {
+            padding: 30px;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin: 0;
+        }
+
+        .page-header h1 i {
+            color: var(--primary-color);
+            margin-right: 15px;
+        }
+
+        /* Stats Cards */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            font-size: 24px;
+            color: white;
+        }
+
+        .total-users .stat-icon {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .active-users .stat-icon {
+            background: linear-gradient(135deg, var(--success-color), #27ae60);
+        }
+
+        .admin-users .stat-icon {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+        }
+
+        .new-users .stat-icon {
+            background: linear-gradient(135deg, var(--info-color), #2980b9);
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark-color);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .positive {
+            color: var(--success-color);
+        }
+
+        .negative {
+            color: var(--danger-color);
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--dark-color);
+            display: block;
+        }
+
+        /* DataTable Customization */
+        .dataTables_wrapper {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .dataTables_length,
+        .dataTables_filter {
+            padding: 20px 20px 0;
+        }
+
+        .dataTables_info,
+        .dataTables_paginate {
+            padding: 20px;
+        }
+
+        #usersTable {
+            margin: 0 !important;
+        }
+
+        #usersTable thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: var(--dark-color);
+            padding: 15px 20px;
+            white-space: nowrap;
+        }
+
+        #usersTable tbody td {
+            padding: 15px 20px;
+            vertical-align: middle;
+            border-top: 1px solid #eee;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Role Badges */
+        .role-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .role-admin {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--secondary-color);
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .role-user {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(46, 204, 113, 0.2);
+        }
+
+        .role-photographer {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+            border: 1px solid rgba(243, 156, 18, 0.2);
+        }
+
+        .role-editor {
+            background-color: rgba(155, 89, 182, 0.1);
+            color: #9b59b6;
+            border: 1px solid rgba(155, 89, 182, 0.2);
+        }
+
+        /* User Avatar in Table */
+        .user-avatar-small {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-active {
+            background-color: var(--success-color);
+            box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+        }
+
+        .status-inactive {
+            background-color: #95a5a6;
+            box-shadow: 0 0 0 2px rgba(149, 165, 166, 0.2);
+        }
+
+        .status-pending {
+            background-color: var(--warning-color);
+            box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.2);
+        }
+
+        /* Buttons */
+        .btn-add-user {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 8px;
+            padding: 12px 25px;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 4px 15px rgba(69, 103, 183, 0.3);
+            transition: var(--transition);
+        }
+
+        .btn-add-user:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(69, 103, 183, 0.4);
+        }
+
+        /* Modals */
+        .modal-content {
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            padding: 25px 30px;
+            border-bottom: none;
+        }
+
+        .modal-header h5 {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .modal-header .close {
+            color: white;
+            opacity: 0.8;
+            font-size: 28px;
+            transition: var(--transition);
+        }
+
+        .modal-header .close:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #eee;
+            padding: 20px 30px;
+        }
+
+        /* Form Styling — bordures visibles (champs + listes déroulantes) */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--dark-color);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .content-wrapper .form-control,
+        #userModal .form-control {
+            border: 2px solid var(--input-border) !important;
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 14px;
+            transition: var(--transition);
+            background-color: var(--input-bg) !important;
+            color: var(--dark-color);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+            min-height: 48px;
+        }
+
+        .content-wrapper .form-control:hover,
+        #userModal .form-control:hover {
+            border-color: var(--input-border-hover) !important;
+        }
+
+        .content-wrapper .form-control:focus,
+        #userModal .form-control:focus {
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 0 3px rgba(69, 103, 183, 0.22);
+            background-color: #ffffff !important;
+            outline: none;
+        }
+
+        /* Select2 — même rendu que les inputs texte */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container--default .select2-selection--single {
+            height: 48px !important;
+            border: 2px solid var(--input-border) !important;
+            border-radius: 8px !important;
+            padding: 8px 40px 8px 14px !important;
+            background-color: var(--input-bg) !important;
+            transition: var(--transition);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        .select2-container--default .select2-selection--single:hover {
+            border-color: var(--input-border-hover) !important;
+            cursor: pointer;
+        }
+
+        .select2-container--default.select2-container--focus .select2-selection--single,
+        .select2-container--default.select2-container--open .select2-selection--single {
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 0 3px rgba(69, 103, 183, 0.22) !important;
+            background-color: #ffffff !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 30px !important;
+            padding-left: 0 !important;
+            color: var(--dark-color) !important;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #64748b !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 44px !important;
+            right: 12px !important;
+            width: 24px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #475569 transparent transparent transparent !important;
+            border-width: 7px 5px 0 5px !important;
+            margin-top: -2px;
+        }
+
+        .select2-dropdown {
+            border: 2px solid var(--input-border) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+            overflow: hidden;
+        }
+
+        .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: var(--primary-color) !important;
+        }
+
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border: 2px solid var(--input-border) !important;
+            border-radius: 6px !important;
+            padding: 8px 10px !important;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #95a5a6;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+
+        /* Icons inside form inputs */
+        .form-group .icon-in-input {
+            position: absolute;
+            left: 15px;
+            top: 40px;
+            /* Adjusted to align with input text area */
+            transform: translateY(0);
+            color: #95a5a6;
+            z-index: 10;
+        }
+
+        .form-group textarea+.icon-in-input {
+            /* Adjust for textarea icon */
+            top: 40px;
+            /* Keep consistent with single line inputs */
+            transform: translateY(0);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+            border-top: 1px solid var(--gray-light);
+            background: white;
+            margin-top: 30px;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 70px;
+                overflow: hidden;
+            }
+
+            .sidebar:hover {
+                width: 250px;
+            }
+
+            .logo-text,
+            .nav-links span {
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .sidebar:hover .logo-text,
+            .sidebar:hover .nav-links span {
+                opacity: 1;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .sidebar:hover~.main-content {
+                margin-left: 250px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .stats-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .top-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                width: 100%;
+                margin-bottom: 15px;
+            }
+
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .table-actions {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .content-wrapper {
+                padding: 20px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .page-header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav th:replace="~{admin/fragments/sidebar :: sidebar-fragment}"></nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Inclusion du header depuis le fragment -->
+        <div th:insert="~{admin/fragments/header :: mainHeader}"></div>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1><i class="fas fa-user-friends"></i>Gestion des Utilisateurs</h1>
+                </div>
+                <div class="d-flex align-items-center">
+                    <button id="bulkDeleteBtn" class="btn btn-danger mr-3 d-none" onclick="handleBulkDelete()">
+                        <i class="fas fa-trash-alt mr-2"></i>Supprimer (<span id="selectedCount">0</span>)
+                    </button>
+                    <button class="btn btn-add-user" data-toggle="modal" data-target="#userModal" id="addUserBtn">
+                        <i class="fas fa-user-plus mr-2"></i>Nouvel Utilisateur
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+                <div class="stat-card total-users">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="totalUsers">0</div>
+                        <div class="stat-label">Total Utilisateurs</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up mr-1"></i> 12% ce mois
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card active-users">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="activeUsers">0</div>
+                        <div class="stat-label">Utilisateurs Actifs</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up mr-1"></i> 8% ce mois
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card admin-users">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="adminUsers">0</div>
+                        <div class="stat-label">Administrateurs</div>
+                        <div class="stat-change negative">
+                            <i class="fas fa-arrow-down mr-1"></i> 2% ce mois
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card new-users">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="newUsers">0</div>
+                        <div class="stat-label">Nouveaux (7 jours)</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up mr-1"></i> 15% ce mois
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation for Roles -->
+            <ul class="nav nav-tabs mb-4" id="userRoleTabs" role="tablist" style="border-bottom: 2px solid var(--gray-light);">
+                <li class="nav-item">
+                    <a class="nav-link active font-weight-bold" id="all-users-tab" data-toggle="tab" href="#all" role="tab" data-role="" style="padding: 12px 25px; border: none; color: #7f8c8d;">
+                        <i class="fas fa-users mr-2"></i>Tous les comptes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" id="admin-users-tab" data-toggle="tab" href="#admins" role="tab" data-role="ADMIN" style="padding: 12px 25px; border: none; color: #7f8c8d;">
+                        <i class="fas fa-user-shield mr-2"></i>Administrateurs
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" id="simple-users-tab" data-toggle="tab" href="#users" role="tab" data-role="USER" style="padding: 12px 25px; border: none; color: #7f8c8d;">
+                        <i class="fas fa-user mr-2"></i>Utilisateurs simples
+                    </a>
+                </li>
+            </ul>
+
+            <style>
+                .nav-tabs .nav-link.active {
+                    color: var(--primary-color) !important;
+                    background-color: transparent !important;
+                    border-bottom: 3px solid var(--primary-color) !important;
+                }
+                .nav-tabs .nav-link:hover {
+                    border-bottom: 3px solid var(--gray-light);
+                }
+            </style>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group d-none"> <!-- Hidden as we use tabs now -->
+                        <label for="filterRole">Filtrer par rôle</label>
+                        <select id="filterRole" class="form-control select2">
+                            <option value="">Tous les rôles</option>
+                            <option value="ADMIN">Administrateur</option>
+                            <option value="USER">Utilisateur</option>
+                            <option value="PHOTOGRAPHER">Photographe</option>
+                            <option value="EDITOR">Éditeur</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterStatus">Filtrer par statut</label>
+                        <select id="filterStatus" class="form-control select2">
+                            <option value="">Tous les statuts</option>
+                            <option value="ACTIVE">Actif</option>
+                            <option value="INACTIVE">Inactif</option>
+                            <option value="PENDING">En attente</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterDate">Date d'inscription</label>
+                        <input type="date" id="filterDate" class="form-control">
+                    </div>
+                    <div class="filter-group d-flex align-items-end">
+                        <button class="btn btn-primary mr-2" id="applyFilters">
+                            <i class="fas fa-filter mr-2"></i>Appliquer
+                        </button>
+                        <button class="btn btn-outline-secondary" id="resetFilters">
+                            <i class="fas fa-redo mr-2"></i>Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="dataTables_wrapper">
+                <table id="usersTable" class="table table-hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="selectAll">
+                                    <label class="custom-control-label" for="selectAll"></label>
+                                </div>
+                            </th>
+                            <th>Utilisateur</th>
+                            <th>Email</th>
+                            <th>Téléphone</th>
+                            <th>PIN</th>
+                            <th>Rôle</th>
+                            <th>Statut</th>
+                            <th>Date d'inscription</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Data will be loaded via DataTables -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- User Modal (Add/Edit) -->
+        <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="userModalLabel">Nouvel Utilisateur</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="userForm">
+                            <input type="hidden" id="userId" name="id">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group position-relative">
+                                        <label for="firstname">Prénom *</label>
+                                        <i class="fas fa-user icon-in-input"></i>
+                                        <input type="text" class="form-control pl-5" id="firstname" name="firstname"
+                                            required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group position-relative">
+                                        <label for="lastname">Nom *</label>
+                                        <i class="fas fa-user icon-in-input"></i>
+                                        <input type="text" class="form-control pl-5" id="lastname" name="lastname"
+                                            required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group position-relative">
+                                <label for="email">Email *</label>
+                                <i class="fas fa-envelope icon-in-input"></i>
+                                <input type="email" class="form-control pl-5" id="email" name="email" required>
+                            </div>
+                            <!-- Password fields section -->
+                            <div id="passwordFieldsGroup" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="password">Mot de passe *</label>
+                                            <div class="position-relative">
+                                                <input type="password" class="form-control" id="password"
+                                                    name="password">
+                                                <span class="password-toggle" id="togglePassword">
+                                                    <i class="fas fa-eye"></i>
+                                                </span>
+                                            </div>
+                                            <small class="form-text text-muted">Minimum 8 caractères</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="confirmPassword">Confirmer le mot de passe *</label>
+                                            <input type="password" class="form-control" id="confirmPassword"
+                                                name="confirmPassword">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="changePasswordToggleGroup" style="display: none;">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="changePasswordCheckbox">
+                                    <label class="form-check-label" for="changePasswordCheckbox">Changer le mot de
+                                        passe</label>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="role">Rôle *</label>
+                                        <select class="form-control select2" id="role" name="role" style="width: 100%"
+                                            required>
+                                            <option th:each="role : ${roles}" th:value="${role}" th:text="${role}">
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="status">Statut *</label>
+                                        <select class="form-control select2" id="status" name="status"
+                                            style="width: 100%" required>
+                                            <option th:each="status : ${statuses}" th:value="${status}"
+                                                th:text="${status}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group position-relative">
+                                <label for="phone">Téléphone</label>
+                                <i class="fas fa-phone icon-in-input"></i>
+                                <input type="tel" class="form-control pl-5" id="phone" name="phone" value="+228">
+                            </div>
+                            <div class="form-group position-relative">
+                                <label for="pin">PIN</label>
+                                <i class="fas fa-key icon-in-input"></i>
+                                <input type="text" class="form-control pl-5" id="pin" name="pin">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-primary" id="saveUserBtn">
+                                    <i class="fas fa-save mr-2"></i>Enregistrer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Chart Modal -->
+        <div class="modal fade" id="userActivityModal" tabindex="-1" aria-labelledby="userActivityModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="userActivityModalLabel"><i class="fas fa-chart-line mr-2"></i>Historique d'activité : <span id="chartUserName"></span></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6 text-center border-right">
+                                <div class="text-muted small text-uppercase font-weight-bold">Total Commandes</div>
+                                <div class="h3 font-weight-bold text-primary" id="chartTotalOrders">0</div>
+                            </div>
+                            <div class="col-md-6 text-center">
+                                <div class="text-muted small text-uppercase font-weight-bold">Montant Total</div>
+                                <div class="h3 font-weight-bold text-success"><span id="chartTotalRevenue">0</span> FCFA</div>
+                            </div>
+                        </div>
+                        <div style="height: 350px; width: 100%;">
+                            <canvas id="userHistoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Studio Photo Admin. Tous droits réservés. | Version 2.1.0</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!--    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/fr.min.js"></script>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        $(document).ready(function () {
+            // Select2 — sans thème bootstrap (non chargé) ; listes du modal bien visibles
+            $('#filterStatus').select2({ width: '100%' });
+            $('#role, #status').select2({
+                width: '100%',
+                dropdownParent: $('#userModal'),
+                minimumResultsForSearch: Infinity
+            });
+
+            // Event listener for the "Change password" checkbox
+            $('#changePasswordCheckbox').change(function () {
+                if ($(this).is(':checked')) {
+                    $('#passwordFieldsGroup').show();
+                    $('#password').attr('required', true);
+                    $('#confirmPassword').attr('required', true);
+                } else {
+                    $('#passwordFieldsGroup').hide();
+                    $('#password').removeAttr('required').val('');
+                    $('#confirmPassword').removeAttr('required').val('');
+                }
+            });
+
+            // Handle Tab Clicks
+            $('#userRoleTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                const selectedRole = $(e.target).data('role');
+                $('#filterRole').val(selectedRole).trigger('change');
+                table.ajax.reload();
+            });
+
+
+            // Initialize DataTable
+            var table = $('#usersTable').DataTable({
+                language: {
+                    url: '/i18n/French.json'
+                },
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: '/admin/users/api/datatable',
+                    type: 'GET',
+                    data: function (d) {
+                        d.role = $('#filterRole').val();
+                        d.status = $('#filterStatus').val();
+                        d.date = $('#filterDate').val();
+                    }
+                },
+                columns: [
+                    {
+                        data: 'id',
+                        render: function (data) {
+                            return `
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input user-checkbox" id="check-${data}" value="${data}">
+                                <label class="custom-control-label" for="check-${data}"></label>
+                            </div>
+                        `;
+                        },
+                        orderable: false,
+                        width: '40px'
+                    },
+                    {
+                        data: null,
+                        render: function (data, type, row) {
+                            const initials = (row.firstname?.[0] || '') + (row.lastname?.[0] || '');
+                            const color = getColorFromName(row.firstname + row.lastname);
+                            return `
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar-small" style="background: ${color}">${initials}</div>
+                                <div>
+                                    <div class="font-weight-bold">${row.firstname} ${row.lastname}</div>
+                                    <!-- ID removed as per user request -->
+                                </div>
+                            </div>
+                        `;
+                        }
+                    },
+                    { data: 'email' },
+                    { data: 'phone' },
+                    { data: 'pin' },
+                    {
+                        data: 'role',
+                        render: function (data) {
+                            const roleClass = getRoleClass(data);
+                            return `<span class="role-badge ${roleClass}">${data}</span>`;
+                        }
+                    },
+                    {
+                        data: 'status',
+                        render: function (data) {
+                            const statusClass = getStatusClass(data);
+                            const statusText = getStatusText(data);
+                            return `<span><span class="status-indicator ${statusClass}"></span>${statusText}</span>`;
+                        }
+                    },
+                    {
+                        data: 'createdAt',
+                        render: function (data) {
+                            return data ? moment(data).format('DD/MM/YYYY HH:mm') : '-';
+                        }
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        render: function (data, type, row) {
+                            return `
+                            <div class="table-actions">
+                                <button class="btn btn-sm btn-outline-primary history-btn" data-id="${row.id}" data-name="${row.firstname} ${row.lastname}" title="Historique d'activité">
+                                    <i class="fas fa-chart-line"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info edit-btn" data-id="${row.id}" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning reset-btn" data-id="${row.id}" title="Réinitialiser MDP">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                                ${row.status === 'ACTIVE' ?
+                                    `<button class="btn btn-sm btn-outline-secondary deactivate-btn" data-id="${row.id}" title="Désactiver">
+                                        <i class="fas fa-user-slash"></i>
+                                    </button>` :
+                                    `<button class="btn btn-sm btn-outline-success activate-btn" data-id="${row.id}" title="Activer">
+                                        <i class="fas fa-user-check"></i>
+                                    </button>`
+                                }
+                                <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${row.id}" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                        }
+                    }
+                ],
+                order: [6, 'desc'],
+                pageLength: 25,
+                responsive: true
+            });
+
+            // Helper functions
+            function getColorFromName(name) {
+                const colors = [
+                    'linear-gradient(135deg, #4567b7, #3498db)',
+                    'linear-gradient(135deg, #2ecc71, #27ae60)',
+                    'linear-gradient(135deg, #f39c12, #e67e22)',
+                    'linear-gradient(135deg, #9b59b6, #8e44ad)',
+                    'linear-gradient(135deg, #e74c3c, #c0392b)'
+                ];
+                const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+                return colors[index];
+            }
+
+            function getRoleClass(role) {
+                const roles = {
+                    'ADMIN': 'role-admin',
+                    'USER': 'role-user',
+                    'PHOTOGRAPHER': 'role-photographer',
+                    'EDITOR': 'role-editor'
+                };
+                return roles[role] || 'role-user';
+            }
+
+            function getStatusClass(status) {
+                const statuses = {
+                    'ACTIVE': 'status-active',
+                    'INACTIVE': 'status-inactive',
+                    'PENDING': 'status-pending'
+                };
+                return statuses[status] || 'status-inactive';
+            }
+
+            function getStatusText(status) {
+                const statuses = {
+                    'ACTIVE': 'Actif',
+                    'INACTIVE': 'Inactif',
+                    'PENDING': 'En attente'
+                };
+                return statuses[status] || 'Inactif';
+            }
+
+            // Load stats
+            function loadStats() {
+                showLoading();
+                fetch('/admin/users/api/stats')
+                    .then(response => response.json())
+                    .then(stats => {
+                        $('#totalUsers').text(stats.totalUsers || 0);
+                        $('#activeUsers').text(stats.activeUsers || 0);
+                        $('#adminUsers').text(stats.adminUsers || 0);
+                        $('#newUsers').text(stats.newUsers || 0);
+                        hideLoading();
+                    })
+                    .catch(error => {
+                        console.error('Error loading stats:', error);
+                        hideLoading();
+                    });
+            }
+
+            // Loading overlay
+            function showLoading() {
+                $('#loadingOverlay').fadeIn();
+            }
+
+            function hideLoading() {
+                $('#loadingOverlay').fadeOut();
+            }
+
+            // User initials
+            const userName = /*[[${#authentication.principal.firstname + ' ' + #authentication.principal.lastname}]]*/ 'Admin';
+            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+            $('#userInitials').text(initials);
+
+            // Password toggle
+            $('#togglePassword').click(function () {
+                const passwordInput = $('#password');
+                const icon = $(this).find('i');
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+
+            // Filter functionality
+            $('#applyFilters').click(function () {
+                table.ajax.reload();
+                loadStats();
+            });
+
+            $('#resetFilters').click(function () {
+                $('#filterRole').val('').trigger('change');
+                $('#filterStatus').val('').trigger('change');
+                $('#filterDate').val('');
+                table.ajax.reload();
+                loadStats();
+            });
+
+            // Add User Button
+            $('#addUserBtn').click(function () {
+                $('#userForm')[0].reset();
+                $('#userId').val('');
+                $('#userModalLabel').text('Nouvel Utilisateur');
+
+                // Reset and show password fields for new user
+                $('#passwordFieldsGroup').show();
+                $('#password').attr('required', true);
+                $('#confirmPassword').attr('required', true); // Ensure confirmation is also required
+                $('#changePasswordToggleGroup').hide(); // Hide the 'change password' checkbox
+                $('#changePasswordCheckbox').prop('checked', false); // Ensure it's unchecked
+
+                $('.select2').trigger('change');
+            });
+
+            let userHistoryChart = null;
+
+            // History Chart
+            $('#usersTable tbody').on('click', '.history-btn', function () {
+                const userId = $(this).data('id');
+                const userName = $(this).data('name');
+                
+                $('#chartUserName').text(userName);
+                showLoading();
+                
+                fetch(`/admin/users/api/${userId}/activity-chart`)
+                    .then(response => response.json())
+                    .then(chartData => {
+                        const ctx = document.getElementById('userHistoryChart').getContext('2d');
+                        
+                        // Update summary stats
+                        $('#chartTotalOrders').text(chartData.totalOrders);
+                        $('#chartTotalRevenue').text(chartData.totalRevenue.toLocaleString());
+
+                        if (userHistoryChart) {
+                            userHistoryChart.destroy();
+                        }
+                        
+                        userHistoryChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: chartData.labels,
+                                datasets: [{
+                                    label: 'Dépenses mensuelles (FCFA)',
+                                    data: chartData.data,
+                                    borderColor: '#4567b7',
+                                    backgroundColor: 'rgba(69, 103, 183, 0.1)',
+                                    borderWidth: 3,
+                                    fill: true,
+                                    tension: 0.4
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            callback: function(value) {
+                                                return value.toLocaleString() + ' FCFA';
+                                            }
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                return context.parsed.y.toLocaleString() + ' FCFA';
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        
+                        $('#userActivityModal').modal('show');
+                        hideLoading();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching user history:', error);
+                        hideLoading();
+                        Swal.fire('Erreur', 'Impossible de charger l\'historique.', 'error');
+                    });
+            });
+
+            // Edit User
+            $('#usersTable tbody').on('click', '.edit-btn', function () {
+                const userId = $(this).data('id');
+                showLoading();
+                fetch(`/admin/users/api/${userId}`)
+                    .then(response => response.json())
+                    .then(user => {
+                        $('#userId').val(user.id);
+                        $('#firstname').val(user.firstname);
+                        $('#lastname').val(user.lastname);
+                        $('#email').val(user.email);
+                        $('#role').val(user.role).trigger('change');
+                        $('#status').val(user.status).trigger('change');
+                        $('#phone').val(user.phone || '');
+                        $('#pin').val(user.pin || '');
+
+                        // Hide password fields for existing user, show toggle
+                        $('#passwordFieldsGroup').hide();
+                        $('#password').removeAttr('required').val(''); // Remove required and clear value
+                        $('#confirmPassword').removeAttr('required').val(''); // Remove required and clear value
+                        $('#changePasswordToggleGroup').show(); // Show the 'change password' checkbox
+                        $('#changePasswordCheckbox').prop('checked', false); // Ensure it's unchecked
+                        $('#userModalLabel').text('Modifier Utilisateur');
+                        $('#userModal').modal('show');
+                        hideLoading();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching user:', error);
+                        hideLoading();
+                        alert('Erreur lors du chargement de l\'utilisateur');
+                    });
+            });
+
+            // Delete User
+            $('#usersTable tbody').on('click', '.delete-btn', function () {
+                const userId = $(this).data('id');
+                Swal.fire({
+                    title: 'Confirmation',
+                    text: 'Supprimer cet utilisateur ? S\'il a des commandes ou réservations, le compte sera désactivé (historique conservé). Sinon, suppression définitive.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Oui, supprimer',
+                    cancelButtonText: 'Annuler'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        showLoading();
+                        fetch(`/admin/users/api/${userId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content
+                            }
+                        })
+                            .then(async response => {
+                                hideLoading();
+                                if (response.ok) {
+                                    const data = await response.json().catch(() => ({}));
+                                    Swal.fire({
+                                        title: data.mode === 'soft' ? 'Compte désactivé' : 'Supprimé',
+                                        text: data.message || 'L\'utilisateur a été traité.',
+                                        icon: 'success',
+                                        confirmButtonColor: '#4567b7'
+                                    }).then(() => {
+                                        table.ajax.reload();
+                                        loadStats();
+                                    });
+                                } else {
+                                    const err = await response.json().catch(() => ({}));
+                                    Swal.fire('Erreur', err.message || 'Erreur lors de la suppression de l\'utilisateur.', 'error');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error deleting user:', error);
+                                Swal.fire('Erreur', 'Erreur lors de la suppression de l\'utilisateur.', 'error');
+                                hideLoading();
+                            });
+                    }
+                });
+            });
+
+            // Reset Password
+            $('#usersTable tbody').on('click', '.reset-btn', function () {
+                const userId = $(this).data('id');
+                Swal.fire({
+                    title: 'Réinitialiser le mot de passe',
+                    input: 'password',
+                    inputPlaceholder: 'Nouveau mot de passe',
+                    inputAttributes: {
+                        autocapitalize: 'off',
+                        autocorrect: 'off'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Réinitialiser',
+                    cancelButtonText: 'Annuler',
+                    showLoaderOnConfirm: true,
+                    preConfirm: (newPassword) => {
+                        return newPassword === '' ? null : newPassword;
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const newPassword = result.value;
+                        // Check if a new password was provided (not cancelled the prompt)
+                        if (newPassword !== undefined) {
+                            showLoading();
+                            fetch(`/admin/users/api/${userId}/reset-password`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content
+                                },
+                                body: JSON.stringify({
+                                    password: newPassword || null // newPassword can be null if user confirms empty
+                                })
+                            })
+                                .then(response => {
+                                    if (response.ok) {
+                                        Swal.fire('Succès', 'Mot de passe réinitialisé avec succès', 'success');
+                                    } else {
+                                        Swal.fire('Erreur', 'Erreur lors de la réinitialisation', 'error');
+                                    }
+                                    hideLoading();
+                                })
+                                .catch(error => {
+                                    console.error('Error resetting password:', error);
+                                    Swal.fire('Erreur', 'Erreur lors de la réinitialisation', 'error');
+                                    hideLoading();
+                                });
+                        }
+                    }
+                }); // Correctly closed .then() for Swal.fire
+            });
+
+            // Activate/Deactivate User
+            $('#usersTable tbody').on('click', '.activate-btn, .deactivate-btn', function () {
+                const userId = $(this).data('id');
+                const action = $(this).hasClass('activate-btn') ? 'activate' : 'deactivate';
+                const confirmMessage = action === 'activate'
+                    ? 'Activer cet utilisateur ?'
+                    : 'Désactiver cet utilisateur ?';
+
+                Swal.fire({
+                    title: 'Confirmation',
+                    text: confirmMessage,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Oui',
+                    cancelButtonText: 'Annuler'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        showLoading();
+                        fetch(`/admin/users/api/${userId}/${action}`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content
+                            }
+                        })
+                            .then(response => {
+                                if (response.ok) {
+                                    table.ajax.reload();
+                                    loadStats();
+                                    Swal.fire('Succès', `Utilisateur ${action === 'activate' ? 'activé' : 'désactivé'} avec succès`, 'success');
+                                } else {
+                                    Swal.fire('Erreur', `Erreur lors de l'${action === 'activate' ? 'activation' : 'désactivation'} de l'utilisateur.`, 'error');
+                                }
+                                hideLoading();
+                            })
+                            .catch(error => {
+                                console.error(`Error ${action} user:`, error);
+                                Swal.fire('Erreur', `Erreur lors de l'${action === 'activate' ? 'activation' : 'désactivation'} de l'utilisateur.`, 'error');
+                                hideLoading();
+                            });
+                    }
+                });
+            });
+
+            // Save User Form
+            $('#userForm').submit(function (e) {
+                e.preventDefault();
+
+                // Initialize jQuery objects for form elements
+                const passwordFieldsGroup = $('#passwordFieldsGroup');
+                const passwordInput = $('#password');
+                const confirmPasswordInput = $('#confirmPassword');
+                const userIdInput = $('#userId');
+                const firstnameInput = $('#firstname');
+                const lastnameInput = $('#lastname');
+                const emailInput = $('#email');
+                const roleInput = $('#role');
+                const statusInput = $('#status');
+                const phoneInput = $('#phone');
+                const notesInput = $('#notes');
+
+                // Validate password confirmation ONLY if password fields are visible/required
+                if (passwordFieldsGroup.is(':visible')) {
+                    const password = passwordInput.val();
+                    const confirmPassword = confirmPasswordInput.val();
+                    if (password !== confirmPassword) {
+                        Swal.fire('Erreur', 'Les mots de passe ne correspondent pas', 'error');
+                        return;
+                    }
+                    if (!password || password.length < 8) { // Basic password length validation
+                        Swal.fire('Erreur', 'Le mot de passe doit contenir au moins 8 caractères.', 'error');
+                        return;
+                    }
+                } else { // If password fields are hidden (edit mode, not changing password)
+                    passwordInput.removeAttr('required').val(''); // Ensure no client-side validation for password if hidden
+                    confirmPasswordInput.removeAttr('required').val('');
+                }
+
+                const formData = {
+                    id: userIdInput.val() ? parseInt(userIdInput.val()) : null,
+                    firstname: firstnameInput.val(),
+                    lastname: lastnameInput.val(),
+                    email: emailInput.val(),
+                    role: roleInput.val(),
+                    status: statusInput.val(),
+                    phone: phoneInput.val(),
+                    pin: $('#pin').val()
+                };
+
+                // Only include password in payload if it's being set/changed
+                if (passwordInput.val() && passwordInput.val().length > 0) {
+                    formData.password = passwordInput.val();
+                }
+
+                const method = formData.id ? 'PUT' : 'POST';
+                const url = formData.id ? `/admin/users/api/${formData.id}` : '/admin/users/api';
+
+                showLoading();
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content
+                    },
+                    body: JSON.stringify(formData)
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            // Attempt to parse error message from response body
+                            return response.json().then(err => Promise.reject(err.message || err));
+                        }
+                    })
+                    .then(() => {
+                        $('#userModal').modal('hide');
+                        table.ajax.reload();
+                        loadStats();
+                        hideLoading();
+                        Swal.fire('Succès', 'Utilisateur enregistré avec succès', 'success');
+                    })
+                    .catch(error => {
+                        console.error('Error saving user:', error);
+                        hideLoading();
+                        // Display error message from backend if available, otherwise generic
+                        Swal.fire('Erreur', 'Erreur lors de l\'enregistrement de l\'utilisateur: ' + (error || 'Une erreur inconnue est survenue.'), 'error');
+                    });
+            });
+
+            // Bulk Delete Logic
+            const selectAll = $('#selectAll');
+            const bulkDeleteBtn = $('#bulkDeleteBtn');
+            const selectedCount = $('#selectedCount');
+
+            function updateBulkDeleteBtn() {
+                const checked = $('.user-checkbox:checked').length;
+                selectedCount.text(checked);
+                if (checked > 0) {
+                    bulkDeleteBtn.removeClass('d-none');
+                } else {
+                    bulkDeleteBtn.addClass('d-none');
+                }
+            }
+
+            selectAll.on('change', function () {
+                $('.user-checkbox').prop('checked', this.checked);
+                updateBulkDeleteBtn();
+            });
+
+            $(document).on('change', '.user-checkbox', function () {
+                updateBulkDeleteBtn();
+                if (!this.checked) {
+                    selectAll.prop('checked', false);
+                } else if ($('.user-checkbox:checked').length === $('.user-checkbox').length) {
+                    selectAll.prop('checked', true);
+                }
+            });
+
+            window.handleBulkDelete = function () {
+                const selectedIds = $('.user-checkbox:checked').map(function () {
+                    return $(this).val();
+                }).get();
+
+                if (selectedIds.length === 0) return;
+
+                Swal.fire({
+                    title: 'Action groupée',
+                    text: `Traiter ${selectedIds.length} utilisateur(s) ? Les comptes avec commandes/réservations seront désactivés (historique conservé) ; les autres seront supprimés définitivement.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e74c3c',
+                    cancelButtonColor: '#95a5a6',
+                    confirmButtonText: 'Oui, continuer',
+                    cancelButtonText: 'Annuler'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        showLoading();
+                        fetch('/admin/users/api/bulk-delete', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content
+                            },
+                            body: JSON.stringify(selectedIds.map(id => parseInt(id, 10)))
+                        }).then(async response => {
+                            hideLoading();
+                            if (response.ok) {
+                                const data = await response.json().catch(() => ({}));
+                                table.ajax.reload();
+                                loadStats();
+                                selectAll.prop('checked', false);
+                                updateBulkDeleteBtn();
+                                Swal.fire('Succès', data.message || 'Utilisateurs traités.', 'success');
+                            } else {
+                                const err = await response.json().catch(() => ({}));
+                                Swal.fire('Erreur', err.message || 'Une erreur est survenue lors de la suppression.', 'error');
+                            }
+                        }).catch(error => {
+                            hideLoading();
+                            Swal.fire('Erreur', 'Erreur de connexion.', 'error');
+                        });
+                    }
+                });
+            };
+
+            // Initial load
+            loadStats();
+        });
+        /*]]>*/
+    </script>
+</body>
+
+</html>

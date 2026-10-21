@@ -1,0 +1,10 @@
+<service>
+  <id>photo-app-backend</id>
+  <name>Studio Photo Backend Service</name>
+  <description>API Backend pour l'application Flutter Studio Photo</description>
+  <!-- Assurez-vous que Java est dans le PATH de Windows -->
+  <executable>java</executable>
+  <arguments>-Xmx512m -jar photo-app-backend-0.0.1-SNAPSHOT.jar --spring.config.additional-location=file:./application-prod.properties</arguments>
+  <log mode="roll"></log>
+  <onfailure action="restart" delay="10 sec"/>
+</service>

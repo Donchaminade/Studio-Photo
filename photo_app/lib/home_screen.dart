@@ -6,20 +6,20 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:photo_app/api_service.dart';
-import 'package:photo_app/booking_screen.dart';
-import 'package:photo_app/contact_screen.dart';
-import 'package:photo_app/history_screen.dart';
-import 'package:photo_app/no_connection_screen.dart';
-import 'package:photo_app/notifications_screen.dart';
-import 'package:photo_app/order_summary_screen.dart';
-import 'package:photo_app/portfolio_screen.dart';
-import 'package:photo_app/pricing_screen.dart';
-import 'package:photo_app/profile_page.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/utils/connectivity_service.dart';
-import 'package:photo_app/widgets/picon_photo.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:Picon/api_service.dart';
+import 'package:Picon/contact_screen.dart';
+import 'package:Picon/history_screen.dart';
+import 'package:Picon/no_connection_screen.dart';
+import 'package:Picon/notifications_screen.dart';
+import 'package:Picon/order_summary_screen.dart';
+import 'package:Picon/portfolio_screen.dart';
+import 'package:Picon/pricing_screen.dart';
+import 'package:Picon/profile_page.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/utils/connectivity_service.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/picon_photo.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class RecentRequest {
   final String title;
@@ -31,11 +31,15 @@ class RecentRequest {
 
 class HomeScreen extends StatefulWidget {
   final String userName;
+  final String userLastName;
+  final String userEmail;
   final int userId;
 
   const HomeScreen({
     super.key,
     required this.userName,
+    this.userLastName = '',
+    this.userEmail = '',
     required this.userId,
   });
 
@@ -62,17 +66,11 @@ class _HomeScreenState extends State<HomeScreen> {
   CartMode _selectedMode = CartMode.detail;
   bool _isExpress = false;
   double _totalPrice = 0.0;
-
-  /// Tarifs utilisables dans le panier ; un format choisi dans « Prix &
-  /// dimensions » y est ajouté.
-  final Map<String, double> _prices = {
+  final Map<String, double> _prices = const {
     '10x15 cm': 150,
     '15x20 cm': 300,
     '20x30 cm': 500,
   };
-
-  /// Tirages ajoutés depuis l'écran des tarifs (format → quantité).
-  final Map<String, int> _formatLines = {};
 
   final List<RecentRequest> _mockHistory = [
     RecentRequest(
@@ -106,10 +104,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentUserName = widget.userName;
-    _currentUserEmail = 'user-test@email.com';
+    _currentUserEmail = widget.userEmail.isNotEmpty
+        ? widget.userEmail
+        : (ApiService.userEmail ?? '');
     _albumImagesFuture = ApiService.getAlbumImages(widget.userId);
-    _connectivitySubscription =
-        _connectivityService.connectivityStream.listen((result) {
+    _connectivitySubscription = _connectivityService.connectivityStream.listen((result) {
       if (result == ConnectivityResult.none) {
         if (!_isOffline && mounted) {
           setState(() => _isOffline = true);
@@ -134,8 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _syncTotal() {
     for (final imageUrl in _selectedImages) {
-      _photoDetails.putIfAbsent(
-          imageUrl, () => {'size': '10x15 cm', 'quantity': 1});
+      _photoDetails.putIfAbsent(imageUrl, () => {'size': '10x15 cm', 'quantity': 1});
     }
     var total = 0.0;
     for (final imageUrl in _selectedImages) {
@@ -145,52 +143,11 @@ class _HomeScreenState extends State<HomeScreen> {
         total += price * ((details['quantity'] as num?)?.toInt() ?? 1);
       }
     }
-    _formatLines.forEach((size, qty) => total += (_prices[size] ?? 0) * qty);
     if (_isExpress && _selectedImages.length <= 10) {
       total += 1500;
     }
     _totalPrice = total;
   }
-
-  Future<void> _openPricing() async {
-    final result = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(builder: (context) => const PricingScreen()),
-    );
-    if (!mounted || result == null) return;
-    final size = '${result['dimension']}';
-    final price = (result['price'] as num?)?.toDouble() ?? 0;
-    setState(() {
-      _prices[size] = price;
-      _formatLines[size] = (_formatLines[size] ?? 0) + 1;
-      _syncTotal();
-      _currentIndex = 2;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tirage $size ajouté au panier')),
-    );
-  }
-
-  void _changeFormatQuantity(String size, int delta) {
-    setState(() {
-      final next = (_formatLines[size] ?? 0) + delta;
-      if (next <= 0) {
-        _formatLines.remove(size);
-      } else {
-        _formatLines[size] = next;
-      }
-      _syncTotal();
-    });
-  }
-
-  /// Photos + tirages choisis, transmis au récapitulatif.
-  Map<String, Map<String, dynamic>> get _orderDetails => {
-        ..._photoDetails,
-        for (final e in _formatLines.entries)
-          'format:${e.key}': {'size': e.key, 'quantity': e.value},
-      };
-
-  bool get _cartEmpty => _selectedImages.isEmpty && _formatLines.isEmpty;
 
   void _onTabTapped(int index) {
     if (index == 3) {
@@ -229,8 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       for (final file in pickedFiles) {
         _selectedImages.add(file.path);
-        _photoDetails.putIfAbsent(
-            file.path, () => {'size': '10x15 cm', 'quantity': 1});
+        _photoDetails.putIfAbsent(file.path, () => {'size': '10x15 cm', 'quantity': 1});
       }
       _syncTotal();
       _currentIndex = 2;
@@ -244,8 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _photoDetails.remove(imageUrl);
       } else {
         _selectedImages.add(imageUrl);
-        _photoDetails.putIfAbsent(
-            imageUrl, () => {'size': '10x15 cm', 'quantity': 1});
+        _photoDetails.putIfAbsent(imageUrl, () => {'size': '10x15 cm', 'quantity': 1});
       }
       _syncTotal();
     });
@@ -280,8 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar:
-          _FloatingNav(index: _currentIndex, onTap: _onTabTapped),
+      bottomNavigationBar: _FloatingNav(index: _currentIndex, onTap: _onTabTapped),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 76),
@@ -312,23 +266,17 @@ class _HomeScreenState extends State<HomeScreen> {
       child: _avatar == null
           ? Text(
               initials,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
             )
           : null,
     );
     return Padding(
-      padding:
-          EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 8, 4, 6),
+      padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 8, 4, 6),
       child: Row(
         children: [
           TapScale(
             onTap: _openProfile,
-            child: reduceMotion(context)
-                ? avatar
-                : Hero(tag: 'picon-avatar', child: avatar),
+            child: reduceMotion(context) ? avatar : Hero(tag: 'picon-avatar', child: avatar),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -337,17 +285,13 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Text(
                   'Ravi de vous revoir',
-                  style:
-                      TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
                 Text(
                   _currentUserName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.3),
                 ),
               ],
             ),
@@ -357,12 +301,10 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const NotificationsScreen()),
+                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
               );
             },
-            icon: const Icon(Icons.notifications_none_rounded,
-                color: AppColors.textPrimary),
+            icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary),
           ),
         ],
       ),
@@ -371,8 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomeTab() {
     final recent = _mockHistory
-        .where((req) =>
-            req.date.isAfter(DateTime.now().subtract(const Duration(days: 7))))
+        .where((req) => req.date.isAfter(DateTime.now().subtract(const Duration(days: 7))))
         .take(3)
         .toList();
     final count = _selectedImages.length;
@@ -402,32 +343,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
                           count <= 1 ? '$count photo' : '$count photos',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text('Panier',
-                      style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  const Text('Panier', style: TextStyle(color: Colors.white70, fontSize: 13)),
                   const SizedBox(height: 4),
                   AnimatedFcfa(value: _totalPrice),
                   const SizedBox(height: 8),
                   Text(
-                    _isExpress
-                        ? 'Livraison Xpress incluse'
-                        : 'Impression à domicile, au Togo',
+                    _isExpress ? 'Livraison Xpress incluse' : 'Impression à domicile, au Togo',
                     style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
@@ -445,9 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Commande en cours',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  const Text('Commande en cours', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                   const SizedBox(height: 4),
                   Text(
                     count == 0
@@ -455,10 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : count > 10
                             ? 'Le surplus sera discuté avec le propriétaire'
                             : 'Livraison Xpress : $count/10 photos',
-                    style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        height: 1.3),
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.3),
                   ),
                   const SizedBox(height: 12),
                   FillBar(progress: progress, color: AppColors.primary),
@@ -474,8 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
               trailing: OutlinedButton(
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) => const HistoryScreen()),
+                  MaterialPageRoute(builder: (context) => const HistoryScreen()),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
@@ -494,39 +422,31 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Reveal(
                 index: 5 + i,
                 child: PiconCard(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => const HistoryScreen()),
+                    MaterialPageRoute(builder: (context) => const HistoryScreen()),
                   ),
                   child: Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor:
-                            AppColors.primary.withValues(alpha: 0.08),
-                        child: Icon(recent[i].icon,
-                            color: AppColors.primary, size: 20),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                        child: Icon(recent[i].icon, color: AppColors.primary, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(recent[i].title,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w700)),
+                            Text(recent[i].title, style: const TextStyle(fontWeight: FontWeight.w700)),
                             Text(
                               DateFormat('dd MMM yyyy').format(recent[i].date),
-                              style: const TextStyle(
-                                  color: AppColors.textSecondary, fontSize: 12),
+                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios,
-                          size: 14, color: AppColors.textSecondary),
+                      const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
                     ],
                   ),
                 ),
@@ -579,18 +499,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Text(
                     'Le studio',
-                    style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600),
+                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 2),
                   const Text(
                     'Vos souvenirs, imprimés avec soin',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800),
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 10),
                   FilledButton.icon(
@@ -618,25 +532,17 @@ class _HomeScreenState extends State<HomeScreen> {
       (
         icon: Icons.photo_album,
         label: 'Portfolio',
-        onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (context) => const PortfolioScreen())),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PortfolioScreen())),
       ),
       (
         icon: Icons.archive_outlined,
         label: 'Mes commandes',
-        onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (context) => const HistoryScreen())),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
       ),
       (
         icon: Icons.straighten,
         label: 'Prix & dimensions',
-        onTap: _openPricing,
-      ),
-      (
-        icon: Icons.event_available_outlined,
-        label: 'Réserver',
-        onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (context) => const BookingScreen())),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PricingScreen())),
       ),
       (
         icon: Icons.flash_on,
@@ -646,8 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
       (
         icon: Icons.chat_bubble_outline,
         label: 'Nous contacter',
-        onTap: () => Navigator.push(context,
-            MaterialPageRoute(builder: (context) => const ContactScreen())),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactScreen())),
       ),
     ];
 
@@ -674,10 +579,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: const [
-                    BoxShadow(
-                        color: AppColors.cardShadow,
-                        blurRadius: 10,
-                        offset: Offset(0, 4)),
+                    BoxShadow(color: AppColors.cardShadow, blurRadius: 10, offset: Offset(0, 4)),
                   ],
                 ),
                 child: Icon(action.icon, color: AppColors.primary, size: 24),
@@ -688,8 +590,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w600, height: 1.15),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, height: 1.15),
               ),
             ],
           ),
@@ -705,16 +606,16 @@ class _HomeScreenState extends State<HomeScreen> {
         future: _albumImagesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary));
+            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
           }
           if (snapshot.hasError) {
-            return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Text('Erreur: ${snapshot.error}',
-                    textAlign: TextAlign.center),
-              ),
+            return AppInlineError(
+              error: snapshot.error!,
+              onRetry: () {
+                setState(() {
+                  _albumImagesFuture = ApiService.getAlbumImages(widget.userId);
+                });
+              },
             );
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -729,9 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: Text('Photos',
-                    style:
-                        TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                child: Text('Photos', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
               ),
               Expanded(
                 child: GridView.builder(
@@ -756,15 +655,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             PiconPhoto(source: imageUrl, cachePixels: 480),
                             if (selected)
                               const DecoratedBox(
-                                decoration:
-                                    BoxDecoration(color: Color(0x55032A85)),
+                                decoration: BoxDecoration(color: Color(0x55032A85)),
                               ),
                             if (selected)
                               const Positioned(
                                 top: 8,
                                 right: 8,
-                                child: Icon(Icons.check_circle,
-                                    color: Colors.white, size: 28),
+                                child: Icon(Icons.check_circle, color: Colors.white, size: 28),
                               ),
                           ],
                         ),
@@ -788,16 +685,14 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: Text('Panier',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            child: Text('Panier', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SegmentedButton<CartMode>(
               showSelectedIcon: false,
               segments: const [
-                ButtonSegment(
-                    value: CartMode.detail, label: Text('Par détail')),
+                ButtonSegment(value: CartMode.detail, label: Text('Par détail')),
                 ButtonSegment(value: CartMode.batch, label: Text('Par lot')),
               ],
               selected: {_selectedMode},
@@ -810,36 +705,24 @@ class _HomeScreenState extends State<HomeScreen> {
               style: ButtonStyle(
                 visualDensity: VisualDensity.comfortable,
                 shape: WidgetStatePropertyAll(
-                  RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: _cartEmpty
+            child: _selectedImages.isEmpty
                 ? const PiconEmpty(
                     icon: Icons.shopping_cart_outlined,
                     title: 'Votre panier est vide.',
-                    subtitle:
-                        'Sélectionnez des photos pour commencer une commande !',
+                    subtitle: 'Sélectionnez des photos pour commencer une commande !',
                   )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_formatLines.isNotEmpty) _buildFormatLines(),
-                      Expanded(
-                        child: _selectedImages.isEmpty
-                            ? const SizedBox.shrink()
-                            : _selectedMode == CartMode.detail
-                                ? _buildDetailCart()
-                                : _buildBatchCart(),
-                      ),
-                    ],
-                  ),
+                : _selectedMode == CartMode.detail
+                    ? _buildDetailCart()
+                    : _buildBatchCart(),
           ),
-          if (!_cartEmpty)
+          if (_selectedImages.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
               child: Column(
@@ -848,8 +731,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Total : ${_totalPrice.toStringAsFixed(0)} FCFA',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w800, color: AppColors.primary),
+                    style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary),
                   ),
                   const SizedBox(height: 8),
                   PiconButton(
@@ -865,53 +747,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFormatLines() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: PiconCard(
-        padding: const EdgeInsets.fromLTRB(14, 12, 6, 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Tirages choisis',
-                style: TextStyle(fontWeight: FontWeight.w800)),
-            for (final e in _formatLines.entries)
-              Row(
-                key: ValueKey('format-${e.key}'),
-                children: [
-                  const Icon(Icons.print_outlined,
-                      size: 18, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${e.key} · ${((_prices[e.key] ?? 0) * e.value).toStringAsFixed(0)} FCFA',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Retirer un tirage',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _changeFormatQuantity(e.key, -1),
-                    icon: const Icon(Icons.remove_circle_outline,
-                        color: AppColors.textSecondary),
-                  ),
-                  Text('${e.value}',
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
-                  IconButton(
-                    tooltip: 'Ajouter un tirage',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _changeFormatQuantity(e.key, 1),
-                    icon: const Icon(Icons.add_circle_outline,
-                        color: AppColors.primary),
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildDetailCart() {
     final images = _selectedImages.toList(growable: false);
     return ListView.builder(
@@ -919,8 +754,7 @@ class _HomeScreenState extends State<HomeScreen> {
       itemCount: images.length,
       itemBuilder: (context, index) {
         final imageUrl = images[index];
-        final photoDetails =
-            _photoDetails[imageUrl] ?? {'size': '10x15 cm', 'quantity': 1};
+        final photoDetails = _photoDetails[imageUrl] ?? {'size': '10x15 cm', 'quantity': 1};
         final price = _prices[photoDetails['size']] ?? 0;
         final quantity = (photoDetails['quantity'] as num?)?.toInt() ?? 1;
         final subtotal = price * quantity;
@@ -932,8 +766,7 @@ class _HomeScreenState extends State<HomeScreen> {
             clipBehavior: Clip.antiAlias,
             child: ExpansionTile(
               key: ValueKey(imageUrl),
-              tilePadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               title: Row(
                 children: [
                   ClipRRect(
@@ -949,15 +782,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Photo ${index + 1}',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w800)),
+                        Text('Photo ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w800)),
                         const SizedBox(height: 2),
                         Text(
                           '${subtotal.toStringAsFixed(0)} FCFA',
-                          style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700),
+                          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
@@ -983,18 +812,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Text('Taille :'),
                           const Spacer(),
                           DropdownButton<String>(
-                            value:
-                                photoDetails['size'] as String? ?? '10x15 cm',
+                            value: photoDetails['size'] as String? ?? '10x15 cm',
                             borderRadius: BorderRadius.circular(12),
                             items: _prices.keys
-                                .map((size) => DropdownMenuItem(
-                                    value: size, child: Text(size)))
+                                .map((size) => DropdownMenuItem(value: size, child: Text(size)))
                                 .toList(),
                             onChanged: (value) {
                               if (value == null) return;
                               setState(() {
-                                _photoDetails.putIfAbsent(imageUrl,
-                                    () => {'size': value, 'quantity': 1});
+                                _photoDetails.putIfAbsent(imageUrl, () => {'size': value, 'quantity': 1});
                                 _photoDetails[imageUrl]!['size'] = value;
                                 _syncTotal();
                               });
@@ -1010,24 +836,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             onPressed: quantity > 1
                                 ? () {
                                     setState(() {
-                                      _photoDetails[imageUrl]!['quantity'] =
-                                          quantity - 1;
+                                      _photoDetails[imageUrl]!['quantity'] = quantity - 1;
                                       _syncTotal();
                                     });
                                   }
                                 : null,
                             icon: const Icon(Icons.remove_circle_outline),
                           ),
-                          Text('$quantity',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w800)),
+                          Text('$quantity', style: const TextStyle(fontWeight: FontWeight.w800)),
                           IconButton(
                             onPressed: () {
                               setState(() {
-                                _photoDetails.putIfAbsent(imageUrl,
-                                    () => {'size': '10x15 cm', 'quantity': 1});
-                                _photoDetails[imageUrl]!['quantity'] =
-                                    quantity + 1;
+                                _photoDetails.putIfAbsent(imageUrl, () => {'size': '10x15 cm', 'quantity': 1});
+                                _photoDetails[imageUrl]!['quantity'] = quantity + 1;
                                 _syncTotal();
                               });
                             },
@@ -1049,8 +870,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBatchCart() {
     String? commonSize;
     if (_photoDetails.isNotEmpty) {
-      final sizes =
-          _photoDetails.values.map((d) => d['size'] as String).toSet();
+      final sizes = _photoDetails.values.map((d) => d['size'] as String).toSet();
       if (sizes.length == 1) commonSize = sizes.first;
     }
     final images = _selectedImages.toList(growable: false);
@@ -1062,15 +882,12 @@ class _HomeScreenState extends State<HomeScreen> {
             initialValue: commonSize,
             isExpanded: true,
             decoration: piconField('Dimension', icon: Icons.straighten),
-            items: _prices.keys
-                .map((size) => DropdownMenuItem(value: size, child: Text(size)))
-                .toList(),
+            items: _prices.keys.map((size) => DropdownMenuItem(value: size, child: Text(size))).toList(),
             onChanged: (value) {
               if (value == null) return;
               setState(() {
                 for (final key in _selectedImages) {
-                  _photoDetails.putIfAbsent(
-                      key, () => {'size': value, 'quantity': 1});
+                  _photoDetails.putIfAbsent(key, () => {'size': value, 'quantity': 1});
                   _photoDetails[key]!['size'] = value;
                 }
                 _syncTotal();
@@ -1104,8 +921,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: const CircleAvatar(
                           radius: 12,
                           backgroundColor: AppColors.error,
-                          child:
-                              Icon(Icons.close, size: 14, color: Colors.white),
+                          child: Icon(Icons.close, size: 14, color: Colors.white),
                         ),
                       ),
                     ),
@@ -1128,11 +944,9 @@ class _HomeScreenState extends State<HomeScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return Padding(
-              padding: EdgeInsets.only(
-                  bottom: MediaQuery.viewInsetsOf(context).bottom),
+              padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
               child: Container(
-                constraints: BoxConstraints(
-                    maxHeight: MediaQuery.sizeOf(context).height * 0.72),
+                constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.72),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -1161,21 +975,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Text(
                         'Résumé de la commande',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary),
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 14),
                       Card(
                         margin: EdgeInsets.zero,
                         elevation: 0,
                         color: AppColors.fieldFill,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         child: SwitchListTile(
-                          title: const Text('Livraison Xpress',
-                              style: TextStyle(fontWeight: FontWeight.w800)),
+                          title: const Text('Livraison Xpress', style: TextStyle(fontWeight: FontWeight.w800)),
                           subtitle: Text(
                             _selectedImages.length > 10
                                 ? 'Le surplus sera discuté avec le propriétaire'
@@ -1192,23 +1001,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text('Montant Total',
-                          style: TextStyle(
-                              color: AppColors.textSecondary, fontSize: 16)),
+                      const Text('Montant Total', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Text(
                           '${_totalPrice.toStringAsFixed(0)} FCFA',
-                          style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white),
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -1220,7 +1023,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => OrderSummaryScreen(
-                                  orderDetails: _orderDetails),
+                                orderDetails: _photoDetails,
+                                isExpress: _isExpress,
+                              ),
                             ),
                           );
                         },
@@ -1229,8 +1034,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onPressed: () => Navigator.of(sheetContext).pop(),
                         child: const Text(
                           'Modifier la commande',
-                          style: TextStyle(
-                              color: AppColors.textPrimary, fontSize: 16),
+                          style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
                         ),
                       ),
                     ],
@@ -1249,26 +1053,22 @@ class _HomeScreenState extends State<HomeScreen> {
       {
         'icon': Icons.photo_library_outlined,
         'title': 'Étape 1: Sélectionnez vos photos',
-        'subtitle':
-            'Parcourez votre galerie et choisissez les souvenirs que vous souhaitez immortaliser.',
+        'subtitle': 'Parcourez votre galerie et choisissez les souvenirs que vous souhaitez immortaliser.',
       },
       {
         'icon': Icons.straighten_outlined,
         'title': 'Étape 2: Choisissez format et quantité',
-        'subtitle':
-            "Pour chaque photo, sélectionnez la taille d'impression et le nombre de copies désirées.",
+        'subtitle': "Pour chaque photo, sélectionnez la taille d'impression et le nombre de copies désirées.",
       },
       {
         'icon': Icons.payment_outlined,
         'title': 'Étape 3: Validez et payez',
-        'subtitle':
-            'Vérifiez votre commande, choisissez votre mode de paiement et réglez en toute sécurité.',
+        'subtitle': 'Vérifiez votre commande, choisissez votre mode de paiement et réglez en toute sécurité.',
       },
       {
         'icon': Icons.local_shipping_outlined,
         'title': 'Étape 4: Recevez votre commande',
-        'subtitle':
-            "Nous préparons vos photos avec soin et vous notifions dès qu'elles sont prêtes !",
+        'subtitle': "Nous préparons vos photos avec soin et vous notifions dès qu'elles sont prêtes !",
       },
     ];
 
@@ -1276,14 +1076,11 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (dialogContext) {
         return Dialog(
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           backgroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.82),
+            constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.82),
             child: Stack(
               children: [
                 SingleChildScrollView(
@@ -1294,8 +1091,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Text(
                         'Comment ça marche ?',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.w800),
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 12),
                       for (var i = 0; i < steps.length; i++)
@@ -1306,35 +1102,26 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.05),
+                                color: AppColors.primary.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                    color: AppColors.primary
-                                        .withValues(alpha: 0.12)),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(steps[i]['icon'] as IconData,
-                                      color: AppColors.primary, size: 32),
+                                  Icon(steps[i]['icon'] as IconData, color: AppColors.primary, size: 32),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           steps[i]['title'] as String,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w800),
+                                          style: const TextStyle(fontWeight: FontWeight.w800),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           steps[i]['subtitle'] as String,
-                                          style: const TextStyle(
-                                              color: AppColors.textSecondary,
-                                              fontSize: 13,
-                                              height: 1.3),
+                                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.3),
                                         ),
                                       ],
                                     ),
@@ -1371,28 +1158,24 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 String _initials(String name) {
-  final parts =
-      name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+  final parts = name.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
   if (parts.isEmpty) return '?';
   return parts.take(2).map((s) => s[0]).join().toUpperCase();
 }
 
-/// Visuels du carrousel promo, préchargés pendant le splash.
-const List<String> kPromoImages = [
-  'assets/carousel/Ajouter un sous-titre.png',
-  'assets/carousel/car.jpg',
-  'assets/carousel/car1.jpg',
-  'assets/carousel/pflex.jpeg',
-  'assets/carousel/Pink Modern Pink October Instagram Post  (1).png',
-  'assets/carousel/Pink Modern Pink October Instagram Post  (2).png',
-  'assets/carousel/Pink Modern Pink October Instagram Post .png',
-  'assets/images/pro.png',
-];
-
 class _PromoCarousel extends StatelessWidget {
   const _PromoCarousel();
 
-  static const List<String> _localImages = kPromoImages;
+  static const List<String> _localImages = [
+    'assets/carousel/Ajouter un sous-titre.png',
+    'assets/carousel/car.jpg',
+    'assets/carousel/car1.jpg',
+    'assets/carousel/pflex.jpeg',
+    'assets/carousel/Pink Modern Pink October Instagram Post  (1).png',
+    'assets/carousel/Pink Modern Pink October Instagram Post  (2).png',
+    'assets/carousel/Pink Modern Pink October Instagram Post .png',
+    'assets/images/pro.png',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1412,8 +1195,7 @@ class _PromoCarousel extends StatelessWidget {
                   fit: BoxFit.cover,
                   width: double.infinity,
                   cacheWidth: 800,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.image_not_supported_outlined),
+                  errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined),
                 ),
               ),
             ),
@@ -1489,9 +1271,7 @@ class _FloatingNav extends StatelessWidget {
                                 Icon(
                                   _items[i].$1,
                                   size: 22,
-                                  color: i == index
-                                      ? Colors.white
-                                      : AppColors.textSecondary,
+                                  color: i == index ? Colors.white : AppColors.textSecondary,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -1501,9 +1281,7 @@ class _FloatingNav extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: i == index
-                                        ? Colors.white
-                                        : AppColors.textSecondary,
+                                    color: i == index ? Colors.white : AppColors.textSecondary,
                                   ),
                                 ),
                               ],

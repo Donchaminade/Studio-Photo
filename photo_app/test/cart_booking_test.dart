@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_app/booking_screen.dart';
-import 'package:photo_app/home_screen.dart';
-import 'package:photo_app/pricing_screen.dart';
-import 'package:photo_app/utils/app_theme.dart';
+import 'package:Picon/booking_screen.dart';
+import 'package:Picon/home_screen.dart';
+import 'package:Picon/pricing_screen.dart';
+import 'package:Picon/utils/app_theme.dart';
 
 Future<void> _settle(WidgetTester tester) async {
   for (var i = 0; i < 12; i++) {

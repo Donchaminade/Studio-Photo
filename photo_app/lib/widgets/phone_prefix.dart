@@ -1,15 +1,17 @@
+import 'package:Picon/utils/africa_countries.dart';
+import 'package:Picon/utils/colors.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_app/utils/africa_countries.dart';
-import 'package:photo_app/utils/colors.dart';
 
 class AfricanPhonePrefix extends StatelessWidget {
-  /// Indicatif sélectionné (ex. « +228 »).
   final ValueChanged<String>? onChanged;
   final String initialSelection;
 
-  const AfricanPhonePrefix(
-      {super.key, this.onChanged, this.initialSelection = 'TG'});
+  const AfricanPhonePrefix({
+    super.key,
+    this.onChanged,
+    this.initialSelection = 'TG',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,9 @@ class AfricanPhonePrefix extends StatelessWidget {
       child: CountryCodePicker(
         onChanged: (code) {
           final dial = code.dialCode;
-          if (dial != null) onChanged?.call(dial);
+          if (dial != null && dial.isNotEmpty) {
+            onChanged?.call(dial);
+          }
         },
         initialSelection: initialSelection,
         favorite: kFavoriteDialCodes,

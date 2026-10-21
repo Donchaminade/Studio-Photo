@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/utils/geometric_background.dart';
-import 'package:photo_app/widgets/phone_prefix.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/phone_prefix.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String currentName;

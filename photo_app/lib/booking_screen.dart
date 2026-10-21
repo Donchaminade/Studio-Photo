@@ -1,6 +1,10 @@
+import 'package:Picon/api_service.dart';
+import 'package:Picon/models/booking.dart';
+import 'package:Picon/utils/app_error.dart';
+import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_app/utils/geometric_background.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -54,15 +58,59 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  void _submitBooking() {
-    if (_formKey.currentState!.validate()) {
+  BookingType _typeForService(String title) {
+    switch (title) {
+      case 'Forfait Événementiel':
+      case 'Forfait Mariage':
+        return BookingType.event;
+      case "Photos d'identité":
+        return BookingType.portrait;
+      case 'Tirage Photos':
+        return BookingType.other;
+      default:
+        return BookingType.photoSession;
+    }
+  }
+
+  Future<void> _submitBooking() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedService == null || _selectedDate == null || _selectedTime == null) {
+      return;
+    }
+    if (ApiService.userId == null) {
+      await showAppError(context, AppError.session());
+      return;
+    }
+
+    final scheduledTime = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+    final booking = Booking.fromId(
+      title: _selectedService!,
+      description: _commentsController.text,
+      userId: ApiService.userId!,
+      startTime: scheduledTime,
+      endTime: scheduledTime.add(const Duration(hours: 1)),
+      type: _typeForService(_selectedService!),
+      amount: 0.0,
+    );
+
+    try {
+      final created = await ApiService.createBooking(booking);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Réservation envoyée! Nous vous contacterons bientôt.'),
+        SnackBar(
+          content: Text('Réservation #${created.id} enregistrée.'),
           backgroundColor: Colors.green,
         ),
       );
       Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) await showAppError(context, e);
     }
   }
 

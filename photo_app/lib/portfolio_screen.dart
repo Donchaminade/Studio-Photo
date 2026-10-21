@@ -2,8 +2,8 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class PhotoFormat {
   final String dimension;

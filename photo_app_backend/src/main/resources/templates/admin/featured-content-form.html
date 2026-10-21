@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title th:text="${featuredContent.id == null ? 'Nouveau Contenu Mis en Avant' : 'Modifier Contenu Mis en Avant'}">Featured Content Form - Studio Photo Admin</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <!-- Votre CSS personnalisé ici (ou le même que user-management.html) -->
+    <style>
+        /* Styles personnalisés similaires à user-management.html */
+        :root {
+            --primary-color: #4567b7;
+            --primary-dark: #3455a0;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
+            --dark-color: #2c3e50;
+            --light-color: #f8f9fa;
+            --gray-light: #ecf0f1;
+            --shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fb;
+            color: var(--dark-color);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            background: rgba(255, 255, 255, 0.2);
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-links {
+            padding: 20px 0;
+        }
+
+        .nav-links li {
+            list-style: none;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: white;
+        }
+
+        .nav-links i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 0;
+            transition: var(--transition);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            border: 2px solid var(--gray-light);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(69, 103, 183, 0.15);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .user-details {
+            margin-right: 20px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        .user-role {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        /* Content Wrapper */
+        .content-wrapper {
+            padding: 30px;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin: 0;
+        }
+
+        .page-header h1 i {
+            color: var(--primary-color);
+            margin-right: 15px;
+        }
+        
+        /* Form Styling */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--dark-color);
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            border: 2px solid #eef1f7;
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 14px;
+            transition: var(--transition);
+            background-color: #fafbfd;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(69, 103, 183, 0.15);
+            background-color: white;
+        }
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+            border-top: 1px solid var(--gray-light);
+            background: white;
+            margin-top: 30px;
+        }
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none; /* Initially hidden */
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+</div>
+<!-- Sidebar Navigation -->
+<nav th:replace="~{admin/fragments/sidebar :: sidebar-fragment}"></nav>
+
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Inclusion du header depuis le fragment -->
+    <div th:insert="~{admin/fragments/header :: mainHeader}"></div>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 th:text="${featuredContent.id == null ? 'Nouveau Contenu Mis en Avant' : 'Modifier Contenu Mis en Avant'}">Featured Content Form</h1>
+            <a th:href="@{/admin/featured-content}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-2"></i>Retour à la liste
+            </a>
+        </div>
+
+                <!-- Featured Content Form -->
+
+                <div class="card p-4 shadow-sm">
+
+                    <form th:action="@{/admin/featured-content/save}" th:object="${featuredContent}" method="post" enctype="multipart/form-data">
+
+                        <input type="hidden" th:field="*{id}" />
+
+                        <input type="hidden" th:field="*{imageUrl}" id="existingImageUrl" /> <!-- Champ caché pour l'URL existante -->
+
+        
+
+                        <div class="form-group">
+
+                            <label for="title">Titre</label>
+
+                            <input type="text" id="title" th:field="*{title}" class="form-control" required />
+
+                        </div>
+
+        
+
+                        <div class="form-group">
+
+                            <label for="fileInput">Image du Contenu (URL ou Fichier)</label>
+
+                            <input type="file" id="fileInput" name="file" class="form-control-file" accept="image/*" />
+
+                            <small class="form-text text-muted">JPG, PNG. Images &gt; 1 Mo compressées automatiquement.</small>
+                            <small id="uploadStatus" class="form-text text-primary"></small>
+
+                            <div th:if="${featuredContent.imageUrl != null and featuredContent.imageUrl != ''}" class="mt-2">
+
+                                <p>Image actuelle:</p>
+
+                                <img th:src="${featuredContent.imageUrl}" id="currentImagePreview" alt="Image actuelle" style="max-width: 200px; height: auto; border: 1px solid #ddd; border-radius: 4px; padding: 5px;">
+
+                            </div>
+
+                            <div class="mt-2" id="newImagePreviewContainer" style="display: none;">
+
+                                <p>Nouvelle image sélectionnée:</p>
+
+                                <img id="newImagePreview" src="#" alt="Nouvelle image" style="max-width: 200px; height: auto; border: 1px solid #ddd; border-radius: 4px; padding: 5px;">
+
+                            </div>
+
+                        </div>
+
+        
+
+                        <div class="form-group">
+
+                            <label for="buttonText">Texte du Bouton (Optionnel)</label>
+
+                            <input type="text" id="buttonText" th:field="*{buttonText}" class="form-control" />
+
+                        </div>
+
+        
+
+                        <div class="form-group">
+
+                            <label for="buttonAction">Action du Bouton (Optionnel - URL ou Route)</label>
+
+                            <input type="text" id="buttonAction" th:field="*{buttonAction}" class="form-control" />
+
+                        </div>
+
+        
+
+                        <div class="form-group">
+
+                            <label for="priority">Priorité</label>
+
+                            <input type="number" id="priority" th:field="*{priority}" class="form-control" value="0" />
+
+                        </div>
+
+        
+
+                        <div class="form-group form-check">
+
+                            <input type="checkbox" id="active" th:field="*{active}" class="form-check-input" />
+
+                            <label for="active" class="form-check-label">Active</label>
+
+                        </div>
+
+        
+
+                        <button type="submit" class="btn btn-primary">
+
+                            <i class="fas fa-save mr-2"></i>Enregistrer
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        
+
+            <!-- Footer -->
+
+            <footer class="footer">
+
+                <p>&copy; 2026 Studio Photo Admin. Tous droits réservés. | Version 2.1.0</p>
+
+            </footer>
+
+        </div>
+
+        
+
+        <!-- Scripts -->
+
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+        <script src="https://unpkg.com/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <!-- Inclure SweetAlert2 -->
+        <th:block th:replace="~{admin/fragments/image-compress-script :: image-compress-script}"></th:block>
+
+        <script th:inline="javascript">
+
+            /*<![CDATA[*/
+
+            $(document).ready(function() {
+        AdminImageUpload.attach({ form: 'form', input: '#fileInput', statusSelector: '#uploadStatus' });
+
+        // Loading overlay
+        function showLoading() {
+            $('#loadingOverlay').fadeIn();
+        }
+
+        function hideLoading() {
+            $('#loadingOverlay').fadeOut();
+        }
+
+                // Placeholder for user initials (if needed)
+
+                const userName = /*[[${#authentication.principal.firstname + ' ' + #authentication.principal.lastname}]]*/ 'Admin';
+
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+
+                $('#userInitials').text(initials);
+
+        
+
+                // Afficher la prévisualisation de l'image sélectionnée
+
+                $('#fileInput').change(function() {
+
+                    if (this.files && this.files[0]) {
+
+                        var reader = new FileReader();
+
+                        reader.onload = function(e) {
+
+                            $('#newImagePreview').attr('src', e.target.result);
+
+                            $('#newImagePreviewContainer').show();
+
+                            $('#currentImagePreview').hide(); // Cacher l'ancienne image si une nouvelle est sélectionnée
+
+                        }
+
+                        reader.readAsDataURL(this.files[0]);
+
+                    } else {
+
+                        $('#newImagePreviewContainer').hide();
+
+                        $('#currentImagePreview').show(); // Montrer l'ancienne image si aucune nouvelle n'est sélectionnée
+
+                    }
+
+                });
+
+        
+
+                                // Handle form submission
+
+        
+
+                                $('form').submit(function() {
+
+        
+
+                                    showLoading();
+
+        
+
+                                });
+
+        
+
+                
+
+        
+
+                                // Afficher les messages flash de Spring (succès/erreur)
+
+        
+
+                                var successMessage = [[${successMessage}]];
+
+        
+
+                                var errorMessage = [[${errorMessage}]];
+
+        
+
+                
+
+        
+
+                                if (successMessage) {
+
+        
+
+                                    hideLoading(); // Hide if redirected back with success
+
+        
+
+                                    Swal.fire('Succès', successMessage, 'success');
+
+        
+
+                                }
+
+        
+
+                                if (errorMessage) {
+
+        
+
+                                    hideLoading(); // Hide if redirected back with error
+
+        
+
+                                    Swal.fire('Erreur', errorMessage, 'error');
+
+        
+
+                                }
+
+        
+
+                            });
+
+        
+
+                            /*]]>*/
+
+        </script>
+
+        </body>
+
+        </html>
+
+        

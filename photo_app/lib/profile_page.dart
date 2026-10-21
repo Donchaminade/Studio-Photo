@@ -2,14 +2,15 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:photo_app/contact_screen.dart';
-import 'package:photo_app/edit_profile_page.dart';
-import 'package:photo_app/history_screen.dart';
-import 'package:photo_app/login_screen.dart';
-import 'package:photo_app/services/session_store.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/utils/geometric_background.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:Picon/contact_screen.dart';
+import 'package:Picon/edit_profile_page.dart';
+import 'package:Picon/history_screen.dart';
+import 'package:Picon/api_service.dart';
+import 'package:Picon/login_screen.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/utils/session_controller.dart';
+import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userName;
@@ -46,8 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
 
     if (pickedFile != null) {
       final newAvatar = File(pickedFile.path);
@@ -80,12 +80,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _logout() async {
-    await SessionStore.instance.clear();
+    await SessionController.expireToLogin();
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (Route<dynamic> route) => false,
-    );
+    if (SessionController.navigatorKey?.currentState == null) {
+      await ApiService.clearAuthDetails();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
   }
 
   @override
@@ -114,9 +118,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        reduceMotion(context)
-                            ? photo
-                            : Hero(tag: 'picon-avatar', child: photo),
+                        reduceMotion(context) ? photo : Hero(tag: 'picon-avatar', child: photo),
                         Positioned(
                           bottom: 0,
                           right: 0,
@@ -126,8 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               color: AppColors.accent,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.camera_alt,
-                                color: Colors.white, size: 18),
+                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
                           ),
                         ),
                       ],
@@ -138,15 +139,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   _currentName,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 26, fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _currentEmail,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 15, color: AppColors.textSecondary),
+                  style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 22),
                 Reveal(
@@ -155,29 +154,21 @@ class _ProfilePageState extends State<ProfilePage> {
                     padding: EdgeInsets.zero,
                     child: Column(
                       children: [
-                        _tile(Icons.edit_outlined, 'Modifier le profil',
-                            _navigateToEditPage),
+                        _tile(Icons.edit_outlined, 'Modifier le profil', _navigateToEditPage),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _tile(
                           Icons.history_outlined,
                           'Historique des commandes',
-                          () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const HistoryScreen())),
+                          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
                         ),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _tile(
                           Icons.contact_support_outlined,
                           'Aide & Support',
-                          () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const ContactScreen())),
+                          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactScreen())),
                         ),
                         const Divider(height: 1, indent: 16, endIndent: 16),
-                        _tile(Icons.logout, 'Déconnexion', _logout,
-                            color: AppColors.error),
+                        _tile(Icons.logout, 'Déconnexion', _logout, color: AppColors.error),
                       ],
                     ),
                   ),
@@ -190,17 +181,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _tile(IconData icon, String title, VoidCallback onTap,
-      {Color? color}) {
+  Widget _tile(IconData icon, String title, VoidCallback onTap, {Color? color}) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: Icon(icon, color: color ?? AppColors.primary),
-      title: Text(title,
-          style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: color ?? AppColors.textPrimary)),
-      trailing: Icon(Icons.arrow_forward_ios,
-          size: 14, color: color ?? AppColors.textSecondary),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w700, color: color ?? AppColors.textPrimary)),
+      trailing: Icon(Icons.arrow_forward_ios, size: 14, color: color ?? AppColors.textSecondary),
       onTap: onTap,
     );
   }

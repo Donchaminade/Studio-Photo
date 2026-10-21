@@ -1,0 +1,15 @@
+package com.studiophoto.photoappbackend.notification;
+
+public enum NotificationType {
+    ORDER_CREATED,
+    PAYMENT_UNDER_REVIEW,
+    PAYMENT_CONFIRMED,
+    ORDER_COMPLETED,
+    ORDER_CANCELLED,
+    ORDER_CANCELLED_BY_YOU,
+    CANCELLATION_REFUSED,
+    REFUND_PENDING,
+    REFUND_CONFIRMED,
+    BOOKING_CONFIRMED,
+    BOOKING_CANCELLED
+}

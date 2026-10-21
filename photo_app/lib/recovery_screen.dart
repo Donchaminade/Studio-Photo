@@ -1,9 +1,13 @@
+import 'package:Picon/api_service.dart';
+import 'package:Picon/models/contact_info.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/phone_prefix.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/utils/geometric_background.dart';
-import 'package:photo_app/widgets/phone_prefix.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
 import 'package:pinput/pinput.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RecoveryScreen extends StatefulWidget {
   const RecoveryScreen({super.key});
@@ -14,22 +18,51 @@ class RecoveryScreen extends StatefulWidget {
 
 class _RecoveryScreenState extends State<RecoveryScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _pinController = TextEditingController();
-  bool _isRecoveryWithName = true;
+  bool _isRecoveryWithEmail = true;
+  bool _isLoading = false;
+  String _selectedDialCode = '+228';
 
   Future<void> _recoverPassword() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      _showNewPasswordDialog();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final identifier = _isRecoveryWithEmail
+          ? _emailController.text.trim()
+          : _buildFullPhoneNumber(_phoneController.text);
+      final response = await ApiService.verifyPinForPasswordReset(
+        email: _isRecoveryWithEmail ? identifier : null,
+        phone: !_isRecoveryWithEmail ? identifier : null,
+        pin: _pinController.text,
+      );
+      if (!mounted) return;
+      _showNewPasswordDialog(response['resetToken'] as String);
+    } catch (e) {
+      if (mounted) await showAppError(context, e);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showNewPasswordDialog() {
+  String _buildFullPhoneNumber(String rawPhone) {
+    var cleaned = rawPhone.trim().replaceAll(RegExp(r'[\s.\-()]'), '');
+    if (cleaned.startsWith('+')) return cleaned;
+    if (cleaned.startsWith('00')) return '+${cleaned.substring(2)}';
+    if (cleaned.startsWith('228') && cleaned.length >= 11) return '+$cleaned';
+    if (cleaned.startsWith('0') && cleaned.length == 9) {
+      cleaned = cleaned.substring(1);
+    }
+    return '$_selectedDialCode$cleaned';
+  }
+
+  void _showNewPasswordDialog(String resetToken) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const _NewPasswordDialog(),
+      builder: (context) => _NewPasswordDialog(resetToken: resetToken),
     );
   }
 
@@ -39,21 +72,45 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Contacter l\'administrateur'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Pour réinitialiser votre code secret, veuillez contacter l\'administrateur via :'),
-            SizedBox(height: 16),
-            Text('Email: admin@example.com'),
-            SizedBox(height: 8),
-            Text('Tél: +228 90 00 00 00 / +225 01 02 03 04'),
-          ],
+        content: FutureBuilder<ContactInfo>(
+          future: ApiService.fetchContactInfo(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 120,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final info = snapshot.data;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pour réinitialiser votre code secret, veuillez contacter l\'administrateur :',
+                ),
+                const SizedBox(height: 16),
+                Text('Email: ${info?.email ?? '—'}'),
+                const SizedBox(height: 8),
+                Text('Tél: ${info?.phoneNumber ?? '—'}'),
+              ],
+            );
+          },
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Fermer'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final info = await ApiService.fetchContactInfo();
+              final uri = Uri.parse('mailto:${info.email}');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+              }
+            },
+            child: const Text('Écrire'),
           ),
         ],
       ),
@@ -62,7 +119,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _pinController.dispose();
     super.dispose();
@@ -97,11 +154,15 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
 
   Widget _buildForm() {
     final width = MediaQuery.sizeOf(context).width;
-    final pinWidth = ((width - 120) / 6).clamp(34.0, 48.0);
+    final pinWidth = ((width - 120) / 4).clamp(34.0, 56.0);
     final defaultPinTheme = PinTheme(
       width: pinWidth,
       height: 52,
-      textStyle: const TextStyle(fontSize: 18, color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+      textStyle: const TextStyle(
+        fontSize: 18,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w700,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -132,30 +193,35 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             ),
             const SizedBox(height: 18),
             PillToggle(
-              labels: const ['Nom', 'Téléphone'],
-              index: _isRecoveryWithName ? 0 : 1,
-              onChanged: (i) => setState(() => _isRecoveryWithName = i == 0),
+              labels: const ['Email', 'Téléphone'],
+              index: _isRecoveryWithEmail ? 0 : 1,
+              onChanged: (i) => setState(() => _isRecoveryWithEmail = i == 0),
             ),
             const SizedBox(height: 18),
-            if (_isRecoveryWithName)
+            if (_isRecoveryWithEmail)
               TextFormField(
-                controller: _nameController,
-                decoration: piconField('Nom complet', icon: Icons.person_outline),
+                controller: _emailController,
+                decoration: piconField('Email', icon: Icons.email_outlined),
+                keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
+                validator: (value) =>
+                    (value?.isEmpty ?? true) ? 'Champ requis' : null,
               )
             else
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const AfricanPhonePrefix(),
+                  AfricanPhonePrefix(
+                    onChanged: (dial) => _selectedDialCode = dial,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextFormField(
                       controller: _phoneController,
                       decoration: piconField('Numéro de téléphone'),
                       keyboardType: TextInputType.phone,
-                      validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
+                      validator: (value) =>
+                          (value?.isEmpty ?? true) ? 'Champ requis' : null,
                     ),
                   ),
                 ],
@@ -163,7 +229,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             const SizedBox(height: 16),
             Pinput(
               controller: _pinController,
-              length: 6,
+              length: 4,
               defaultPinTheme: defaultPinTheme,
               focusedPinTheme: defaultPinTheme.copyWith(
                 decoration: defaultPinTheme.decoration!.copyWith(
@@ -176,7 +242,8 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                 ),
               ),
               separatorBuilder: (index) => const SizedBox(width: 6),
-              validator: (s) => (s?.length ?? 0) < 6 ? 'Code secret invalide' : null,
+              validator: (s) =>
+                  (s?.length ?? 0) < 4 ? 'Code secret invalide' : null,
             ),
             Align(
               alignment: Alignment.centerRight,
@@ -187,7 +254,8 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             ),
             PiconButton(
               label: 'Valider',
-              onPressed: _recoverPassword,
+              onPressed: _isLoading ? null : _recoverPassword,
+              loading: _isLoading,
             ),
           ],
         ),
@@ -197,7 +265,9 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
 }
 
 class _NewPasswordDialog extends StatefulWidget {
-  const _NewPasswordDialog();
+  final String resetToken;
+
+  const _NewPasswordDialog({required this.resetToken});
 
   @override
   State<_NewPasswordDialog> createState() => _NewPasswordDialogState();
@@ -213,27 +283,32 @@ class _NewPasswordDialogState extends State<_NewPasswordDialog> {
   bool _success = false;
 
   Future<void> _resetPassword() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      await Future.delayed(const Duration(seconds: 3));
-
+    setState(() => _isLoading = true);
+    try {
+      await ApiService.resetPasswordWithToken(
+        token: widget.resetToken,
+        newPassword: _passwordController.text,
+      );
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _success = true;
-      });
+      setState(() => _success = true);
       if (!reduceMotion(context)) {
-        await Future<void>.delayed(const Duration(milliseconds: 320));
+        await Future<void>.delayed(const Duration(milliseconds: 280));
       }
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mot de passe réinitialisé avec succès!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Mot de passe réinitialisé avec succès !'),
+          backgroundColor: Colors.green,
+        ),
       );
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    } catch (e) {
+      if (mounted) await showAppError(context, e);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -262,7 +337,11 @@ class _NewPasswordDialogState extends State<_NewPasswordDialog> {
                 const Text(
                   'Créer un nouveau mot de passe',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 18),
                 TextFormField(
@@ -271,18 +350,27 @@ class _NewPasswordDialogState extends State<_NewPasswordDialog> {
                   decoration: piconField('Nouveau mot de passe').copyWith(
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: AppColors.textSecondary,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Champ requis';
                     if (value.length < 8) return '8 caractères minimum';
-                    if (!value.contains(RegExp(r'[A-Z]'))) return '1 majuscule minimum';
-                    if (!value.contains(RegExp(r'[a-z]'))) return '1 minuscule minimum';
-                    if (!value.contains(RegExp(r'[0-9]'))) return '1 chiffre minimum';
+                    if (!value.contains(RegExp(r'[A-Z]'))) {
+                      return '1 majuscule minimum';
+                    }
+                    if (!value.contains(RegExp(r'[a-z]'))) {
+                      return '1 minuscule minimum';
+                    }
+                    if (!value.contains(RegExp(r'[0-9]'))) {
+                      return '1 chiffre minimum';
+                    }
                     return null;
                   },
                 ),
@@ -293,14 +381,20 @@ class _NewPasswordDialogState extends State<_NewPasswordDialog> {
                   decoration: piconField('Confirmer le mot de passe').copyWith(
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: AppColors.textSecondary,
                       ),
-                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      onPressed: () => setState(
+                        () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                      ),
                     ),
                   ),
                   validator: (value) {
-                    if (value != _passwordController.text) return 'Les mots de passe ne correspondent pas';
+                    if (value != _passwordController.text) {
+                      return 'Les mots de passe ne correspondent pas';
+                    }
                     return null;
                   },
                 ),
@@ -312,8 +406,12 @@ class _NewPasswordDialogState extends State<_NewPasswordDialog> {
                   success: _success,
                 ),
                 TextButton(
-                  onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-                  child: const Text('Annuler', style: TextStyle(color: AppColors.textPrimary)),
+                  onPressed:
+                      _isLoading ? null : () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Annuler',
+                    style: TextStyle(color: AppColors.textPrimary),
+                  ),
                 ),
               ],
             ),

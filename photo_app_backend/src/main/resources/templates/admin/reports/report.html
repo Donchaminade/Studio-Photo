@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title>Rapports - Studio Photo Admin</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4567b7;
+            --primary-dark: #3455a0;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
+            --dark-color: #2c3e50;
+            --light-color: #f8f9fa;
+            --gray-light: #ecf0f1;
+            --shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.12);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fb;
+            color: var(--dark-color);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            background: rgba(255, 255, 255, 0.2);
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-links {
+            padding: 20px 0;
+        }
+
+        .nav-links li {
+            list-style: none;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: white;
+        }
+
+        .nav-links i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 0;
+            transition: var(--transition);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .user-details {
+            margin-right: 20px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        .user-role {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        /* Content Wrapper */
+        .content-wrapper {
+            padding: 30px;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .page-header h1 i {
+            color: var(--primary-color);
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .btn-primary-action {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px rgba(69, 103, 183, 0.3);
+        }
+
+        .btn-primary-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(69, 103, 183, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+
+        /* Dashboard Section (reused for reports) */
+        .dashboard-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+        }
+
+        .stat-card.users::before {
+            background-color: var(--primary-color);
+        }
+
+        .stat-card.orders::before {
+            background-color: var(--success-color);
+        }
+
+        .stat-card.bookings::before {
+            background-color: var(--secondary-color);
+        }
+
+        .stat-card.revenue::before {
+            background-color: var(--warning-color);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .users .stat-icon {
+            background: var(--primary-color);
+        }
+
+        .orders .stat-icon {
+            background: var(--success-color);
+        }
+
+        .bookings .stat-icon {
+            background: var(--secondary-color);
+        }
+
+        .revenue .stat-icon {
+            background: var(--warning-color);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--dark-color);
+        }
+
+        .stat-label {
+            font-size: 15px;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        .chart-container {
+            height: 300px;
+            position: relative;
+            margin-top: 20px;
+        }
+
+        table.table-striped tbody tr:nth-of-type(odd) {
+            background-color: var(--gray-light);
+        }
+
+        table.table-hover tbody tr:hover {
+            background-color: rgba(69, 103, 183, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 70px;
+                overflow: hidden;
+            }
+
+            .sidebar:hover {
+                width: 250px;
+            }
+
+            .logo-text,
+            .nav-links span {
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .sidebar:hover .logo-text,
+            .sidebar:hover .nav-links span {
+                opacity: 1;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .sidebar:hover~.main-content {
+                margin-left: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .page-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .content-wrapper {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav th:replace="~{admin/fragments/sidebar :: sidebar-fragment}"></nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Inclusion du header depuis le fragment -->
+        <div th:insert="~{admin/fragments/header :: mainHeader}"></div>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>
+                    <i class="fas fa-chart-line"></i> Rapports d'Activité
+                </h1>
+                <div class="page-actions">
+                    <button class="btn-action btn-primary-action" id="downloadPdfBtn">
+                        <i class="fas fa-file-pdf"></i> Télécharger PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Date Range Filter -->
+            <div class="dashboard-section mb-4">
+                <div class="section-header">
+                    <h2 class="section-title">Filtrer par Période</h2>
+                </div>
+                <div class="row">
+                    <div class="col-md-5">
+                        <div class="form-group">
+                            <label for="startDate">Date de début:</label>
+                            <input type="date" id="startDate" class="form-control" th:value="${startDate}">
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-group">
+                            <label for="endDate">Date de fin:</label>
+                            <input type="date" id="endDate" class="form-control" th:value="${endDate}">
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-primary btn-block" id="applyFilterBtn"><i class="fas fa-filter"></i>
+                            Appliquer</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h2 class="section-title">Statistiques Récapitulatives</h2>
+                </div>
+                <div class="stats-grid" id="summaryStatsGrid">
+                    <!-- Stats will be loaded here via JS -->
+                    <div class="stat-card users">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="stat-value" id="reportNewUsers">0</div>
+                        <div class="stat-label">Nouveaux Utilisateurs</div>
+                    </div>
+                    <div class="stat-card orders">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-value" id="reportTotalOrders">0</div>
+                        <div class="stat-label">Total Commandes</div>
+                    </div>
+                    <div class="stat-card bookings">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="stat-value" id="reportTotalBookings">0</div>
+                        <div class="stat-label">Total Réservations</div>
+                    </div>
+                    <div class="stat-card revenue">
+                        <div class="stat-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-value" id="reportTotalRevenue">0 FCFA</div>
+                        <div class="stat-label">Revenu Total</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Tables/Charts -->
+            <div class="row mt-4">
+                <div class="col-lg-6">
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Commandes Récentes</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Montant</th>
+                                        <th>Statut</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentOrdersTableBody">
+                                    <!-- Data will be loaded here via JS -->
+                                    <tr>
+                                        <td colspan="3" class="text-center">Chargement des données...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Nouveaux Utilisateurs</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Email</th>
+                                        <th>Date Inscription</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentUsersTableBody">
+                                    <!-- Data will be loaded here via JS -->
+                                    <tr>
+                                        <td colspan="3" class="text-center">Chargement des données...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://unpkg.com/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Function to load report data
+            function loadReportData(startDate, endDate) {
+                // Fetch Summary Stats
+                fetch(`/admin/api/reports/summary?startDate=${startDate}&endDate=${endDate}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => {
+                        document.getElementById('reportNewUsers').innerText = formatNumber(data.totalNewUsers);
+                        document.getElementById('reportTotalOrders').innerText = formatNumber(data.totalOrders);
+                        document.getElementById('reportTotalBookings').innerText = formatNumber(data.totalBookings);
+                        document.getElementById('reportTotalRevenue').innerText = formatCurrency(data.totalRevenue || 0);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching report summary stats:', error);
+                        document.getElementById('reportNewUsers').innerText = 'N/A';
+                        document.getElementById('reportTotalOrders').innerText = 'N/A';
+                        document.getElementById('reportTotalBookings').innerText = 'N/A';
+                        document.getElementById('reportTotalRevenue').innerText = 'N/A';
+                    });
+
+                // Fetch Recent Orders
+                fetch(`/admin/api/reports/recent-orders?startDate=${startDate}&endDate=${endDate}`)
+                    .then(response => response.json())
+                    .then(orders => {
+                        const tableBody = document.getElementById('recentOrdersTableBody');
+                        tableBody.innerHTML = ''; // Clear existing content
+                        if (orders.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="3" class="text-center">Aucune commande trouvée.</td></tr>';
+                            return;
+                        }
+                        orders.forEach(order => {
+                            const row = tableBody.insertRow();
+                            row.innerHTML = `
+                                <td>${formatCurrency(order.totalAmount)}</td>
+                                <td>${order.status}</td>
+                                <td>${new Date(order.createdAt).toLocaleDateString('fr-FR')}</td>
+                            `;
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching recent orders:', error);
+                        const tableBody = document.getElementById('recentOrdersTableBody');
+                        tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Erreur de chargement des commandes.</td></tr>';
+                    });
+
+                // Fetch Recent Users
+                fetch(`/admin/api/reports/recent-users?startDate=${startDate}&endDate=${endDate}`)
+                    .then(response => response.json())
+                    .then(users => {
+                        const tableBody = document.getElementById('recentUsersTableBody');
+                        tableBody.innerHTML = ''; // Clear existing content
+                        if (users.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="3" class="text-center">Aucun utilisateur trouvé.</td></tr>';
+                            return;
+                        }
+                        users.forEach(user => {
+                            const row = tableBody.insertRow();
+                            row.innerHTML = `
+                                <td>${user.firstname} ${user.lastname}</td>
+                                <td>${user.email}</td>
+                                <td>${new Date(user.createdAt).toLocaleDateString('fr-FR')}</td>
+                            `;
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching recent users:', error);
+                        const tableBody = document.getElementById('recentUsersTableBody');
+                        tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Erreur de chargement des utilisateurs.</td></tr>';
+                    });
+            }
+
+            // Initial load of report data
+            const initialStartDate = document.getElementById('startDate').value;
+            const initialEndDate = document.getElementById('endDate').value;
+            loadReportData(initialStartDate, initialEndDate);
+
+            // Apply filter button click
+            document.getElementById('applyFilterBtn').addEventListener('click', function () {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                loadReportData(startDate, endDate);
+            });
+
+            // Download PDF button click
+            document.getElementById('downloadPdfBtn').addEventListener('click', function () {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                window.open(`/admin/reports/download-pdf?startDate=${startDate}&endDate=${endDate}`, '_blank');
+            });
+
+            function formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+
+            function formatCurrency(amount) {
+                return amount.toLocaleString('fr-FR', { style: 'currency', currency: 'XOF' }); // Assuming XOF for FCFA
+            }
+
+            // Setup initials
+            const firstName = "[[${#authentication.principal instanceof T(com.studiophoto.photoappbackend.model.User) ? #authentication.principal.firstname : ''}]]";
+            const lastName = "[[${#authentication.principal instanceof T(com.studiophoto.photoappbackend.model.User) ? #authentication.principal.lastname : ''}]]";
+            if (firstName && lastName) {
+                const userInitials = document.getElementById('userInitials');
+                if (userInitials) {
+                    userInitials.innerText = firstName.charAt(0) + lastName.charAt(0);
+                }
+            }
+        });
+        /*]]>*/
+    </script>
+</body>
+
+</html>

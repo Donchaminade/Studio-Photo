@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_app/home_screen.dart';
-import 'package:photo_app/login_screen.dart';
-import 'package:photo_app/main.dart';
-import 'package:photo_app/services/session_store.dart';
+import 'package:Picon/home_screen.dart';
+import 'package:Picon/login_screen.dart';
+import 'package:Picon/main.dart';
+import 'package:Picon/services/session_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Stockage sécurisé simulé, partagé entre « processus » comme le Keystore.

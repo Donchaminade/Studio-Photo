@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:photo_app/utils/colors.dart';
+import 'package:Picon/utils/colors.dart';
 
 ThemeData buildPiconTheme() {
   const scheme = ColorScheme(
