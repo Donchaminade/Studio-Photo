@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/widgets/music_wave_loader.dart';
+import 'package:photo_app/widgets/picon_ui.dart';
 
 class LoadingButton extends StatefulWidget {
   final Future<void> Function()? onPressed;
@@ -17,33 +16,54 @@ class LoadingButton extends StatefulWidget {
 }
 
 class _LoadingButtonState extends State<LoadingButton> {
-  void _handlePress() {
-    if (widget.onPressed != null) {
-      widget.onPressed!();
+  bool _loading = false;
+  bool _success = false;
+  bool _error = false;
+  int _shake = 0;
+
+  Future<void> _handle() async {
+    if (_loading || widget.onPressed == null) return;
+    setState(() {
+      _loading = true;
+      _success = false;
+      _error = false;
+    });
+    try {
+      await widget.onPressed!();
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _success = true;
+      });
+      await Future<void>.delayed(
+        Duration(milliseconds: reduceMotion(context) ? 80 : 420),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = true;
+        _shake++;
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 520));
+    }
+    if (mounted) {
+      setState(() {
+        _success = false;
+        _error = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.textOnPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 24.0),
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        onPressed: _handlePress,
-        child: Text(widget.text),
-      ),
+    return PiconButton(
+      label: widget.text,
+      onPressed: widget.onPressed == null ? null : _handle,
+      loading: _loading,
+      success: _success,
+      error: _error,
+      shakeToken: _shake,
     );
   }
 }

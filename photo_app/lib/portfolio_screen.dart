@@ -1,13 +1,10 @@
-import 'dart:ui';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/utils/geometric_background.dart';
+import 'package:photo_app/widgets/picon_ui.dart';
 
-/// ===============================
-/// MODEL
-/// ===============================
 class PhotoFormat {
   final String dimension;
   final int price;
@@ -26,10 +23,7 @@ class PhotoFormat {
   });
 }
 
-/// ===============================
-/// DATA
-/// ===============================
-final List<PhotoFormat> photoFormats = [
+const List<PhotoFormat> photoFormats = [
   PhotoFormat(dimension: '9x13 cm', price: 75, images: ['assets/carousel/car.jpg', 'assets/carousel/car1.jpg'], title: 'Petit Format Classique', description: 'Idéal pour les albums photos ou les petits cadres. Un souvenir intime et abordable.'),
   PhotoFormat(dimension: '10x15 cm', price: 150, images: ['assets/carousel/car1.jpg', 'assets/carousel/mxx.jpeg', 'assets/carousel/pflex.jpeg'], title: 'Format Standard', description: 'Le format le plus courant pour partager vos moments. Parfait pour les tirages du quotidien.', isPopular: true),
   PhotoFormat(dimension: '13x18 cm', price: 125, images: ['assets/carousel/mxx.jpeg', 'assets/carousel/pflex.jpeg'], title: 'Portrait Élégant', description: 'Un choix populaire pour les portraits et les photos de famille. Offre une belle présence.', isPopular: true),
@@ -50,74 +44,249 @@ final List<PhotoFormat> photoFormats = [
 final NumberFormat currencyFormatter =
     NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
 
-/// ===============================
-/// SCREEN
-/// ===============================
-class PortfolioScreen extends StatelessWidget {
+class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
 
-  void _openDetails(BuildContext context, PhotoFormat format) {
+  @override
+  State<PortfolioScreen> createState() => _PortfolioScreenState();
+}
+
+class _PortfolioScreenState extends State<PortfolioScreen> {
+  final PageController _page = PageController(viewportFraction: 0.86);
+  int _index = 0;
+
+  void _openDetails(PhotoFormat format) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.85),
+      barrierColor: Colors.black.withValues(alpha: 0.85),
       builder: (_) => DimensionDetailDialog(format: format),
     );
   }
 
+  void _go(int index) {
+    if (reduceMotion(context)) {
+      _page.jumpToPage(index);
+    } else {
+      _page.animateToPage(index, duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
+    }
+  }
+
+  @override
+  void dispose() {
+    _page.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text('Guide des Dimensions'),
-        
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-              onPressed: () => Navigator.pop(context),
-            ),
+    final format = photoFormats[_index];
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.navyDeep,
+        appBar: piconBar('Guide des Dimensions', dark: true),
+        body: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Galerie',
+                        style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    Text(
+                      '${_index + 1} / ${photoFormats.length}',
+                      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: PageView.builder(
+                  controller: _page,
+                  itemCount: photoFormats.length,
+                  onPageChanged: (i) => setState(() => _index = i),
+                  itemBuilder: (context, index) {
+                    final item = photoFormats[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                      child: _GlassFormatCard(
+                        format: item,
+                        onTap: () => _openDetails(item),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Précédent',
+                      onPressed: _index == 0 ? null : () => _go(_index - 1),
+                      icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
+                    ),
+                    Expanded(
+                      child: Text(
+                        format.dimension,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Suivant',
+                      onPressed: _index == photoFormats.length - 1 ? null : () => _go(_index + 1),
+                      icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 78,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  itemExtent: 76,
+                  itemCount: photoFormats.length,
+                  itemBuilder: (context, index) {
+                    final active = index == _index;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => _go(index),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: active ? AppColors.accent : Colors.white24,
+                              width: active ? 2 : 1,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(
+                              photoFormats[index].images.first,
+                              width: 64,
+                              height: 56,
+                              fit: BoxFit.cover,
+                              cacheWidth: 180,
+                              errorBuilder: (_, __, ___) => const SizedBox(
+                                width: 64,
+                                height: 56,
+                                child: Icon(Icons.image_not_supported, color: Colors.white, size: 20),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
-      ),
-      body: Stack(
-        children: [
-          const GeometricBackground(),
-          SafeArea(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 0.78,
-              ),
-              itemCount: photoFormats.length,
-              itemBuilder: (context, index) {
-                final format = photoFormats[index];
-                return GestureDetector(
-                  onTap: () => _openDetails(context, format),
-                  child: DimensionTile(format: format),
-                );
-              },
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
-/// ===============================
-/// TILE
-/// ===============================
+class _GlassFormatCard extends StatelessWidget {
+  final PhotoFormat format;
+  final VoidCallback onTap;
+
+  const _GlassFormatCard({required this.format, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return TapScale(
+      onTap: onTap,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: Colors.white.withValues(alpha: 0.08),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Image.asset(
+                  format.images.first,
+                  fit: BoxFit.cover,
+                  cacheWidth: 900,
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Icon(Icons.image_not_supported, color: Colors.white54, size: 42),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            format.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                          ),
+                        ),
+                        if (format.isPopular) const _PopularBadge(),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      format.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.3),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            format.dimension,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            currencyFormatter.format(format.price),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w800, fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class DimensionTile extends StatelessWidget {
   final PhotoFormat format;
 
@@ -125,66 +294,7 @@ class DimensionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Image.asset(
-            format.images.first,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            errorBuilder: (_, __, ___) =>
-                const Icon(Icons.image_not_supported),
-          ),
-          _TileInfo(format: format),
-          if (format.isPopular) const _PopularBadge(),
-        ],
-      ),
-    );
-  }
-}
-
-class _TileInfo extends StatelessWidget {
-  final PhotoFormat format;
-
-  const _TileInfo({required this.format});
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            color: Colors.black.withOpacity(0.45),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  format.dimension,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  currencyFormatter.format(format.price),
-                  style: const TextStyle(
-                      color: Colors.orangeAccent,
-                      fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    return _GlassFormatCard(format: format, onTap: () {});
   }
 }
 
@@ -193,39 +303,27 @@ class _PopularBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 8,
-      right: 8,
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.accent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Text(
-          'Populaire',
-          style: TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold),
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.accent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'Populaire',
+        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
       ),
     );
   }
 }
 
-/// ===============================
-/// DETAIL DIALOG
-/// ===============================
 class DimensionDetailDialog extends StatefulWidget {
   final PhotoFormat format;
 
   const DimensionDetailDialog({super.key, required this.format});
 
   @override
-  State<DimensionDetailDialog> createState() =>
-      _DimensionDetailDialogState();
+  State<DimensionDetailDialog> createState() => _DimensionDetailDialogState();
 }
 
 class _DimensionDetailDialogState extends State<DimensionDetailDialog> {
@@ -236,90 +334,94 @@ class _DimensionDetailDialogState extends State<DimensionDetailDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(12),
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              color: Colors.black.withOpacity(0.7),
-              child: SingleChildScrollView(
-                child: Column(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          color: const Color(0xF0101830),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Stack(
                   children: [
                     CarouselSlider(
                       options: CarouselOptions(
-                        height: 300,
+                        height: 280,
                         viewportFraction: 1,
-                        onPageChanged: (i, _) =>
-                            setState(() => currentIndex = i),
+                        enableInfiniteScroll: widget.format.images.length > 1,
+                        onPageChanged: (i, _) => setState(() => currentIndex = i),
                       ),
                       items: widget.format.images.map((img) {
                         return Image.asset(
                           img,
                           fit: BoxFit.contain,
                           width: double.infinity,
+                          cacheWidth: 1000,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported, color: Colors.white),
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.format.title,
-                            style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            widget.format.description,
-                            style: const TextStyle(
-                                color: Colors.white70),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                widget.format.dimension,
-                                style: const TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white),
-                              ),
-                              Text(
-                                currencyFormatter
-                                    .format(widget.format.price),
-                                style: const TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.orangeAccent,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          )
-                        ],
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: IconButton(
+                        tooltip: 'Fermer',
+                        onPressed: () => Navigator.pop(context),
+                        icon: const CircleAvatar(
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.close, color: AppColors.primary),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
+                if (widget.format.images.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(widget.format.images.length, (i) {
+                        final active = i == currentIndex;
+                        return Container(
+                          width: active ? 16 : 6,
+                          height: 6,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: BoxDecoration(
+                            color: active ? AppColors.accent : Colors.white24,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.format.title,
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(widget.format.description, style: const TextStyle(color: Colors.white70, height: 1.35)),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Text(widget.format.dimension, style: const TextStyle(fontSize: 18, color: Colors.white)),
+                          const Spacer(),
+                          Text(
+                            currencyFormatter.format(widget.format.price),
+                            style: const TextStyle(fontSize: 18, color: AppColors.accent, fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          Positioned(
-            top: 6,
-            right: 6,
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: AppColors.primary), // Use primary color for icon
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

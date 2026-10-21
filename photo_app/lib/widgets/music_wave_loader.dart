@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:photo_app/utils/colors.dart';
 
@@ -5,20 +7,33 @@ class MusicWaveLoader extends StatefulWidget {
   const MusicWaveLoader({super.key});
 
   @override
-  _MusicWaveLoaderState createState() => _MusicWaveLoaderState();
+  State<MusicWaveLoader> createState() => _MusicWaveLoaderState();
 }
 
 class _MusicWaveLoaderState extends State<MusicWaveLoader>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late final AnimationController _controller;
+  bool _reduced = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat();
+      duration: const Duration(milliseconds: 900),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final media = MediaQuery.of(context);
+    _reduced = media.disableAnimations || media.accessibleNavigation;
+    if (_reduced) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -29,24 +44,29 @@ class _MusicWaveLoaderState extends State<MusicWaveLoader>
 
   @override
   Widget build(BuildContext context) {
+    if (_reduced) {
+      return _bars(0.6);
+    }
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) => _bars(_controller.value),
+    );
+  }
+
+  Widget _bars(double t) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: List.generate(3, (index) {
-        return AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            final double t =
-                (_controller.value - (index * 0.2)).clamp(0.0, 1.0);
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              height: 10 + (t * 40),
-              width: 10,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(5),
-              ),
-            );
-          },
+        final wave = _reduced ? 0.55 : (math.sin((t + index / 3) * math.pi * 2) + 1) / 2;
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          height: 10 + (wave * 28),
+          width: 8,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(6),
+          ),
         );
       }),
     );

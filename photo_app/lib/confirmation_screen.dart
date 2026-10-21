@@ -1,60 +1,55 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'utils/colors.dart';
+import 'package:photo_app/utils/colors.dart';
+import 'package:photo_app/widgets/picon_photo.dart';
+import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:photo_app/widgets/receipt_card.dart';
 
-// Fonction pour soumettre la commande via l'API
 Future<void> submitOrder(
     String userId,
     Map<String, Map<String, dynamic>> orderDetails,
     BuildContext context) async {
-  // L'URL de votre API PHP
   const String apiUrl = 'http://10.0.2.2/studio/submit_order.php';
 
-  // Convertir les détails de la commande en format JSON
   String orderDetailsJson = jsonEncode(orderDetails);
 
-  // Préparer les données à envoyer
   Map<String, String> headers = {
     'Content-Type': 'application/x-www-form-urlencoded',
   };
 
-  // Créer le corps de la requête
   Map<String, String> body = {
     'user_id': userId,
     'order_details': orderDetailsJson,
   };
 
   try {
-    // Envoyer la requête POST
     final response = await http.post(
       Uri.parse(apiUrl),
       headers: headers,
       body: body,
     );
+    if (!context.mounted) return;
 
-    // Vérifier la réponse
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
       if (responseData['success']) {
-        // Afficher un message de succès
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Commande enregistrée avec succès')),
         );
       } else {
-        // Afficher le message d'erreur du serveur
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur: ${responseData['message']}')),
         );
       }
     } else {
-      // Erreur de connexion au serveur
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Erreur: impossible de contacter le serveur')),
       );
     }
   } catch (error) {
-    // Afficher une erreur si l'envoi échoue
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content:
@@ -68,55 +63,103 @@ class ConfirmationScreen extends StatelessWidget {
   final String paymentMethod;
 
   const ConfirmationScreen({
-    Key? key,
+    super.key,
     required this.orderDetails,
     required this.paymentMethod,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
+    final entries = orderDetails.entries.toList(growable: false);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Confirmation de la commande'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textOnPrimary,
-      ),
-      body: Container(
-        color: AppColors.background,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.check_circle, color: AppColors.accent, size: 100),
-              const SizedBox(height: 30),
-              const Text(
-                'Commande confirmée avec succès !',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                textAlign: TextAlign.center,
+      backgroundColor: AppColors.background,
+      appBar: piconBar('Confirmation de la commande'),
+      body: ReceiptBackdrop(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: Unroll(
+                  child: ReceiptCard(
+                    title: 'REÇU OFFICIEL',
+                    status: 'PAYÉ',
+                    subtitle: 'Commande confirmée avec succès !',
+                    lines: [
+                      _line('Mode de paiement', paymentMethod),
+                      for (var i = 0; i < entries.length; i++)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: PiconPhoto(source: entries[i].key, cachePixels: 140),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Taille : ${entries[i].value['size']}',
+                                    style: const TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    'Quantité : ${entries[i].value['quantity']}',
+                                    style: const TextStyle(color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                    footer: Text(
+                      entries.isEmpty ? 'Aucun article' : '${entries.length} article${entries.length > 1 ? 's' : ''}',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(height: 20),
-              Text(
-                'Mode de paiement : $paymentMethod',
-                style: const TextStyle(fontSize: 18, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
+            ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: PiconButton(
+                  label: "Retour à l'accueil",
+                  onPressed: () {
+                    submitOrder('user_id_example', orderDetails, context);
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                  },
+                ),
               ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  // Remplacer 'user_id_example' par l'ID de l'utilisateur réel.
-                  submitOrder('user_id_example', orderDetails, context);
-
-                  // Retourner à l'écran d'accueil après l'enregistrement
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                child: const Text('Retour à l\'accueil'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _line(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: Text(label, style: const TextStyle(color: AppColors.textSecondary))),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
     );
   }
 }

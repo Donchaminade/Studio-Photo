@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photo_app/utils/colors.dart';
 import 'package:photo_app/utils/geometric_background.dart';
+import 'package:photo_app/widgets/picon_ui.dart';
 
 class NoConnectionScreen extends StatelessWidget {
   const NoConnectionScreen({super.key});
@@ -8,53 +8,36 @@ class NoConnectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           const GeometricBackground(),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.wifi_off,
-                  size: 100,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Pas de connexion Internet',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  const Spacer(),
+                  const Reveal(
+                    child: PiconEmpty(
+                      icon: Icons.wifi_off_rounded,
+                      title: 'Pas de connexion Internet',
+                      subtitle: 'Veuillez vérifier votre connexion et réessayer.',
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Veuillez vérifier votre connexion et réessayer.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
+                  const SizedBox(height: 12),
+                  PiconButton(
+                    label: 'Mode hors ligne',
+                    icon: Icons.arrow_back,
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                    },
                   ),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // This button could try to reconnect or navigate to an offline mode
-                    // For now, it just pops the screen
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Mode hors ligne'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textOnPrimary,
-                  ),
-                )
-              ],
+                  const Spacer(),
+                ],
+              ),
             ),
           ),
         ],
