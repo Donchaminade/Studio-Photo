@@ -82,6 +82,12 @@
                     return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
                 }
             </script>
+            <form class="picon-topbar-logout" th:action="@{/admin/logout}" method="post">
+                <button type="submit">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Déconnexion</span>
+                </button>
+            </form>
             <!-- User Dropdown -->
             <div class="dropdown">
                 <a class="d-flex align-items-center text-decoration-none text-dark dropdown-toggle" href="#" role="button" id="dropdownUser" data-toggle="dropdown" aria-expanded="false">

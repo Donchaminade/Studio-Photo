@@ -10,8 +10,7 @@
         <div class="sidebar-header">
             <a href="/admin/dashboard" class="logo">
                 <div class="logo-icon">
-                    <img th:src="@{/images/pro.png}" alt="PICON"
-                         onerror="this.onerror=null;this.src='/images/logo.jpeg';">
+                    <img th:src="@{/images/picon-logo.png}" alt="PICON">
                 </div>
                 <div class="logo-text">PICON</div>
             </a>
@@ -38,6 +37,11 @@
             <!--        <li><a th:href="@{/admin/settings}"><i class="fas fa-cog"></i><span>Paramètres</span></a></li>-->
 
         </ul>
+        <form class="sidebar-logout" th:action="@{/admin/logout}" method="post">
+            <button type="submit">
+                <i class="fas fa-sign-out-alt"></i><span>Déconnexion</span>
+            </button>
+        </form>
 
         <script>
             document.addEventListener("DOMContentLoaded", function () {

@@ -79,6 +79,8 @@ flutter:
     - assets/logos/flooz.webp
     - assets/logos/mixbyyass.jpg
     - assets/logos/pro.png
+    - assets/logos/image.png
+    - assets/logos/picon-mark.png
 
 flutter_launcher_icons:
   android: "launcher_icon"

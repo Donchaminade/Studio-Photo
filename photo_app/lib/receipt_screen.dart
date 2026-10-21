@@ -437,7 +437,7 @@ class _PrintedReceiptViewState extends State<_PrintedReceiptView> {
         color: const Color(0xFFFAFAFA),
         padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Center(child: Image.asset('assets/images/pro.png', height: 34)),
+          const Center(child: PiconWordmark(height: 34)),
           const SizedBox(height: 6),
           Center(child: Text('STUDIO PHOTO • LOMÉ', style: mono(11, FontWeight.w700).copyWith(letterSpacing: 2))),
           const TicketDashes(),
