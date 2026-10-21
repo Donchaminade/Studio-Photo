@@ -8,6 +8,7 @@ import 'package:Picon/login_screen.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/settings_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -64,8 +65,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
   
   Future<void> _navigateToEditPage() async {
-    // Placeholder for phone since it's not managed in homescreen state yet
-    const String placeholderPhone = '90123456'; 
+    // v5 : vrai numéro de la session (plus de numéro fictif).
+    final String placeholderPhone = ApiService.userPhone ?? '';
 
     final result = await Navigator.push(
       context,
@@ -284,6 +285,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactScreen())),
               ).animate().fade(delay: 150.ms, duration: 300.ms).slideX(begin: 0.1, curve: Curves.easeOut),
               const Divider(height: 1, indent: 16, endIndent: 16),
+              _buildProfileMenuTile(
+                icon: Icons.tune_rounded,
+                title: 'Paramètres',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen())),
+              ).animate().fade(delay: 170.ms, duration: 300.ms).slideX(begin: 0.1, curve: Curves.easeOut),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              _buildProfileMenuTile(
+                icon: Icons.info_outline_rounded,
+                title: 'À propos',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen())),
+              ).animate().fade(delay: 185.ms, duration: 300.ms).slideX(begin: 0.1, curve: Curves.easeOut),              const Divider(height: 1, indent: 16, endIndent: 16),
                _buildProfileMenuTile(
                 icon: Icons.logout,
                 title: 'Déconnexion',

@@ -428,8 +428,9 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>?> getAuthDetails() async {
-    final url =
-        '$baseUrl/auth/me'; // Most backends have a /me or /profile endpoint
+    // v5 : /auth/me n'existe pas sur l'API PICON. On valide le jeton avec un
+    // GET authentifié réel et léger, et on renvoie le profil de la session.
+    final url = '$baseUrl/notifications/unread-count';
     try {
       final response = await _safeGet(url);
       if (response.statusCode == 401) {
@@ -437,9 +438,15 @@ class ApiService {
         throw AppError.generic('Session conservée.');
       }
       if (response.statusCode == 200) {
-        final details = _handleApiResponse(response);
-        if (details != null) {
-          // Update local cache
+        final Map<String, dynamic> details = {
+          'firstname': _userName,
+          'lastname': _userLastName,
+          'email': _userEmail,
+          'phone': _userPhone,
+        };
+        // ignore: dead_code, unnecessary_null_comparison
+        if (false) {
+          // Ancienne mise à jour du cache depuis /auth/me (conservée)
           _userName = details['firstname'];
           _userLastName = details['lastname'];
           _userEmail = details['email'];
@@ -502,7 +509,13 @@ class ApiService {
     return _handleAuthResponse(response);
   }
 
+  /// /auth/forgot-password n'existe pas sur l'API : la récupération passe par
+  /// le code secret (verify-pin + reset-password). Aucun appel réseau.
+  @Deprecated('Utiliser verifyPinForPasswordReset')
   static Future<void> forgotPassword(String email) async {
+    throw AppError.generic(
+        'Utilisez « Mot de passe oublié » avec votre code secret.');
+    // ignore: dead_code
     final url = '$baseUrl/auth/forgot-password';
     final body = {'email': email};
     final response = await _safePost(url, body);
@@ -510,12 +523,31 @@ class ApiService {
   }
 
   static Future<List<String>> getAlbumImages(int userId) async {
+    // v5 : aucun endpoint /album/images côté API → pas d'appel (404 évité).
+    return const [];
+    // ignore: dead_code
     final url =
         '$baseUrl/album/images'; // Backend should infer user from token
     final response = await _safeGet(url);
     final data = _handleApiResponse(response);
     if (data == null || data['images'] == null) return [];
     return List<String>.from(data['images']);
+  }
+
+  /// GET /promotions/{id}
+  static Future<Promotion> fetchPromotionById(int id) async {
+    final response = await _safeGet('$baseUrl/promotions/$id');
+    final data = _handleApiResponse(response);
+    if (data is! Map) throw AppError.server();
+    return Promotion.fromJson(Map<String, Object?>.from(data));
+  }
+
+  /// GET /featured-content/{id}
+  static Future<FeaturedContent> fetchFeaturedContentById(int id) async {
+    final response = await _safeGet('$baseUrl/featured-content/$id');
+    final data = _handleApiResponse(response);
+    if (data is! Map) throw AppError.server();
+    return FeaturedContent.fromJson(Map<String, Object?>.from(data));
   }
 
   static Future<List<Promotion>> fetchPromotions() async {
@@ -638,6 +670,27 @@ class ApiService {
   }
 
 // fetch user bookings
+  /// Archive ZIP des photos d'une commande (GET /orders/{id}/download-photos).
+  static Future<Uint8List> downloadOrderPhotosZip(int orderId) async {
+    final url = '$baseUrl/orders/$orderId/download-photos';
+    final response = await _withAuthRetry(() async {
+      try {
+        return await http.get(Uri.parse(url), headers: _headers).timeout(
+              const Duration(seconds: 60),
+              onTimeout: () => throw AppError.server(),
+            );
+      } catch (error) {
+        throw AppError.from(error);
+      }
+    });
+    if (response.statusCode == 200) return response.bodyBytes;
+    if (response.statusCode == 404) {
+      throw Exception('Commande introuvable ou sans photos.');
+    }
+    _handleApiResponse(response);
+    throw AppError.server();
+  }
+
   static Future<List<Booking>> fetchUserBookings() async {
     final url = '$baseUrl/bookings';
     final response = await _safeGet(url);
@@ -686,13 +739,13 @@ class ApiService {
       final response = await _safeGet(url);
       final responseData = _handleApiResponse(response);
       if (responseData is! Map<String, dynamic>) {
-        debugPrint('fetchContactInfo: réponse inattendue, fallback local');
-        return defaultContactInfo;
+        // v5 : plus de coordonnées en dur affichées ; l'écran montre l'erreur.
+        throw AppError.server();
       }
       return ContactInfo.fromJson(Map<String, Object?>.from(responseData));
     } catch (e) {
-      debugPrint('fetchContactInfo: $e — fallback local');
-      return defaultContactInfo;
+      debugPrint('fetchContactInfo: $e');
+      rethrow;
     }
   }
 

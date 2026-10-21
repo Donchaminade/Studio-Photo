@@ -125,10 +125,18 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
           ),
           TextButton(
             onPressed: () async {
-              final info = await ApiService.fetchContactInfo();
-              final uri = Uri.parse('mailto:${info.email}');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri);
+              try {
+                final info = await ApiService.fetchContactInfo();
+                final uri = Uri.parse('mailto:${info.email}');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                }
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Coordonnées du studio indisponibles. Réessayez.'),
+                  ));
+                }
               }
             },
             child: const Text('Écrire'),
