@@ -2,7 +2,16 @@ import 'package:Picon/models/order.dart';
 import 'package:Picon/models/order_item.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/widgets/safe_photo_thumbnail.dart';
+import 'dart:io';
+
+import 'package:Picon/api_service.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/picon_premium.dart';
+import 'package:Picon/widgets/picon_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 
 class OrderDetailScreen extends StatelessWidget {
@@ -25,7 +34,11 @@ class OrderDetailScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => _OrderDetailView(screen: this);
+
+  // Ancienne mise en page (v2), conservée.
+  // ignore: unused_element
+  Widget _legacyBuild(BuildContext context) {
     final statusInfo = _getStatusInfo(order.status);
     return Scaffold(
       appBar: AppBar(
@@ -142,6 +155,145 @@ class OrderDetailScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+/// Détail commande v5 : récapitulatif, articles, téléchargement des photos.
+class _OrderDetailView extends StatefulWidget {
+  final OrderDetailScreen screen;
+  const _OrderDetailView({required this.screen});
+  @override
+  State<_OrderDetailView> createState() => _OrderDetailViewState();
+}
+
+class _OrderDetailViewState extends State<_OrderDetailView> {
+  late Order _order = widget.screen.order;
+  bool _downloading = false;
+  bool _downloaded = false;
+
+  Future<void> _refresh() async {
+    final fresh = await ApiService.fetchOrderById('${_order.id}');
+    if (fresh != null && mounted) setState(() => _order = fresh);
+  }
+
+  Future<void> _download() async {
+    if (_downloading) return;
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Le téléchargement des photos est disponible dans l'application mobile."),
+      ));
+      return;
+    }
+    setState(() {
+      _downloading = true;
+      _downloaded = false;
+    });
+    try {
+      final bytes = await ApiService.downloadOrderPhotosZip(_order.id);
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/picon_commande_${_order.id}_photos.zip');
+      await file.writeAsBytes(bytes, flush: true);
+      if (!mounted) return;
+      setState(() => _downloaded = true);
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile(file.path, mimeType: 'application/zip')],
+        subject: 'Photos commande PICON #${_order.id}',
+      ));
+    } catch (e) {
+      if (mounted) await showAppError(context, e, endSession: false);
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final info = widget.screen._getStatusInfo(_order.status);
+    final color = info['color'] as Color;
+    final items = _order.orderItems;
+    final photos = items.fold<int>(0, (a, i) => a + i.quantity);
+    return PiconHeroScaffold(
+      title: 'Commande #${_order.id}',
+      subtitle: DateFormat('dd/MM/yyyy • HH:mm').format(_order.createdAt),
+      icon: Icons.receipt_long_rounded,
+      onRefresh: _refresh,
+      headerExtra: Row(children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(info['icon'] as IconData, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(info['text'] as String, style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 12.5)),
+          ]),
+        ),
+        const Spacer(),
+        Text('$photos tirage${photos > 1 ? 's' : ''}',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w700)),
+      ]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Reveal(
+          child: PiconCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const PiconSectionHeader(icon: Icons.summarize_rounded, title: 'Récapitulatif'),
+              PiconKeyValue('Paiement', _order.paymentMethod.replaceAll('_', ' ')),
+              PiconKeyValue('Livraison', _order.deliveryType.replaceAll('_', ' ')),
+              if ((_order.deliveryAddress ?? '').isNotEmpty) PiconKeyValue('Adresse', _order.deliveryAddress!),
+              const Divider(height: 22),
+              PiconKeyValue('Total', '${_order.totalAmount.toStringAsFixed(0)} FCFA', strong: true),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Reveal(
+          index: 1,
+          child: PiconCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              PiconSectionHeader(icon: Icons.photo_library_rounded, title: 'Articles (${items.length})'),
+              if (items.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 18),
+                  child: Center(child: Text('Aucun article', style: TextStyle(color: AppColors.textSecondary))),
+                ),
+              for (final item in items)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(children: [
+                    SafePhotoThumbnail(item.imageUrl,
+                        width: 64, height: 64, fit: BoxFit.cover, borderRadius: BorderRadius.circular(14)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(item.photoSize, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 2),
+                        Text('${item.quantity} × ${item.pricePerUnit.toStringAsFixed(0)} FCFA',
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5)),
+                      ]),
+                    ),
+                    Text('${(item.pricePerUnit * item.quantity).toStringAsFixed(0)} F',
+                        style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
+                  ]),
+                ),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 20),
+        PiconButton(
+          label: _downloaded ? 'Photos prêtes — partager à nouveau' : 'Télécharger les photos (ZIP)',
+          icon: _downloaded ? Icons.ios_share_rounded : Icons.download_rounded,
+          loading: _downloading,
+          success: false,
+          onPressed: items.isEmpty ? null : _download,
+        ),
+        const SizedBox(height: 8),
+        const Text('Archive de vos fichiers originaux, à enregistrer ou partager.',
+            textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+      ]),
     );
   }
 }

@@ -74,7 +74,14 @@ class _PricingScreenState extends State<PricingScreen> {
                 );
               }
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return _OfferCarousel(prices: PricingScreen.fallbackPrintPrices, isOffline: true);
+                // v5 : plus de tarifs fictifs — uniquement ceux de l'API.
+                return const Center(
+                  child: PiconEmpty(
+                    icon: Icons.straighten_rounded,
+                    title: 'Aucun tarif disponible',
+                    subtitle: 'Les formats seront affichés dès leur publication par le studio.',
+                  ),
+                );
               }
               return _OfferCarousel(prices: snapshot.data!);
             },

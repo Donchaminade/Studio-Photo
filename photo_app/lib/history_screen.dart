@@ -4,6 +4,7 @@ import 'package:Picon/api_service.dart';
 import 'package:Picon/confirmation_screen.dart';
 import 'package:Picon/models/order.dart';
 import 'package:Picon/models/order_item.dart';
+import 'package:Picon/order_detail_screen.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
 import 'package:Picon/widgets/auth_network_image.dart';
@@ -390,6 +391,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ],
                   const SizedBox(height: 16),
                   _statusLargeView(_effectiveStatus(order)),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => OrderDetailScreen(order: order)),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      icon: const Icon(Icons.open_in_full_rounded, size: 18),
+                      label: const Text('Voir le détail et télécharger les photos'),
+                    ),
+                  ),
                   if (_shouldShowFinalizePaymentButton(order)) ...[
                     const SizedBox(height: 14),
                     SizedBox(

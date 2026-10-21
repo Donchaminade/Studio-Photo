@@ -21,6 +21,7 @@ import 'package:Picon/utils/geometric_background.dart';
 import 'package:Picon/utils/realtime_service.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/content_detail_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
@@ -705,7 +706,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           SliverToBoxAdapter(child: _buildOrderNowButton()),
           SliverToBoxAdapter(child: _buildQuickActions()),
           _buildHistorySection(),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)), //padding en bas de la page des actions
+          const SliverToBoxAdapter(child: SizedBox(height: 10)), // espace resserré (v5)
           SliverToBoxAdapter(child: _buildAdCarousel()),
           const SliverToBoxAdapter(child: SizedBox(height: 140)), //padding en bas de la page des carousels
         ],
@@ -1707,9 +1708,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         fc.imageUrl,
                         fit: BoxFit.cover,
                         width: double.infinity,
-                        errorWidget: Image.asset(
-                          'assets/carousel/mxx.jpeg',
-                          fit: BoxFit.cover,
+                        errorWidget: const ColoredBox(
+                          color: AppColors.primary,
+                          child: Center(child: PiconMark(size: 56)),
                         ),
                       ),
                       // Gradient + titre en bas
@@ -1747,15 +1748,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         bottom: 12,
                         right: 12,
                         child: GestureDetector(
-                          onTap: () async {
-                            final action = fc.buttonAction as String;
-                            if (action.isNotEmpty) {
-                              final url = Uri.parse(action);
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(url, mode: LaunchMode.externalApplication);
-                              }
-                            }
-                          },
+                          // v5 : détail in-app (GET /featured-content/{id}).
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ContentDetailScreen.featured(
+                                id: fc.id as int,
+                                initialTitle: fc.title as String,
+                                initialImageUrl: fc.imageUrl as String,
+                              ),
+                            ),
+                          ),
                           child: Container(
                             width: 38,
                             height: 38,
@@ -1913,17 +1916,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final screenWidth = MediaQuery.of(context).size.width;
     return Padding(
       // Marges symétriques (alignées sur la carte d'accueil et le bouton Commander).
-      padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 8.0),
+      padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 4.0),
       child: GridView.builder(
         shrinkWrap: true, // Important for nested scroll views
         physics:
             const NeverScrollableScrollPhysics(), // Disable GridView's own scrolling
+        // Pas de padding implicite (safe area) : supprime le vide sous la grille.
+        padding: EdgeInsets.zero,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           // 4 actions visibles → grille 2×2 (plus de tuile « Nous contacter » isolée).
           crossAxisCount: 2,
           crossAxisSpacing: 12.0,
           mainAxisSpacing: 12.0,
-          childAspectRatio: screenWidth < 360 ? 1.45 : 1.7,
+          childAspectRatio: screenWidth < 360 ? 1.12 : 1.3, // tuiles plus grandes (v5)
         ),
         // Réserver / Mes réservations (3, 4) restent dans le switch mais sont
         // masqués : ils ne prennent plus de case dans la grille.
@@ -2090,21 +2095,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: AppColors.primary, size: 36),
-              const SizedBox(height: 8),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 32),
+              ),
+              const SizedBox(height: 12),
               Flexible(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
                         ),
                   ),
                 ),
@@ -2288,11 +2302,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
-                  errorWidget: Image.asset(
-                    'assets/carousel/mxx.jpeg',
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
+                  errorWidget: const ColoredBox(
+                    color: AppColors.primary,
+                    child: Center(child: PiconMark(size: 56)),
                   ),
                 ),
         ),
@@ -2356,14 +2368,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   final imageUrl = ApiService.getFullImageUrl(promo.imageUrl);
 
                   return GestureDetector(
-                    onTap: () async {
-                      if (promo.targetUrl != null && promo.targetUrl!.isNotEmpty) {
-                        final uri = Uri.parse(promo.targetUrl!);
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri);
-                        }
-                      }
-                    },
+                    // v5 : détail in-app (GET /promotions/{id}).
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ContentDetailScreen.promotion(
+                          id: promo.id,
+                          initialTitle: promo.title,
+                          initialImageUrl: promo.imageUrl,
+                        ),
+                      ),
+                    ),
                     child: buildItem(imageUrl, false),
                   );
                 },

@@ -779,13 +779,21 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: qualityLightColor(analysis.quality),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
         child: Row(
           children: [
-            Icon(qualityIcon(analysis.quality), color: color, size: 18),
-            const SizedBox(width: 8),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(qualityIcon(analysis.quality), color: color, size: 18),
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 '${qualityLabelForAnalysis(analysis)} · ${analysis.dpi.round()} DPI · ${cropSummary(analysis)}',
@@ -808,10 +816,11 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.line),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),

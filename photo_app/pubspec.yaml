@@ -57,7 +57,8 @@ dependencies:
   flutter_image_compress: ^2.3.0
   device_preview: ^1.2.0
   flutter_secure_storage: ^11.2.0
-
+  path_provider: ^2.1.6
+  share_plus: ^13.3.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
