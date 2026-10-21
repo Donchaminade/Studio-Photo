@@ -8,42 +8,54 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
+        html,
+        body.picon-login {
+            height: 100%;
+        }
+
         body.picon-login {
             font-family: 'Segoe UI', 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 48px 28px;
+            padding: 0;
+            display: block;
             color: #1F2937;
-            background: #F4F6FA;
+            background: #fff;
         }
 
         body.picon-login .login-container {
             display: flex;
             width: 100%;
-            max-width: 1120px;
-            min-height: 680px;
+            max-width: none;
+            min-height: 100vh;
+            height: 100vh;
+            margin: 0;
             background: #fff;
-            border-radius: 24px;
+            border-radius: 0;
             overflow: hidden;
-            box-shadow: 0 18px 48px rgba(1, 22, 62, 0.12);
+            box-shadow: none;
         }
 
         body.picon-login .form-section {
-            flex: 1.05 1 54%;
-            padding: 64px 60px;
+            flex: 1 1 50%;
+            width: 50%;
+            min-height: 100vh;
+            padding: 72px 8vw 72px 7vw;
             background: #fff;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
 
+        body.picon-login .form-inner {
+            width: 100%;
+            max-width: 460px;
+        }
+
         body.picon-login .logo-container {
             display: flex;
             align-items: center;
-            margin-bottom: 28px;
+            margin-bottom: 36px;
         }
 
         body.picon-login .logo-icon {
@@ -85,7 +97,7 @@
             margin: 0 0 28px;
             color: #01163E;
             font-weight: 700;
-            font-size: 28px;
+            font-size: 32px;
             position: relative;
             padding-bottom: 14px;
         }
@@ -169,6 +181,7 @@
             font-weight: 700;
             color: #fff;
             margin-top: 8px;
+            transition: background 0.25s ease;
         }
 
         body.picon-login .btn-login:hover,
@@ -180,7 +193,7 @@
         body.picon-login .forgot-password {
             display: block;
             margin-top: 18px;
-            text-align: center;
+            text-align: left;
             color: #01163E;
             font-size: 15px;
             font-weight: 600;
@@ -217,9 +230,11 @@
         }
 
         body.picon-login .info-section {
-            flex: 0.95 1 46%;
+            flex: 1 1 50%;
+            width: 50%;
+            min-height: 100vh;
             background: #01163E;
-            padding: 64px 52px;
+            padding: 72px 64px;
             color: #fff;
             display: flex;
             flex-direction: column;
@@ -238,35 +253,37 @@
         }
 
         body.picon-login .info-section::before {
-            width: 220px;
-            height: 220px;
-            top: -70px;
-            right: -60px;
+            width: 280px;
+            height: 280px;
+            top: -80px;
+            right: -70px;
         }
 
         body.picon-login .info-section::after {
-            width: 280px;
-            height: 280px;
-            bottom: -110px;
-            left: -90px;
+            width: 360px;
+            height: 360px;
+            bottom: -140px;
+            left: -110px;
         }
 
         body.picon-login .info-title {
-            font-size: 32px;
+            font-size: 40px;
             font-weight: 700;
-            line-height: 1.25;
+            line-height: 1.2;
             margin: 0 0 16px;
             position: relative;
             z-index: 1;
+            max-width: 520px;
         }
 
         body.picon-login .info-subtitle {
-            font-size: 16px;
+            font-size: 17px;
             line-height: 1.5;
-            margin: 0 0 36px;
+            margin: 0 0 40px;
             color: rgba(255, 255, 255, 0.82);
             position: relative;
             z-index: 1;
+            max-width: 460px;
         }
 
         body.picon-login .features-list {
@@ -275,6 +292,7 @@
             margin: 0;
             position: relative;
             z-index: 1;
+            max-width: 480px;
         }
 
         body.picon-login .features-list li {
@@ -316,22 +334,18 @@
         }
 
         @media (max-width: 900px) {
-            body.picon-login {
-                align-items: flex-start;
-                padding: 24px 16px;
-            }
-
             body.picon-login .login-container {
                 flex-direction: column;
-                max-width: 560px;
-                min-height: 0;
+                height: auto;
+                min-height: 100vh;
             }
 
             body.picon-login .form-section,
             body.picon-login .info-section {
                 flex: none;
                 width: 100%;
-                padding: 36px 28px;
+                min-height: 0;
+                padding: 40px 24px;
             }
 
             body.picon-login .info-section {
@@ -339,77 +353,77 @@
             }
 
             body.picon-login .info-title {
-                font-size: 26px;
+                font-size: 28px;
+            }
+
+            body.picon-login .form-inner {
+                max-width: none;
             }
         }
 
-        @media (max-width: 576px) {
-            body.picon-login .form-section,
-            body.picon-login .info-section {
-                padding: 28px 20px;
-            }
-
-            body.picon-login .logo-text,
-            body.picon-login .form-section h2 {
-                font-size: 24px;
+        @media (prefers-reduced-motion: reduce) {
+            body.picon-login .btn-login {
+                transition: none;
             }
         }
     </style>
     <th:block th:replace="~{admin/fragments/picon-assets :: styles}"></th:block>
 </head>
 <body class="picon-login">
-<div class="login-container">
+<div class="login-container login-split">
     <div class="form-section">
-        <div class="logo-container">
-            <div class="logo-icon">
-                <img th:src="@{/images/picon-logo.png}" alt="PICON">
-            </div>
-            <div>
-                <div class="logo-text">PICON</div>
-                <div class="tagline">Gestion professionnelle des photos</div>
-            </div>
-        </div>
-
-        <h2>Connexion Administrateur</h2>
-
-        <form th:action="@{/admin/login}" method="post">
-            <div th:if="${param.error}" class="alert alert-danger" role="alert">
-                <i class="fas fa-exclamation-circle mr-2"></i>
-                Email ou mot de passe invalide.
-            </div>
-            <div th:if="${param.logout}" class="alert alert-success" role="alert">
-                <i class="fas fa-check-circle mr-2"></i>
-                Vous avez été déconnecté avec succès.
+        <div class="form-inner">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <img th:src="@{/images/picon-logo.png}" alt="PICON">
+                </div>
+                <div>
+                    <div class="logo-text">PICON</div>
+                    <div class="tagline">Gestion professionnelle des photos</div>
+                </div>
             </div>
 
-            <label class="field-label" for="username">Identifiant</label>
-            <div class="login-field">
-                <i class="fas fa-envelope"></i>
-                <input type="email" id="username" name="username" class="form-control"
-                       placeholder="Adresse email" autocomplete="username" required autofocus>
-            </div>
+            <h2>Connexion Administrateur</h2>
 
-            <label class="field-label" for="password">Mot de passe</label>
-            <div class="login-field">
-                <i class="fas fa-lock"></i>
-                <input type="password" id="password" name="password" class="form-control"
-                       placeholder="Mot de passe" autocomplete="current-password" required>
-                <button type="button" class="password-toggle" id="togglePassword" aria-label="Afficher le mot de passe">
-                    <i class="fas fa-eye"></i>
+            <form th:action="@{/admin/login}" method="post">
+                <div th:if="${param.error}" class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    Email ou mot de passe invalide.
+                </div>
+                <div th:if="${param.logout}" class="alert alert-success" role="alert">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Vous avez été déconnecté avec succès.
+                </div>
+
+                <label class="field-label" for="username">Identifiant</label>
+                <div class="login-field">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="username" name="username" class="form-control"
+                           placeholder="Adresse email" autocomplete="username" required autofocus>
+                </div>
+
+                <label class="field-label" for="password">Mot de passe</label>
+                <div class="login-field">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" name="password" class="form-control"
+                           placeholder="Mot de passe" autocomplete="current-password" required>
+                    <button type="button" class="password-toggle" id="togglePassword" aria-label="Afficher le mot de passe">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+
+                <button class="btn btn-login btn-block" type="submit">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Se connecter
                 </button>
+
+                <a href="#" class="forgot-password">
+                    <i class="fas fa-key"></i> Mot de passe oublié ?
+                </a>
+            </form>
+
+            <div class="form-footer">
+                <i class="fas fa-shield-alt mr-1"></i> Zone sécurisée — accès réservé au personnel autorisé
             </div>
-
-            <button class="btn btn-login btn-block" type="submit">
-                <i class="fas fa-sign-in-alt mr-2"></i>Se connecter
-            </button>
-
-            <a href="#" class="forgot-password">
-                <i class="fas fa-key"></i> Mot de passe oublié ?
-            </a>
-        </form>
-
-        <div class="form-footer">
-            <i class="fas fa-shield-alt mr-1"></i> Zone sécurisée — accès réservé au personnel autorisé
         </div>
     </div>
 
