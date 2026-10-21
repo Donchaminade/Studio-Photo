@@ -101,9 +101,10 @@ class _SignupScreenState extends State<SignupScreen> {
         children: [
           const GeometricBackground(),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            child: PiconCenteredScroll(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Reveal(child: BrandLogo(height: 88)),
                   const SizedBox(height: 8),

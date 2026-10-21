@@ -157,9 +157,10 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
           const GeometricBackground(),
           SafeArea(
             top: false,
-            child: SingleChildScrollView(
+            child: PiconCenteredScroll(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Reveal(child: BrandLogo(height: 84)),
                   const SizedBox(height: 8),

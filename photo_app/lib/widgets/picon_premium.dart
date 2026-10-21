@@ -8,7 +8,9 @@ import 'package:flutter/services.dart';
 /// Briques « premium » v3 partagées par Réservation, Statut, Reçu,
 /// Confirmation, Infos client, Aperçu photo, Hors ligne et le paiement.
 
-/// Logo PICON (assets/images/pro.png, même fichier que le nouveau favicon
+/// Logo PICON v4 : diaphragme (assets/logos/image.png, identique au
+/// picon-logo.png de l'admin) + mot-symbole, dans une pastille blanche.
+/// (Ancien : assets/images/pro.png, même fichier que l'ancien favicon
 /// admin) dans une pastille blanche.
 class PiconLogoPill extends StatelessWidget {
   final double height;
@@ -21,7 +23,7 @@ class PiconLogoPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 10, offset: Offset(0, 4))],
         ),
-        child: Image.asset('assets/images/pro.png', height: height, fit: BoxFit.contain),
+        child: PiconWordmark(height: height),
       );
 }
 

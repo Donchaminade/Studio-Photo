@@ -646,12 +646,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Image.asset(
-                  'assets/images/pro.png',
-                  height: 24,
-                  cacheWidth: 160,
-                  fit: BoxFit.contain,
-                ),
+                child: const PiconWordmark(height: 20),
               ),
               const SizedBox(width: 4),
               NotificationBellButton(
@@ -1886,11 +1881,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
               ),
-              child: Image.asset(
-                'assets/carousel/mxx.jpeg',
-                fit: BoxFit.contain,
-                cacheWidth: 300,
-              ),
+              // Nouveau logo PICON (diaphragme) ; l'ancienne image
+              // assets/carousel/mxx.jpeg reste dans les assets.
+              child: const PiconMark(size: 72),
             ),
           ],
         ),
@@ -1904,22 +1897,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _buildQuickActions() {
     final screenWidth = MediaQuery.of(context).size.width;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(6.0, 2.0, 16.0, 0.0), //padding en bas de la page des actions
+      // Marges symétriques (alignées sur la carte d'accueil et le bouton Commander).
+      padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 8.0),
       child: GridView.builder(
         shrinkWrap: true, // Important for nested scroll views
         physics:
             const NeverScrollableScrollPhysics(), // Disable GridView's own scrolling
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3, // 3 items per row
-          crossAxisSpacing: 16.0,
-          mainAxisSpacing: 16.0,
-          childAspectRatio: screenWidth < 360 ? 0.75 : 0.85, // Adjust aspect ratio for better look on small screens
+          // 4 actions visibles → grille 2×2 (plus de tuile « Nous contacter » isolée).
+          crossAxisCount: 2,
+          crossAxisSpacing: 12.0,
+          mainAxisSpacing: 12.0,
+          childAspectRatio: screenWidth < 360 ? 1.45 : 1.7,
         ),
-        itemCount: 6, // Total number of quick actions
+        // Réserver / Mes réservations (3, 4) restent dans le switch mais sont
+        // masqués : ils ne prennent plus de case dans la grille.
+        itemCount: 4,
         itemBuilder: (context, gridIndex) {
           // Les actions masquées (réservations) passent en fin de grille :
           // plus de trou au milieu des actions visibles.
-          const order = [0, 1, 2, 5, 3, 4];
+          const order = [0, 1, 2, 5];
           final index = order[gridIndex];
           switch (index) {
             case 0:
