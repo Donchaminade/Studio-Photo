@@ -1,386 +1,194 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
     <title>Connexion admin — PICON</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
-        :root {
-            --primary-color: #4567b7;
-            --primary-dark: #3455a0;
-            --secondary-color: #3498db;
-            --light-color: #f8f9fa;
-            --dark-color: #333;
-            --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            --transition: all 0.3s ease;
-        }
-
-        body {
+        body.picon-login {
             font-family: 'Segoe UI', 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
             margin: 0;
-            color: var(--dark-color);
-            overflow-x: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 16px;
+            color: #1F2937;
         }
 
         .login-container {
-            display: flex;
             width: 100%;
-            max-width: 1100px;
-            min-height: 650px;
+            max-width: 420px;
             background: #fff;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
+            border-radius: 22px;
+            box-shadow: 0 18px 40px rgba(1, 22, 62, 0.12);
         }
 
-        .login-container:hover {
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
-        }
-
-        /* Partie gauche - Formulaire */
         .form-section {
-            flex: 1;
-            padding: 60px 50px;
-            background: #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            padding: 36px 32px 28px;
         }
 
         .logo-container {
             display: flex;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 22px;
         }
 
         .logo-icon {
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            width:  100px;
-            height: 100px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-            box-shadow: 0 5px 15px rgba(69, 103, 183, 0.3);
+            width: 64px;
+            height: 64px;
+            min-width: 64px;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-right: 12px;
+            background: #fff;
+            border: 1px solid #E3E8F0;
         }
 
-        .logo-icon i {
-            color: white;
-            font-size: 24px;
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            background: #fff;
         }
 
         .logo-text {
-            font-size: 26px;
-            font-weight: 700;
-            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: 0.5px;
+            font-size: 22px;
+            font-weight: 800;
+            color: #01163E;
+            letter-spacing: -0.3px;
+            line-height: 1.1;
         }
 
         .tagline {
-            color: #666;
-            font-size: 14px;
-            margin-top: 5px;
+            color: #757575;
+            font-size: 13px;
+            margin-top: 2px;
         }
 
         .form-section h2 {
-            margin-bottom: 35px;
-            color: var(--dark-color);
-            font-weight: 600;
-            font-size: 28px;
+            margin: 0 0 22px;
+            color: #01163E;
+            font-weight: 700;
+            font-size: 22px;
             position: relative;
-            padding-bottom: 15px;
+            padding-bottom: 12px;
         }
 
         .form-section h2::after {
             content: '';
             position: absolute;
-            width: 60px;
+            width: 48px;
             height: 3px;
-            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            background: #01163E;
             bottom: 0;
             left: 0;
             border-radius: 3px;
         }
 
-        .input-group {
-            position: relative;
-            margin-bottom: 25px;
+        .field-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #01163E;
+            margin-bottom: 6px;
         }
 
-        .input-group i {
+        .login-field {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .login-field > i {
             position: absolute;
-            left: 18px;
+            left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #999;
-            font-size: 18px;
-            z-index: 10;
-            transition: var(--transition);
+            color: #757575;
+            font-size: 15px;
+            z-index: 2;
+            pointer-events: none;
         }
 
-        .form-control {
-            border-radius: 10px;
-            height: 55px;
-            padding: 10px 50px 10px 50px;
-            margin-bottom: 0;
-            border: 2px solid #eef1f7;
-            font-size: 16px;
-            background-color: #fafbfd;
-            transition: var(--transition);
+        .login-field .form-control {
+            height: 48px;
+            border-radius: 16px;
+            border: 1px solid #E3E8F0;
+            background: #F8FAFC;
+            padding: 10px 44px;
+            font-size: 15px;
+            color: #1F2937;
         }
 
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(69, 103, 183, 0.15);
-            background-color: #fff;
+        .login-field .form-control:focus {
+            border-color: #01163E;
+            box-shadow: 0 0 0 0.15rem rgba(1, 22, 62, 0.12);
+            background: #fff;
         }
 
         .password-toggle {
             position: absolute;
-            right: 10px;
+            right: 8px;
             top: 50%;
             transform: translateY(-50%);
-            color: #999;
+            border: 0;
+            background: transparent;
+            color: #757575;
             cursor: pointer;
-            font-size: 18px;
-            z-index: 10;
-            transition: var(--transition);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
         }
 
         .password-toggle:hover {
-            color: var(--primary-color);
+            color: #01163E;
         }
 
         .btn-login {
-            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            background: #01163E;
             border: none;
-            border-radius: 10px;
-            height: 55px;
-            font-size: 18px;
-            font-weight: 600;
-            transition: var(--transition);
-            margin-top: 10px;
-            box-shadow: 0 5px 15px rgba(69, 103, 183, 0.3);
-            position: relative;
-            overflow: hidden;
+            border-radius: 16px;
+            height: 48px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 6px;
         }
 
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(69, 103, 183, 0.4);
-        }
-
-        .btn-login:active {
-            transform: translateY(0);
+        .btn-login:hover,
+        .btn-login:focus {
+            background: #032A85;
+            color: #fff;
         }
 
         .alert {
-            margin-bottom: 25px;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 14px;
             border: none;
-            padding: 15px;
         }
 
         .alert-danger {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            border-left: 4px solid #dc3545;
+            background-color: rgba(211, 47, 47, 0.1);
+            color: #D32F2F;
         }
 
         .alert-success {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-            border-left: 4px solid #28a745;
-        }
-
-        .forgot-password {
-            margin-top: 20px;
-            display: block;
-            color: var(--primary-color);
-            text-decoration: none;
-            font-size: 15px;
-            transition: var(--transition);
-            text-align: center;
-        }
-
-        .forgot-password:hover {
-            color: var(--primary-dark);
-            text-decoration: none;
-        }
-
-        .forgot-password i {
-            margin-right: 8px;
-        }
-
-        .form-footer {
-            margin-top: 30px;
-            font-size: 12px;
-            color: #888;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-
-        /* Partie droite - Informations */
-        .info-section {
-            flex: 1;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            padding: 60px 50px;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .info-section::before {
-            content: '';
-            position: absolute;
-            top: -50px;
-            right: -50px;
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .info-section::after {
-            content: '';
-            position: absolute;
-            bottom: -80px;
-            left: -80px;
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .info-title {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 30px;
-            position: relative;
-            z-index: 2;
-        }
-
-        .info-subtitle {
-            font-size: 18px;
-            margin-bottom: 40px;
-            opacity: 0.9;
-            position: relative;
-            z-index: 2;
-        }
-
-        .features-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            position: relative;
-            z-index: 2;
-        }
-
-        .features-list li {
-            margin-bottom: 25px;
-            display: flex;
-            align-items: flex-start;
-        }
-
-        .feature-icon {
-            background: rgba(255, 255, 255, 0.2);
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-            flex-shrink: 0;
-        }
-
-        .feature-text h4 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .feature-text p {
-            font-size: 14px;
-            opacity: 0.8;
-            margin: 0;
-        }
-
-        .info-footer {
-            margin-top: 40px;
-            font-size: 14px;
-            opacity: 0.8;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* Responsive */
-        @media (max-width: 992px) {
-            .login-container {
-                flex-direction: column;
-                max-width: 600px;
-                min-height: auto;
-            }
-
-            .form-section, .info-section {
-                padding: 40px 30px;
-            }
-
-            .info-section {
-                order: -1;
-            }
-
-            .info-section::before, .info-section::after {
-                display: none;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .form-section, .info-section {
-                padding: 30px 20px;
-            }
-
-            .logo-text {
-                font-size: 22px;
-            }
-
-            .form-section h2 {
-                font-size: 24px;
-            }
-
-            .info-title {
-                font-size: 26px;
-            }
+            background-color: rgba(31, 157, 85, 0.1);
+            color: #1F9D55;
         }
     </style>
     <th:block th:replace="~{admin/fragments/picon-assets :: styles}"></th:block>
 </head>
 <body class="picon-login">
 <div class="login-container">
-    <!-- Section formulaire (gauche) -->
     <div class="form-section">
         <div class="logo-container">
             <div class="logo-icon">
-                <img th:src="@{/images/pro.png}" alt="PICON" style="width: 100%; height: auto; border-radius: 12px;"
-                     onerror="this.onerror=null;this.src='/images/logo.jpeg';">
+                <img th:src="@{/images/picon-logo.png}" alt="PICON">
             </div>
             <div>
                 <div class="logo-text">PICON</div>
@@ -391,7 +199,6 @@
         <h2>Connexion Administrateur</h2>
 
         <form th:action="@{/admin/login}" method="post">
-            <!-- Messages d'erreur/succès dynamiques -->
             <div th:if="${param.error}" class="alert alert-danger" role="alert">
                 <i class="fas fa-exclamation-circle mr-2"></i>
                 Email ou mot de passe invalide.
@@ -401,143 +208,37 @@
                 Vous avez été déconnecté avec succès.
             </div>
 
-            <!-- Champ email -->
-            <div class="input-group">
+            <label class="field-label" for="username">Identifiant</label>
+            <div class="login-field">
                 <i class="fas fa-envelope"></i>
-                <input type="email" id="username" name="username" class="form-control" placeholder="Adresse email" required autofocus>
+                <input type="email" id="username" name="username" class="form-control"
+                       placeholder="Adresse email" autocomplete="username" required autofocus>
             </div>
 
-            <!-- Champ mot de passe avec œil -->
-            <div class="input-group">
+            <label class="field-label" for="password">Mot de passe</label>
+            <div class="login-field">
                 <i class="fas fa-lock"></i>
-                <input type="password" id="password" name="password" class="form-control" placeholder="Mot de passe" required>
-                <span class="password-toggle" id="togglePassword">
-                        <i class="fas fa-eye"></i>
-                    </span>
+                <input type="password" id="password" name="password" class="form-control"
+                       placeholder="Mot de passe" autocomplete="current-password" required>
+                <button type="button" class="password-toggle" id="togglePassword" aria-label="Afficher le mot de passe">
+                    <i class="fas fa-eye"></i>
+                </button>
             </div>
 
-            <button class="btn btn-login btn-block" type="submit">
-                <i class="fas fa-sign-in-alt mr-2"></i>Se connecter
-            </button>
-
-            <a href="#" class="forgot-password">
-                <i class="fas fa-key"></i>Mot de passe oublié?
-            </a>
+            <button class="btn btn-login btn-block" type="submit">Connexion</button>
         </form>
-
-        <div class="form-footer">
-            <i class="fas fa-shield-alt mr-1"></i>Zone sécurisée - Accès réservé au personnel autorisé
-        </div>
-    </div>
-
-    <!-- Section informations (droite) -->
-    <div class="info-section">
-        <h2 class="info-title">Bienvenue sur votre espace administrateur</h2>
-        <p class="info-subtitle">Gérez efficacement votre studio photo avec nos outils professionnels</p>
-
-        <ul class="features-list">
-            <li>
-                <div class="feature-icon">
-                    <i class="fas fa-calendar-alt"></i>
-                </div>
-                <div class="feature-text">
-                    <h4>Gestion des rendez-vous</h4>
-                    <p>Planifiez et gérez facilement les séances photo de vos clients</p>
-                </div>
-            </li>
-            <li>
-                <div class="feature-icon">
-                    <i class="fas fa-photo-video"></i>
-                </div>
-                <div class="feature-text">
-                    <h4>Galerie photos</h4>
-                    <p>Organisez et présentez vos réalisations professionnelles</p>
-                </div>
-            </li>
-            <li>
-                <div class="feature-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="feature-text">
-                    <h4>Analyses et statistiques</h4>
-                    <p>Suivez les performances et l'évolution de votre studio</p>
-                </div>
-            </li>
-            <li>
-                <div class="feature-icon">
-                    <i class="fas fa-user-friends"></i>
-                </div>
-                <div class="feature-text">
-                    <h4>Gestion des clients</h4>
-                    <p>Maintenez une relation privilégiée avec votre clientèle</p>
-                </div>
-            </li>
-        </ul>
-
-        <div class="info-footer">
-            <i class="fas fa-info-circle mr-2"></i>
-            Pour toute assistance, contactez notre support technique
-        </div>
     </div>
 </div>
 
 <script>
-    // Fonctionnalité œil pour afficher/masquer le mot de passe
-    document.getElementById('togglePassword').addEventListener('click', function() {
-        const passwordInput = document.getElementById('password');
-        const eyeIcon = this.querySelector('i');
-
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            eyeIcon.classList.remove('fa-eye');
-            eyeIcon.classList.add('fa-eye-slash');
-        } else {
-            passwordInput.type = 'password';
-            eyeIcon.classList.remove('fa-eye-slash');
-            eyeIcon.classList.add('fa-eye');
-        }
-    });
-
-    // Animation légère lors de la soumission du formulaire
-    document.querySelector('form').addEventListener('submit', function(e) {
-        e.preventDefault(); // Empêche la soumission immédiate du formulaire
-        const btn = this.querySelector('.btn-login');
-        const originalButtonContent = btn.innerHTML; // Stocke le contenu original du bouton
-
-        // Affiche uniquement l'icône de chargement Font Awesome
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span class="sr-only">Connexion en cours...</span>';
-        btn.disabled = true; // Désactive le bouton pour éviter les soumissions multiples
-
-        // Simule un délai pour des raisons de démonstration (À SUPPRIMER EN PRODUCTION)
-        // Redémarre la soumission du formulaire après le délai
-        setTimeout(() => {
-            e.target.submit();
-        }, 800); // Délai de 800ms
-    });
-
-    // Effet de focus amélioré pour les champs
-    const inputs = document.querySelectorAll('.form-control');
-    inputs.forEach(input => {
-        input.addEventListener('focus', function() {
-            this.parentElement.querySelector('i').style.color = '#4567b7';
-        });
-
-        input.addEventListener('blur', function() {
-            this.parentElement.querySelector('i').style.color = '#999';
-        });
-    });
-
-    // Animation subtile au survol des features
-    const featureItems = document.querySelectorAll('.features-list li');
-    featureItems.forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateX(10px)';
-            this.style.transition = 'transform 0.3s ease';
-        });
-
-        item.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateX(0)';
-        });
+    document.getElementById('togglePassword').addEventListener('click', function () {
+        var passwordInput = document.getElementById('password');
+        var eyeIcon = this.querySelector('i');
+        var visible = passwordInput.type === 'text';
+        passwordInput.type = visible ? 'password' : 'text';
+        eyeIcon.classList.toggle('fa-eye', visible);
+        eyeIcon.classList.toggle('fa-eye-slash', !visible);
+        this.setAttribute('aria-label', visible ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
     });
 </script>
 <th:block th:replace="~{admin/fragments/picon-assets :: scripts}"></th:block>

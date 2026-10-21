@@ -37,6 +37,8 @@ html body .sidebar {
   background: #01163E;
   box-shadow: 8px 0 24px rgba(7, 20, 51, 0.18);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 html body .sidebar-header {
@@ -52,15 +54,73 @@ html body .sidebar .logo-icon {
   height: 48px;
   min-width: 48px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #fff;
   overflow: hidden;
 }
 
 html body .sidebar .logo-icon img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #fff;
   border-radius: 14px;
+}
+
+html body .nav-links {
+  flex: 1 1 auto;
+}
+
+html body .sidebar-logout {
+  margin-top: auto;
+  padding: 12px 10px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  position: sticky;
+  bottom: 0;
+  background: #01163E;
+}
+
+html body .sidebar-logout button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: #01163E;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+html body .sidebar-logout button:hover {
+  background: #D32F2F;
+  color: #fff;
+}
+
+html body .picon-topbar-logout {
+  margin: 0 14px 0 0;
+}
+
+html body .picon-topbar-logout button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #D32F2F;
+  background: #fff;
+  color: #D32F2F;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+html body .picon-topbar-logout button:hover {
+  background: #D32F2F;
+  color: #fff;
 }
 
 html body .logo-text {
@@ -238,75 +298,92 @@ html body .footer {
   z-index: 999;
 }
 
-/* Login */
+/* Login — carte compacte, sans panneau bleu */
 body.picon-login {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 32px 16px;
 }
 
 body.picon-login .login-container {
-  display: flex;
+  display: block;
   width: 100%;
-  max-width: 1040px;
-  min-height: 620px;
+  max-width: 420px;
+  min-height: 0;
+  height: auto;
   background: #fff;
-  border-radius: 28px;
-  overflow: hidden;
-  box-shadow: 0 18px 40px rgba(3, 42, 133, 0.12);
+  border-radius: 22px;
+  overflow: visible;
+  box-shadow: 0 18px 40px rgba(1, 22, 62, 0.12);
 }
 
 body.picon-login .form-section {
-  flex: 1;
-  padding: 56px 48px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: block;
+  width: auto;
+  flex: none;
+  padding: 36px 32px 28px;
 }
 
 body.picon-login .info-section {
-  flex: 1;
-  background: #01163E;
-  color: #fff;
-  padding: 56px 48px;
-  position: relative;
-  overflow: hidden;
-}
-
-body.picon-login .info-section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
+  display: none;
 }
 
 body.picon-login .logo-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 18px;
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  border-radius: 16px;
   overflow: hidden;
-  margin-right: 14px;
+  margin-right: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+
+body.picon-login .logo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
 }
 
 body.picon-login .logo-text {
   color: #01163E;
   font-weight: 800;
+  font-size: 22px;
   background: none;
+  -webkit-text-fill-color: #01163E;
+  opacity: 1;
+}
+
+body.picon-login .form-section h2 {
+  color: #01163E;
+  font-size: 22px;
+  margin-bottom: 22px;
 }
 
 body.picon-login .btn-login {
-  height: 52px;
+  height: 48px;
+  background: #01163E;
+  border-color: #01163E;
+  color: #fff;
+}
+
+body.picon-login .btn-login:hover {
+  background: #032A85;
+  border-color: #032A85;
+  color: #fff;
 }
 
 body.picon-login .form-control {
-  height: 52px;
-  padding-left: 48px;
+  height: 48px;
+  padding-left: 44px;
+  color: #1F2937;
+  background: #F8FAFC;
+  border: 1px solid #E3E8F0;
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Motion */
@@ -363,8 +440,10 @@ body.picon-login .form-control {
   html body .main-content { margin-left: 0; }
   .picon-sidebar-backdrop.is-visible { display: block; }
   html body .logo-text,
-  html body .nav-links span { opacity: 1; }
-  body.picon-login .login-container { flex-direction: column; min-height: auto; }
+  html body .nav-links span,
+  html body .sidebar-logout span { opacity: 1; }
+  body.picon-login .login-container { display: block; max-width: 420px; min-height: 0; }
+  body.picon-login .form-section { padding: 28px 22px 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
