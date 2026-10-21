@@ -42,9 +42,8 @@ public class AdminUserService {
     public com.studiophoto.photoappbackend.admin.dto.RevenueChartDTO getUserActivityChartData(Integer userId) {
         List<String> labels = new java.util.ArrayList<>();
         List<java.math.BigDecimal> data = new java.util.ArrayList<>();
-        List<com.studiophoto.photoappbackend.order.OrderStatus> revenueStatuses = java.util.Arrays.asList(
-                com.studiophoto.photoappbackend.order.OrderStatus.COMPLETED,
-                com.studiophoto.photoappbackend.order.OrderStatus.PROCESSING);
+        List<com.studiophoto.photoappbackend.order.OrderStatus> revenueStatuses =
+                com.studiophoto.photoappbackend.order.OrderTotals.confirmedPaidStatuses();
 
         java.time.YearMonth currentMonth = java.time.YearMonth.now();
         for (int i = 5; i >= 0; i--) {

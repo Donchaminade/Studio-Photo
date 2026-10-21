@@ -116,16 +116,11 @@ public class OrderService {
                     .build();
 
             newOrder.addOrderItem(orderItem);
-            BigDecimal lineUnitTotal = pricePerUnit.add(framePrice);
-            subtotal = subtotal.add(lineUnitTotal.multiply(new BigDecimal(itemRequest.getQuantity())));
+            subtotal = subtotal.add(OrderTotals.lineTotal(pricePerUnit, framePrice, itemRequest.getQuantity()));
         }
 
-        // 4. Ajouter les frais de livraison si nécessaire
-        BigDecimal totalAmount = subtotal;
-        if (request.isExpress() && request.getItems().size() <= 10) {
-            totalAmount = totalAmount.add(new BigDecimal("1500"));
-        }
-
+        // 4. Total = lignes (tirage + cadre) + Xpress 1500 si ≤ 10 photos
+        BigDecimal totalAmount = OrderTotals.orderTotal(subtotal, request.isExpress(), request.getItems().size());
         newOrder.setTotalAmount(totalAmount);
 
         String newOrderFingerprint = buildRequestFingerprint(request, dimensionMap, totalAmount);

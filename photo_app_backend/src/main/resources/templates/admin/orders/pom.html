@@ -671,6 +671,7 @@
             }
         }
     </style>
+    <th:block th:replace="~{admin/fragments/picon-assets :: styles}"></th:block>
 </head>
 
 <body>
@@ -760,7 +761,7 @@
                     </div>
                     <div class="info-item">
                         <span class="info-label"><i class="fas fa-money-bill-wave"></i> Montant Total</span>
-                        <span class="info-value-amount" th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">15 000 FCFA</span>
+                        <span class="info-value-amount" th:text="${order.totalAmount != null ? #numbers.formatDecimal(order.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' FCFA' : '—'}">3 500 FCFA</span>
                     </div>
                 </div>
             </div>
@@ -853,11 +854,15 @@
                             </div>
                             <div class="photo-spec-item">
                                 <span class="photo-spec-label">Prix unitaire</span>
-                                <span class="photo-spec-value" th:text="${#numbers.formatDecimal(item.price, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">1 500</span>
+                                <span class="photo-spec-value" th:text="${#numbers.formatDecimal(item.pricePerUnit, 1, 'WHITESPACE', 0, 'POINT') + ' FCFA'}">1 500</span>
+                            </div>
+                            <div class="photo-spec-item" th:if="${item.withFrame}">
+                                <span class="photo-spec-label">Cadre</span>
+                                <span class="photo-spec-value" th:text="${item.framePrice != null ? #numbers.formatDecimal(item.framePrice, 1, 'WHITESPACE', 0, 'POINT') + ' FCFA' : '—'}">1 500</span>
                             </div>
                             <div class="photo-spec-item">
                                 <span class="photo-spec-label">Total</span>
-                                <span class="photo-spec-value" th:text="${#numbers.formatDecimal(item.price * item.quantity, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">3 000</span>
+                                <span class="photo-spec-value" th:text="${#numbers.formatDecimal((item.pricePerUnit + (item.framePrice != null ? item.framePrice : 0)) * item.quantity, 1, 'WHITESPACE', 0, 'POINT') + ' FCFA'}">3 000</span>
                             </div>
                         </div>
                     </div>
@@ -960,6 +965,7 @@
         });
     });
 </script>
+    <th:block th:replace="~{admin/fragments/picon-assets :: scripts}"></th:block>
 </body>
 
 </html>

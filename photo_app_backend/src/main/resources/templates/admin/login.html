@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
-    <title>Admin Login - Studio Photo</title>
+    <title>Connexion admin — PICON</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
@@ -371,17 +371,19 @@
             }
         }
     </style>
+    <th:block th:replace="~{admin/fragments/picon-assets :: styles}"></th:block>
 </head>
-<body>
+<body class="picon-login">
 <div class="login-container">
     <!-- Section formulaire (gauche) -->
     <div class="form-section">
         <div class="logo-container">
             <div class="logo-icon">
-                <img th:src="@{/images/logo.jpeg}" alt="Studio Photo Logo" style="width: 100%; height: auto; border-radius: 12px;">
+                <img th:src="@{/images/pro.png}" alt="PICON" style="width: 100%; height: auto; border-radius: 12px;"
+                     onerror="this.onerror=null;this.src='/images/logo.jpeg';">
             </div>
             <div>
-                <div class="logo-text">Picon Studio Photo</div>
+                <div class="logo-text">PICON</div>
                 <div class="tagline">Gestion professionnelle des photos</div>
             </div>
         </div>
@@ -538,5 +540,6 @@
         });
     });
 </script>
+<th:block th:replace="~{admin/fragments/picon-assets :: scripts}"></th:block>
 </body>
 </html>

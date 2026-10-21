@@ -844,6 +844,7 @@
             }
         }
     </style>
+    <th:block th:replace="~{admin/fragments/picon-assets :: styles}"></th:block>
 </head>
 
 <body>
@@ -909,7 +910,7 @@
                     </div>
                     <div class="info-item">
                         <span class="info-label"><i class="fas fa-money-bill-wave"></i> Montant Total</span>
-                        <span class="info-value-amount" th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">15 000 FCFA</span>
+                        <span class="info-value-amount" th:text="${order.totalAmount != null ? #numbers.formatDecimal(order.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' FCFA' : '—'}">3 500 FCFA</span>
                     </div>
                 </div>
             </div>
@@ -1306,6 +1307,7 @@
         });
     });
 </script>
+    <th:block th:replace="~{admin/fragments/picon-assets :: scripts}"></th:block>
 </body>
 
 </html>
