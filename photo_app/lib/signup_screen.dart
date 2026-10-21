@@ -9,6 +9,8 @@ import 'package:Picon/widgets/music_wave_loader.dart';
 import 'package:Picon/widgets/phone_prefix.dart';
 import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/widgets/glass_otp.dart';
+// ignore: unused_import
 import 'package:pinput/pinput.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -258,7 +260,16 @@ class _PinCreationSheet extends StatefulWidget {
 class _PinCreationSheetState extends State<_PinCreationSheet> {
   final _pinController = TextEditingController();
   final _pinFocusNode = FocusNode();
+  OtpStage _stage = OtpStage.idle;
 
+  Future<void> _flashError() async {
+    setState(() => _stage = OtpStage.error);
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (mounted && _stage == OtpStage.error) setState(() => _stage = OtpStage.idle);
+  }
+
+  // Ancien chargeur plein écran, conservé (remplacé par l'étape de vérification).
+  // ignore: unused_element
   void _showLoader(BuildContext context) {
     showDialog(
       context: context,
@@ -276,7 +287,9 @@ class _PinCreationSheetState extends State<_PinCreationSheet> {
   }
 
   Future<void> _validatePin() async {
+    if (_stage == OtpStage.verifying || _stage == OtpStage.success) return;
     if (!RegExp(r'^\d{4}$').hasMatch(_pinController.text)) {
+      _flashError();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez entrer un code secret à 4 chiffres.'),
@@ -286,7 +299,8 @@ class _PinCreationSheetState extends State<_PinCreationSheet> {
       return;
     }
 
-    _showLoader(context);
+    // Étape de vérification dans la feuille (attend la vraie réponse API).
+    setState(() => _stage = OtpStage.verifying);
     try {
       await ApiService.signup(
         widget.name,
@@ -296,7 +310,9 @@ class _PinCreationSheetState extends State<_PinCreationSheet> {
         _pinController.text,
       );
       if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _stage = OtpStage.success);
+      await Future<void>.delayed(Duration(milliseconds: reduceMotion(context) ? 150 : 1100));
+      if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -307,7 +323,8 @@ class _PinCreationSheetState extends State<_PinCreationSheet> {
       Navigator.of(context).pushReplacementNamed('/login');
     } catch (e) {
       if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
+      await _flashError();
+      if (!mounted) return;
       Navigator.of(context).pop();
       await showAppError(context, e);
     }
@@ -322,82 +339,28 @@ class _PinCreationSheetState extends State<_PinCreationSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final pinWidth = ((width - 96) / 4).clamp(36.0, 64.0);
-    final base = PinTheme(
-      width: pinWidth,
-      height: 56,
-      textStyle: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w700),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-        boxShadow: [
-          BoxShadow(color: AppColors.accent.withValues(alpha: 0.18), blurRadius: 12),
-        ],
-      ),
-    );
-
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
-            decoration: BoxDecoration(
-              color: const Color(0xCC102044),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.vpn_key_outlined, color: Colors.white),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Créez votre code secret',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Ce code sécurisera vos transactions et connexions futures.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.35),
-                  ),
-                  const SizedBox(height: 22),
-                  Pinput(
-                    length: 4,
-                    controller: _pinController,
-                    focusNode: _pinFocusNode,
-                    defaultPinTheme: base,
-                    focusedPinTheme: base.copyWith(
-                      decoration: base.decoration!.copyWith(
-                        border: Border.all(color: AppColors.accent, width: 1.6),
-                      ),
-                    ),
-                    separatorBuilder: (index) => const SizedBox(width: 6),
-                  ),
-                  const SizedBox(height: 22),
-                  PiconButton(
-                    label: 'Valider',
-                    onPressed: _validatePin,
-                  ),
-                ],
-              ),
-            ),
+      child: SingleChildScrollView(
+        child: GlassOtpPanel(
+          stage: _stage,
+          title: 'Créez votre code secret',
+          subtitle: 'Ce code sécurisera vos transactions et connexions futures.',
+          successTitle: 'Compte créé avec succès',
+          successSubtitle: 'Votre code secret est enregistré.',
+          field: GlassOtpField(
+            controller: _pinController,
+            focusNode: _pinFocusNode,
+            stage: _stage,
+            onCompleted: (_) => _validatePin(),
+          ),
+          footer: OtpVerifyButton(
+            stage: _stage,
+            label: 'Valider',
+            verifyingLabel: 'Création du compte…',
+            successLabel: 'Compte sécurisé',
+            onPressed: _validatePin,
           ),
         ),
       ),
