@@ -3,6 +3,7 @@ import 'package:Picon/models/booking.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
 import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -48,7 +49,7 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
               future: _bookingsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const PiconSkeletonList(count: 4);
                 }
                 
                 if (snapshot.hasError) {

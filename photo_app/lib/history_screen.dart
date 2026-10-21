@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:Picon/api_service.dart';
 import 'package:Picon/confirmation_screen.dart';
 import 'package:Picon/models/order.dart';
@@ -7,6 +9,7 @@ import 'package:Picon/utils/geometric_background.dart';
 import 'package:Picon/widgets/auth_network_image.dart';
 import 'package:Picon/widgets/safe_photo_thumbnail.dart';
 import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -32,13 +35,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _startAutoRefresh();
   }
 
+  Timer? _autoRefreshTimer;
+
+  /// Même rythme qu'avant (30 s), mais le minuteur est annulé à la fermeture
+  /// de l'écran au lieu de rester en attente.
   void _startAutoRefresh() {
-    Future.delayed(const Duration(seconds: 30), () {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) {
         _fetchAllHistory();
-        _startAutoRefresh();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchAllHistory() async {
@@ -109,7 +122,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             future: _fetchDataFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const PiconSkeletonList(count: 6);
               }
 
               final hiddenOrders = ApiService.hiddenOrders;

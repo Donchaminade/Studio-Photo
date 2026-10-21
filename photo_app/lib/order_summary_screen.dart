@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:Picon/api_service.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
 
 import 'payment_customer_info_screen.dart';
@@ -117,7 +118,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
             padding: EdgeInsets.only(
                 top: MediaQuery.of(context).padding.top + 70), // Leave space for the custom appbar
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const PiconSkeletonList(count: 4)
                 : Column(
                     children: [
                       Expanded(
@@ -396,16 +397,25 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title,
-              style: TextStyle(
-                  fontSize: isTotal ? 16 : 15,
-                  fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
-                  color: isTotal ? AppColors.textPrimary : AppColors.textSecondary)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: isTotal ? 20 : 16,
-                  fontWeight: isTotal ? FontWeight.w900 : FontWeight.bold,
-                  color: isTotal ? AppColors.primary : AppColors.textPrimary)),
+          Flexible(
+            child: Text(title,
+                style: TextStyle(
+                    fontSize: isTotal ? 16 : 15,
+                    fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
+                    color: isTotal ? AppColors.textPrimary : AppColors.textSecondary)),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(value,
+                  style: TextStyle(
+                      fontSize: isTotal ? 20 : 16,
+                      fontWeight: isTotal ? FontWeight.w900 : FontWeight.bold,
+                      color: isTotal ? AppColors.primary : AppColors.textPrimary)),
+            ),
+          ),
         ],
       ),
     );

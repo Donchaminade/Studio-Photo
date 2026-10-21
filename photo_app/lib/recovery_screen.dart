@@ -6,6 +6,7 @@ import 'package:Picon/widgets/app_error_feedback.dart';
 import 'package:Picon/widgets/phone_prefix.dart';
 import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/widgets/glass_otp.dart';
 import 'package:pinput/pinput.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,11 +25,18 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   bool _isRecoveryWithEmail = true;
   bool _isLoading = false;
   String _selectedDialCode = '+228';
+  OtpStage _stage = OtpStage.idle;
 
   Future<void> _recoverPassword() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _flashError();
+      return;
+    }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _stage = OtpStage.verifying;
+    });
     try {
       final identifier = _isRecoveryWithEmail
           ? _emailController.text.trim()
@@ -39,12 +47,25 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
         pin: _pinController.text,
       );
       if (!mounted) return;
+      setState(() => _stage = OtpStage.success);
+      await Future<void>.delayed(Duration(milliseconds: reduceMotion(context) ? 120 : 900));
+      if (!mounted) return;
       _showNewPasswordDialog(response['resetToken'] as String);
+      if (mounted) setState(() => _stage = OtpStage.idle);
     } catch (e) {
-      if (mounted) await showAppError(context, e);
+      if (mounted) {
+        await _flashError();
+        if (mounted) await showAppError(context, e);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _flashError() async {
+    setState(() => _stage = OtpStage.error);
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (mounted && _stage == OtpStage.error) setState(() => _stage = OtpStage.idle);
   }
 
   String _buildFullPhoneNumber(String rawPhone) {
@@ -78,7 +99,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(
                 height: 120,
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: PiconSkeleton(width: 220, height: 56, radius: 16)),
               );
             }
             final info = snapshot.data;
@@ -155,6 +176,8 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   Widget _buildForm() {
     final width = MediaQuery.sizeOf(context).width;
     final pinWidth = ((width - 120) / 4).clamp(34.0, 56.0);
+    // Thème Pinput d'origine, conservé pour référence.
+    // ignore: unused_local_variable
     final defaultPinTheme = PinTheme(
       width: pinWidth,
       height: 52,
@@ -227,35 +250,40 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                 ],
               ),
             const SizedBox(height: 16),
-            Pinput(
-              controller: _pinController,
-              length: 4,
-              defaultPinTheme: defaultPinTheme,
-              focusedPinTheme: defaultPinTheme.copyWith(
-                decoration: defaultPinTheme.decoration!.copyWith(
-                  border: Border.all(color: AppColors.primary, width: 1.6),
-                ),
+            // Étape « code secret » en verre (réf. Glassy OTP DdWWd8OTBoO).
+            GlassOtpPanel(
+              stage: _stage,
+              title: 'Vérifiez votre code',
+              subtitle: 'Saisissez le code secret à 4 chiffres de votre compte.',
+              successTitle: 'Code confirmé',
+              successSubtitle: 'Vous pouvez choisir un nouveau mot de passe.',
+              field: GlassOtpField(
+                controller: _pinController,
+                stage: _stage,
+                obscure: true,
+                validator: (s) =>
+                    (s?.length ?? 0) < 4 ? 'Code secret invalide' : null,
               ),
-              errorPinTheme: defaultPinTheme.copyWith(
-                decoration: defaultPinTheme.decoration!.copyWith(
-                  border: Border.all(color: AppColors.error),
-                ),
+              footer: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _showContactAdminPopup,
+                      style: TextButton.styleFrom(foregroundColor: Colors.white),
+                      child: const Text('Code secret oublié ?'),
+                    ),
+                  ),
+                  OtpVerifyButton(
+                    stage: _stage,
+                    label: 'Valider',
+                    verifyingLabel: 'Vérification du code…',
+                    successLabel: 'Code vérifié',
+                    onPressed: _isLoading ? null : _recoverPassword,
+                  ),
+                ],
               ),
-              separatorBuilder: (index) => const SizedBox(width: 6),
-              validator: (s) =>
-                  (s?.length ?? 0) < 4 ? 'Code secret invalide' : null,
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _showContactAdminPopup,
-                child: const Text('Code secret oublié ?'),
-              ),
-            ),
-            PiconButton(
-              label: 'Valider',
-              onPressed: _isLoading ? null : _recoverPassword,
-              loading: _isLoading,
             ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:Picon/api_service.dart';
 import 'package:Picon/models/app_notification.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -231,7 +232,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const PiconSkeletonList(count: 7)
           : _notifications.isEmpty
               ? _buildEmpty()
               : RefreshIndicator(

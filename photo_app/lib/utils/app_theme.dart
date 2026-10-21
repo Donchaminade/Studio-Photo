@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:Picon/utils/colors.dart';
@@ -56,11 +57,8 @@ ThemeData buildPiconTheme() {
       centerTitle: false,
       foregroundColor: AppColors.textPrimary,
       systemOverlayStyle: SystemUiOverlayStyle.dark,
-      titleTextStyle: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w800,
-        color: AppColors.textPrimary,
-      ),
+      // Pas de couleur imposée ici : le titre suit `foregroundColor` de chaque
+      // AppBar (titres blancs sur fond marine, sombres sur fond clair).
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
