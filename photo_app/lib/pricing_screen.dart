@@ -1,14 +1,13 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:photo_app/api_service.dart';
 import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/utils/geometric_background.dart';
+import 'package:photo_app/widgets/picon_ui.dart';
 
 class PricingScreen extends StatefulWidget {
   const PricingScreen({super.key});
 
-  // Fallback data in case the API call fails
   static final List<Map<String, dynamic>> fallbackPrintPrices = [
     {'dimension': '9x13 cm', 'price': 75},
     {'dimension': '10x15 cm', 'price': 150},
@@ -42,136 +41,180 @@ class _PricingScreenState extends State<PricingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('Prix des Tirages'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          const GeometricBackground(),
-          SafeArea(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _pricesFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                // If error or no data, use fallback data
-                if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                  // Optional: Log the error for debugging
-                  // if (snapshot.hasError) { print(snapshot.error); }
-                  return _buildGridView(PricingScreen.fallbackPrintPrices, isOffline: true);
-                }
-
-                // If data is successfully fetched, use it
-                final apiPrices = snapshot.data!;
-                // The API is assumed to return the final prices. The division rule was for the fallback data.
-                return _buildGridView(apiPrices);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGridView(List<Map<String, dynamic>> prices, {bool isOffline = false}) {
-    final currencyFormatter = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
-
-    return Column(
-      children: [
-        if (isOffline)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Text(
-              'Impossible de charger les tarifs en ligne. Affichage des tarifs hors ligne.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16.0),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.2,
-            ),
-            itemCount: prices.length,
-            itemBuilder: (context, index) {
-              final item = prices[index];
-              return _PriceTile(
-                dimension: item['dimension'],
-                price: currencyFormatter.format(item['price']),
-              );
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.navyDeep,
+        appBar: piconBar('Prix des Tirages', dark: true),
+        body: SafeArea(
+          top: false,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _pricesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Colors.white));
+              }
+              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                return _OfferCarousel(prices: PricingScreen.fallbackPrintPrices, isOffline: true);
+              }
+              return _OfferCarousel(prices: snapshot.data!);
             },
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
-class _PriceTile extends StatelessWidget {
-  final String dimension;
-  final String price;
+class _OfferCarousel extends StatefulWidget {
+  final List<Map<String, dynamic>> prices;
+  final bool isOffline;
 
-  const _PriceTile({required this.dimension, required this.price});
+  const _OfferCarousel({required this.prices, this.isOffline = false});
+
+  @override
+  State<_OfferCarousel> createState() => _OfferCarouselState();
+}
+
+class _OfferCarouselState extends State<_OfferCarousel> {
+  final PageController _page = PageController(viewportFraction: 0.78);
+  int _index = 0;
+  final _currency = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+
+  @override
+  void dispose() {
+    _page.dispose();
+    super.dispose();
+  }
+
+  void _go(int index) {
+    if (reduceMotion(context)) {
+      _page.jumpToPage(index);
+    } else {
+      _page.animateToPage(index, duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
+    }
+  }
+
+  String _priceLabel(dynamic raw) {
+    final num value = raw is num ? raw : num.tryParse('$raw') ?? 0;
+    return _currency.format(value);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.primary, width: 1.0), // Blue primary fine border
+    final selected = widget.prices[_index];
+    return Column(
+      children: [
+        if (widget.isOffline)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Impossible de charger les tarifs en ligne. Affichage des tarifs hors ligne.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Choisissez un format',
+              style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ),
+        Expanded(
+          child: PageView.builder(
+            controller: _page,
+            itemCount: widget.prices.length,
+            onPageChanged: (i) => setState(() => _index = i),
+            itemBuilder: (context, index) {
+              final item = widget.prices[index];
+              final active = index == _index;
+              final dimension = '${item['dimension']}';
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+                child: TapScale(
+                  onTap: () => setState(() => _index = index),
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: reduceMotion(context) ? 1 : 220),
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      color: active ? Colors.white.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.06),
+                      border: Border.all(
+                        color: active ? AppColors.accent : Colors.white24,
+                        width: active ? 1.6 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (active)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: const Text(
+                              'Sélectionné',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                            ),
+                          ),
+                        const Spacer(),
+                        Text(
+                          dimension,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _priceLabel(item['price']),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.accent, fontSize: 22, fontWeight: FontWeight.w800),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          active ? Icons.check_circle : Icons.circle_outlined,
+                          color: active ? AppColors.accent : Colors.white38,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          child: Row(
             children: [
-              Text(
-                dimension,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: AppColors.textPrimary,
-                ),
-                textAlign: TextAlign.center,
+              IconButton(
+                tooltip: 'Précédent',
+                onPressed: _index == 0 ? null : () => _go(_index - 1),
+                icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
               ),
-              const SizedBox(height: 8),
-              Text(
-                price,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 20,
-                  color: AppColors.primary,
+              Expanded(
+                child: Text(
+                  '${selected['dimension']} · ${_priceLabel(selected['price'])}',
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                 ),
+              ),
+              IconButton(
+                tooltip: 'Suivant',
+                onPressed: _index == widget.prices.length - 1 ? null : () => _go(_index + 1),
+                icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }

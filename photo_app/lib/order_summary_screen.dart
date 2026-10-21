@@ -1,96 +1,106 @@
 import 'package:flutter/material.dart';
-import 'payment_selection_screen.dart'; 
-import 'utils/colors.dart';
+import 'package:photo_app/payment_selection_screen.dart';
+import 'package:photo_app/utils/colors.dart';
+import 'package:photo_app/widgets/picon_photo.dart';
+import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:photo_app/widgets/receipt_card.dart';
 
 class OrderSummaryScreen extends StatelessWidget {
   final Map<String, Map<String, dynamic>> orderDetails;
 
-  const OrderSummaryScreen({Key? key, required this.orderDetails})
-      : super(key: key);
+  const OrderSummaryScreen({super.key, required this.orderDetails});
 
   @override
   Widget build(BuildContext context) {
+    final entries = orderDetails.entries.toList(growable: false);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Récapitulatif de la commande',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-        ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textOnPrimary,
-        elevation: 5, 
-      ),
-      body: Container(
-        color: AppColors.background,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ListView(
-            children: orderDetails.entries.map((entry) {
-              final imageUrl = entry.key;
-              final details = entry.value;
-              return Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                margin: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          imageUrl,
-                          height: 150,
-                          fit: BoxFit.cover,
+      backgroundColor: AppColors.background,
+      appBar: piconBar('Récapitulatif de la commande'),
+      body: ReceiptBackdrop(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                itemCount: entries.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Unroll(
+                        child: ReceiptCard(
+                          title: 'REÇU DE COMMANDE',
+                          status: 'EN ATTENTE',
+                          statusColor: AppColors.accent,
+                          subtitle: entries.isEmpty
+                              ? 'Aucune ligne pour le moment'
+                              : '${entries.length} article${entries.length > 1 ? 's' : ''}',
+                          lines: const [],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Taille : ${details['size']}',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                    );
+                  }
+                  final entry = entries[index - 1];
+                  final details = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Reveal(
+                      index: index,
+                      child: PiconCard(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: SizedBox(
+                                width: 84,
+                                height: 84,
+                                child: PiconPhoto(source: entry.key, cachePixels: 240),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Taille : ${details['size']}',
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Quantité : ${details['quantity']}',
+                                    style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      Text(
-                        'Quantité : ${details['quantity']}',
-                        style:
-                            const TextStyle(fontSize: 16, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            foregroundColor: AppColors.textOnPrimary,
-            backgroundColor: AppColors.primary,
-            elevation: 8, 
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    PaymentSelectionScreen(orderDetails: orderDetails),
+                    ),
+                  );
+                },
               ),
-            );
-          },
-          child: const Text(
-            'Confirmer et choisir le paiement',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
+            ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: PiconButton(
+                  label: 'Confirmer et choisir le paiement',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PaymentSelectionScreen(orderDetails: orderDetails),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

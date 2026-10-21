@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_app/contact_screen.dart';
@@ -8,6 +8,7 @@ import 'package:photo_app/history_screen.dart';
 import 'package:photo_app/login_screen.dart';
 import 'package:photo_app/utils/colors.dart';
 import 'package:photo_app/utils/geometric_background.dart';
+import 'package:photo_app/widgets/picon_ui.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userName;
@@ -48,16 +49,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (pickedFile != null) {
       final newAvatar = File(pickedFile.path);
-      setState(() {
-        _currentAvatar = newAvatar;
-      });
+      setState(() => _currentAvatar = newAvatar);
       widget.onAvatarChanged(newAvatar);
     }
   }
-  
+
   Future<void> _navigateToEditPage() async {
-    // Placeholder for phone since it's not managed in homescreen state yet
-    const String placeholderPhone = '90123456'; 
+    const String placeholderPhone = '90123456';
 
     final result = await Navigator.push(
       context,
@@ -65,7 +63,7 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (context) => EditProfilePage(
           currentName: _currentName,
           currentEmail: _currentEmail,
-          currentPhone: placeholderPhone, // Pass placeholder
+          currentPhone: placeholderPhone,
         ),
       ),
     );
@@ -74,9 +72,7 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _currentName = result['name']!;
         _currentEmail = result['email']!;
-        // Phone number is edited but not displayed on this page or stored higher up yet.
       });
-      // The onProfileUpdated callback in home_screen only accepts name and email.
       widget.onProfileUpdated(result['name']!, result['email']!);
     }
   }
@@ -90,69 +86,86 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final photo = CircleAvatar(
+      radius: 64,
+      backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+      backgroundImage: _currentAvatar != null
+          ? FileImage(_currentAvatar!)
+          : const AssetImage('assets/images/pro1.png') as ImageProvider,
+    );
+
     return Scaffold(
       backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
-        title: const Text('Mon Profil', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-      ),
+      appBar: piconBar('Mon Profil'),
       body: Stack(
         children: [
           const GeometricBackground(),
-          Container(
-            height: MediaQuery.of(context).padding.top + kToolbarHeight,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.4), Colors.transparent],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
           SingleChildScrollView(
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + kToolbarHeight, bottom: 20),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 30),
-                    _buildAvatar(),
-                    const SizedBox(height: 20),
-                    Text(
-                      _currentName,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            child: Column(
+              children: [
+                Reveal(
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        reduceMotion(context) ? photo : Hero(tag: 'picon-avatar', child: photo),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: AppColors.accent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _currentEmail,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    _buildMenuItems(),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 14),
+                Text(
+                  _currentName,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _currentEmail,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 22),
+                Reveal(
+                  index: 1,
+                  child: PiconCard(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        _tile(Icons.edit_outlined, 'Modifier le profil', _navigateToEditPage),
+                        const Divider(height: 1, indent: 16, endIndent: 16),
+                        _tile(
+                          Icons.history_outlined,
+                          'Historique des commandes',
+                          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
+                        ),
+                        const Divider(height: 1, indent: 16, endIndent: 16),
+                        _tile(
+                          Icons.contact_support_outlined,
+                          'Aide & Support',
+                          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactScreen())),
+                        ),
+                        const Divider(height: 1, indent: 16, endIndent: 16),
+                        _tile(Icons.logout, 'Déconnexion', _logout, color: AppColors.error),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -160,94 +173,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildAvatar() {
-    return GestureDetector(
-      onTap: _pickImage,
-      child: Stack(
-        children: [
-          CircleAvatar(
-            radius: 75,
-            backgroundColor: AppColors.primary.withOpacity(0.5),
-            child: CircleAvatar(
-              radius: 70,
-              backgroundImage: _currentAvatar != null
-                  ? FileImage(_currentAvatar!) as ImageProvider
-                  : const AssetImage('assets/images/pro1.png'), // A default placeholder
-            ),
-          ),
-          Positioned(
-            bottom: 2,
-            right: 2,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: AppColors.accent,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(1, 1),
-                  )
-                ]
-              ),
-              child: const Icon(Icons.camera_alt, color: Colors.white, size: 22),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuItems() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              _buildProfileMenuTile(
-                icon: Icons.edit_outlined,
-                title: 'Modifier le profil',
-                onTap: _navigateToEditPage,
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              _buildProfileMenuTile(
-                icon: Icons.history_outlined,
-                title: 'Historique des commandes',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              _buildProfileMenuTile(
-                icon: Icons.contact_support_outlined,
-                title: 'Aide & Support',
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ContactScreen())),
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-               _buildProfileMenuTile(
-                icon: Icons.logout,
-                title: 'Déconnexion',
-                color: AppColors.error,
-                onTap: _logout,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileMenuTile({required IconData icon, required String title, required VoidCallback onTap, Color? color}) {
+  Widget _tile(IconData icon, String title, VoidCallback onTap, {Color? color}) {
     return ListTile(
-      leading: Icon(icon, color: color ?? AppColors.textPrimary),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w500, color: color ?? AppColors.textPrimary)),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: color ?? AppColors.textSecondary),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: Icon(icon, color: color ?? AppColors.primary),
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w700, color: color ?? AppColors.textPrimary)),
+      trailing: Icon(Icons.arrow_forward_ios, size: 14, color: color ?? AppColors.textSecondary),
       onTap: onTap,
     );
   }

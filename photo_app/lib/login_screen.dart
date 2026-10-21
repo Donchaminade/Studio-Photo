@@ -1,11 +1,10 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:photo_app/home_screen.dart';
+import 'package:photo_app/recovery_screen.dart';
 import 'package:photo_app/utils/colors.dart';
 import 'package:photo_app/utils/geometric_background.dart';
-import 'package:country_code_picker/country_code_picker.dart';
-import 'package:photo_app/recovery_screen.dart';
-import 'package:photo_app/widgets/music_wave_loader.dart';
+import 'package:photo_app/widgets/phone_prefix.dart';
+import 'package:photo_app/widgets/picon_ui.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,30 +20,46 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController(text: 'password123');
   bool _obscureText = true;
   bool _isLoading = false;
+  bool _success = false;
+  bool _error = false;
+  int _shake = 0;
   bool _isLoginWithPhone = true;
 
   Future<void> _login() async {
-    if (_formKey.currentState?.validate() ?? false) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       setState(() {
-        _isLoading = true;
+        _error = true;
+        _shake++;
       });
-
-      await Future.delayed(const Duration(seconds: 3));
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              userName: 'Test User',
-              userId: 1,
-            ),
-          ),
-        );
-      }
+      await Future<void>.delayed(const Duration(milliseconds: 420));
+      if (mounted) setState(() => _error = false);
+      return;
     }
+    setState(() {
+      _isLoading = true;
+      _error = false;
+      _success = false;
+    });
+
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _success = true;
+    });
+    if (!reduceMotion(context)) {
+      await Future<void>.delayed(const Duration(milliseconds: 380));
+    }
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const HomeScreen(
+          userName: 'Test User',
+          userId: 1,
+        ),
+      ),
+    );
   }
 
   @override
@@ -64,31 +79,16 @@ class _LoginScreenState extends State<LoginScreen> {
           const GeometricBackground(),
           SafeArea(
             child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               child: Column(
                 children: [
-                  _buildHeader(),
-                  _buildForm(),
+                  const SizedBox(height: 12),
+                  const Reveal(child: BrandLogo(height: 96)),
+                  const SizedBox(height: 12),
+                  Reveal(index: 1, child: _buildForm()),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return SizedBox(
-      height: 220,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 30),
-          Image.asset(
-            'assets/images/pro.png',
-            height: 180, // Adjust height as needed
-            width: 180, // Adjust width as needed
-            fit: BoxFit.contain,
           ),
         ],
       ),
@@ -96,209 +96,113 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildForm() {
-    final textTheme = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 24.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
+    return PiconCard(
+      padding: const EdgeInsets.fromLTRB(18, 22, 18, 16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Bienvenue',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    'Bienvenue',
-                    textAlign: TextAlign.center,
-                    style: textTheme.headlineSmall?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Connectez-vous pour continuer',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildLoginMethodToggle(),
-                  const SizedBox(height: 24),
-                  
-                  if (_isLoginWithPhone)
-                    TextFormField(
+            const SizedBox(height: 6),
+            const Text(
+              'Connectez-vous pour continuer',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 20),
+            PillToggle(
+              labels: const ['Téléphone', 'Email'],
+              index: _isLoginWithPhone ? 0 : 1,
+              onChanged: (i) => setState(() => _isLoginWithPhone = i == 0),
+            ),
+            const SizedBox(height: 18),
+            if (_isLoginWithPhone)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const AfricanPhonePrefix(),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
                       controller: _phoneController,
-                      decoration: _glassyInputDecoration(
-                        'Numéro de téléphone',
-                        prefix: CountryCodePicker(
-                          onChanged: (countryCode) {},
-                          initialSelection: 'TG',
-                          favorite: const ['+228', '+225', '+223'],
-                          countryFilter: const ['DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CM', 'CV', 'CF', 'TD', 'KM', 'CG', 'CD', 'CI', 'DJ', 'EG', 'GQ', 'ER', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW', 'KE', 'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'YT', 'MA', 'MZ', 'NA', 'NE', 'NG', 'RE', 'RW', 'SH', 'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SS', 'SD', 'SZ', 'TZ', 'TG', 'TN', 'UG', 'EH', 'ZM', 'ZW'],
-                          textStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.9)),
-                        ),
-                      ),
+                      decoration: piconField('Numéro de téléphone'),
                       keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
                       validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
-                    )
-                  else
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: _glassyInputDecoration('Email', icon: Icons.email_outlined),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return 'Champ requis';
-                        if (!RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)) return 'Email invalide';
-                        return null;
-                      }
                     ),
-
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscureText,
-                    decoration: _glassyInputDecoration('Mot de passe', icon: Icons.lock_outline).copyWith(
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility, color: AppColors.textPrimary.withOpacity(0.7)),
-                        onPressed: () => setState(() => _obscureText = !_obscureText),
-                      ),
-                    ),
-                    validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const RecoveryScreen()),
-                        );
-                      },
-                      child: const Text('Mot de passe oublié ?'),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))
-                    ),
-                    child: _isLoading 
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Connexion', style: TextStyle(color: Colors.white, fontSize: 16)),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("Pas de compte ?", style: textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary)),
-                      TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/signup'),
-                        child: const Text('S\'inscrire', style: TextStyle(color: AppColors.primary)),
-                      ),
-                    ],
                   ),
                 ],
+              )
+            else
+              TextFormField(
+                controller: _emailController,
+                decoration: piconField('Email', icon: Icons.email_outlined),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Champ requis';
+                  if (!RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)) {
+                    return 'Email invalide';
+                  }
+                  return null;
+                },
+              ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _passwordController,
+              obscureText: _obscureText,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _isLoading ? null : _login(),
+              decoration: piconField('Mot de passe', icon: Icons.lock_outline).copyWith(
+                suffixIcon: IconButton(
+                  tooltip: _obscureText ? 'Afficher' : 'Masquer',
+                  icon: Icon(
+                    _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.textSecondary,
+                  ),
+                  onPressed: () => setState(() => _obscureText = !_obscureText),
+                ),
+              ),
+              validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const RecoveryScreen()),
+                  );
+                },
+                child: const Text('Mot de passe oublié ?'),
               ),
             ),
-          ),
+            PiconButton(
+              label: 'Connexion',
+              onPressed: _isLoading ? null : _login,
+              loading: _isLoading,
+              success: _success,
+              error: _error,
+              shakeToken: _shake,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Pas de compte ?', style: TextStyle(color: AppColors.textPrimary)),
+                TextButton(
+                  onPressed: () => Navigator.pushNamed(context, '/signup'),
+                  child: const Text("S'inscrire", style: TextStyle(color: AppColors.primary)),
+                ),
+              ],
+            ),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildLoginMethodToggle() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isLoginWithPhone = true),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: _isLoginWithPhone ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Text(
-                  'Téléphone',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _isLoginWithPhone ? Colors.white : AppColors.textPrimary.withOpacity(0.7),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isLoginWithPhone = false),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: !_isLoginWithPhone ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Text(
-                  'Email',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: !_isLoginWithPhone ? Colors.white : AppColors.textPrimary.withOpacity(0.7),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  InputDecoration _glassyInputDecoration(String label, {IconData? icon, Widget? prefix}) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: prefix ?? (icon != null ? Icon(icon, color: AppColors.textPrimary.withOpacity(0.7)) : null),
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.3),
-      labelStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.7)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.4)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.primary),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
       ),
     );
   }
