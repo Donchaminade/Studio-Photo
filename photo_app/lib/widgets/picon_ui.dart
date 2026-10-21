@@ -755,6 +755,7 @@ class PiconSkeletonList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: padding,
+      shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: count,
       itemBuilder: (context, i) => Padding(
