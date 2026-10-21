@@ -10,6 +10,7 @@ import 'package:Picon/widgets/picon_premium.dart';
 import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/widgets/photo_lightbox.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
@@ -178,6 +179,7 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
     if (fresh != null && mounted) setState(() => _order = fresh);
   }
 
+  // ignore: unused_element
   Future<void> _download() async {
     if (_downloading) return;
     if (kIsWeb) {
@@ -264,8 +266,33 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(children: [
-                    SafePhotoThumbnail(item.imageUrl,
-                        width: 64, height: 64, fit: BoxFit.cover, borderRadius: BorderRadius.circular(14)),
+                    // v6 : miniature de la photo envoyée (imageUrl de l'API) → visionneuse.
+                    TapScale(
+                      onTap: () => showPhotoLightbox(context,
+                          imageUrl: item.imageUrl,
+                          format: item.photoSize,
+                          quantity: item.quantity,
+                          heroTag: 'order-item-${item.id}'),
+                      child: Stack(children: [
+                        Hero(
+                          tag: 'order-item-${item.id}',
+                          child: SafePhotoThumbnail(item.imageUrl,
+                              width: 72, height: 72, fit: BoxFit.cover, borderRadius: BorderRadius.circular(16)),
+                        ),
+                        Positioned(
+                          right: 4,
+                          bottom: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 14),
+                          ),
+                        ),
+                      ]),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -282,17 +309,8 @@ class _OrderDetailViewState extends State<_OrderDetailView> {
             ]),
           ),
         ),
-        const SizedBox(height: 20),
-        PiconButton(
-          label: _downloaded ? 'Photos prêtes — partager à nouveau' : 'Télécharger les photos (ZIP)',
-          icon: _downloaded ? Icons.ios_share_rounded : Icons.download_rounded,
-          loading: _downloading,
-          success: false,
-          onPressed: items.isEmpty ? null : _download,
-        ),
+        // v6 : plus de téléchargement ZIP sur mobile (_download conservé, inutilisé).
         const SizedBox(height: 8),
-        const Text('Archive de vos fichiers originaux, à enregistrer ou partager.',
-            textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
       ]),
     );
   }
