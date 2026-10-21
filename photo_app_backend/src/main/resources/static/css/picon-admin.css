@@ -298,38 +298,43 @@ html body .footer {
   z-index: 999;
 }
 
-/* Login — écran split plein cadre : formulaire | panneau bleu */
+/* Login — carte split centrée : formulaire | panneau bleu */
 body.picon-login {
   min-height: 100vh;
-  display: block;
-  align-items: stretch;
-  justify-content: flex-start;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px;
   margin: 0;
-  background: #fff;
+  box-sizing: border-box;
+  background-color: #F5F6F8;
+  background-image:
+    linear-gradient(rgba(1, 22, 62, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(1, 22, 62, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-attachment: fixed;
 }
 
 body.picon-login .login-container {
   display: flex;
   width: 100%;
-  max-width: none;
-  min-height: 100vh;
-  height: 100vh;
-  margin: 0;
+  max-width: 1120px;
+  height: auto;
+  margin: auto;
   background: #fff;
-  border-radius: 0;
+  border-radius: 22px;
   overflow: hidden;
-  box-shadow: none;
+  box-shadow: 0 22px 50px rgba(1, 22, 62, 0.16), 0 2px 8px rgba(1, 22, 62, 0.06);
 }
 
 body.picon-login .form-section {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  flex: 1 1 50%;
-  width: 50%;
-  min-height: 100vh;
-  padding: 72px 8vw 72px 7vw;
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  padding: 48px 44px;
   background: #fff;
 }
 
@@ -337,12 +342,12 @@ body.picon-login .info-section {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  flex: 1 1 50%;
-  width: 50%;
-  min-height: 100vh;
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
   background: #01163E;
   color: #fff;
-  padding: 72px 64px;
+  padding: 48px 44px;
   position: relative;
   overflow: hidden;
 }
@@ -409,24 +414,22 @@ body.picon-login .form-control {
 
 @media (max-width: 900px) {
   body.picon-login {
-    align-items: stretch;
-    padding: 0;
+    align-items: center;
+    padding: 20px 16px;
   }
 
   body.picon-login .login-container {
     flex-direction: column;
-    max-width: none;
+    max-width: 560px;
     width: 100%;
     height: auto;
-    min-height: 100vh;
   }
 
   body.picon-login .form-section,
   body.picon-login .info-section {
     flex: none;
     width: 100%;
-    min-height: 0;
-    padding: 40px 24px;
+    padding: 36px 24px;
   }
 
   body.picon-login .info-section {
@@ -494,13 +497,12 @@ body.picon-login .form-control {
   body.picon-login .login-container {
     display: flex;
     flex-direction: column;
-    max-width: none;
+    max-width: 560px;
     width: 100%;
     height: auto;
-    min-height: 100vh;
   }
-  body.picon-login .form-section { width: 100%; min-height: 0; padding: 32px 22px 28px; }
-  body.picon-login .info-section { display: flex; width: 100%; min-height: 0; order: 2; padding: 32px 22px; }
+  body.picon-login .form-section { width: 100%; padding: 32px 22px 28px; }
+  body.picon-login .info-section { display: flex; width: 100%; order: 2; padding: 32px 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
