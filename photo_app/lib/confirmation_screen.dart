@@ -14,6 +14,8 @@ import 'utils/google_play_tester.dart';
 import 'utils/mobile_operator_utils.dart';
 import 'utils/phone_payment_permissions.dart';
 import 'widgets/app_error_feedback.dart';
+import 'widgets/picon_premium.dart';
+import 'widgets/picon_ui.dart';
 
 class ConfirmationScreen extends StatefulWidget {
   final Map<String, Map<String, dynamic>> orderDetails;
@@ -364,6 +366,238 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasProof = _proofImage != null;
+    final phone = widget.paymentPhone?.trim() ?? '';
+    Widget step(int n, String title, String text, {required bool done, bool active = false, bool last = false}) {
+      final c = done ? AppColors.success : (active ? AppColors.accent : AppColors.line);
+      return IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Column(children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 260),
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done || active ? c : Colors.white,
+                border: Border.all(color: c, width: 2),
+                boxShadow: active ? [BoxShadow(color: c.withValues(alpha: 0.4), blurRadius: 10)] : null,
+              ),
+              child: Center(
+                child: done
+                    ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                    : Text('$n',
+                        style: TextStyle(
+                            color: active ? Colors.white : AppColors.textSecondary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12)),
+              ),
+            ),
+            if (!last) Expanded(child: Container(width: 2, color: done ? AppColors.success : AppColors.line)),
+          ]),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: last ? 0 : 16, top: 3),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                const SizedBox(height: 2),
+                Text(text, style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary, height: 1.35)),
+              ]),
+            ),
+          ),
+        ]),
+      );
+    }
+
+    return PiconHeroScaffold(
+      title: 'Finaliser le paiement',
+      subtitle: 'Commande #${widget.orderId} • $_amount FCFA',
+      icon: Icons.receipt_long_rounded,
+      step: 2,
+      showBack: false,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Reveal(
+          child: PiconCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Row(children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.12), shape: BoxShape.circle),
+                  child: const Icon(Icons.check_rounded, color: AppColors.success, size: 28),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Commande enregistrée',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+                    Text('Il reste à valider le paiement.', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  ]),
+                ),
+              ]),
+              const Divider(height: 24),
+              PiconKeyValue('Moyen', widget.paymentMethod),
+              if (phone.isNotEmpty) PiconKeyValue('Ligne Mobile Money', phone),
+              PiconKeyValue('Montant', '$_amount FCFA', strong: true),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Reveal(
+          index: 1,
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF1F5FB8)]),
+              boxShadow: const [BoxShadow(color: Color(0x33032A85), blurRadius: 18, offset: Offset(0, 8))],
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Row(children: [
+                Icon(Icons.dialpad_rounded, color: Colors.white),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text('Paiement USSD',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Text(
+                "Une fenêtre USSD s'ouvre sur votre ligne : confirmez le paiement marchand et saisissez votre code secret Mobile Money.",
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.82), fontSize: 12.5, height: 1.4),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed: _launchUssd,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: const Icon(Icons.phone_in_talk_rounded),
+                  label: const Text('Relancer le paiement USSD', style: TextStyle(fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Reveal(
+          index: 2,
+          child: PiconCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const PiconSectionHeader(icon: Icons.route_rounded, title: 'Étapes après paiement'),
+              step(1, 'Valider le pop-up USSD', "Avec votre code Mobile Money, puis capturez l'écran de confirmation.",
+                  done: hasProof, active: !hasProof),
+              step(2, 'Charger la capture', 'Ajoutez-la ci-dessous (obligatoire).', done: hasProof, active: !hasProof),
+              step(3, 'Valider et attendre', 'Le studio confirme votre paiement.',
+                  done: false, active: hasProof, last: true),
+            ]),
+          ),
+        ),
+        if (isGooglePlayTester()) ...[
+          const SizedBox(height: 14),
+          PiconCard(
+            color: const Color(0xFFFFF3E0),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const Text(
+                'Compte testeur Google Play détecté. Vous pouvez terminer la commande sans paiement USSD réel.',
+                style: TextStyle(fontSize: 13, color: Color(0xFFE65100), height: 1.35),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _isConfirmingPayment ? null : _continueGooglePlayTest,
+                icon: _isConfirmingPayment
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.science_outlined),
+                label: const Text('Continuer (mode test Google)'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFE65100),
+                  side: const BorderSide(color: Color(0xFFE65100)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ]),
+          ),
+        ],
+        const SizedBox(height: 14),
+        Reveal(
+          index: 3,
+          child: PiconCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              PiconSectionHeader(
+                icon: Icons.image_rounded,
+                title: "Capture d'écran *",
+                trailing: hasProof
+                    ? const Icon(Icons.check_circle_rounded, color: AppColors.success)
+                    : const Text('Obligatoire', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+              TapScale(
+                onTap: _pickProofImage,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  height: hasProof ? 180 : 120,
+                  decoration: BoxDecoration(
+                    color: AppColors.fieldFill,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: hasProof ? AppColors.success : AppColors.accent.withValues(alpha: 0.5), width: 1.4),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: hasProof
+                      ? Stack(fit: StackFit.expand, children: [
+                          Image.file(_proofImage!, fit: BoxFit.cover),
+                          Positioned(
+                            right: 10,
+                            bottom: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
+                              child: const Text('Changer la capture',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                            ),
+                          ),
+                        ])
+                      : const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(Icons.add_photo_alternate_rounded, color: AppColors.primary, size: 34),
+                          SizedBox(height: 6),
+                          Text('Choisir la capture', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary)),
+                          Text('après le paiement USSD', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        ]),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _referenceController,
+                decoration: piconField('Référence transaction (optionnel)', icon: Icons.tag_rounded, hint: 'Ex: TX123456789'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _messageController,
+                maxLines: 3,
+                decoration: piconField('Coller un message (optionnel)', hint: 'SMS ou message reçu après paiement'),
+              ),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 20),
+        PiconButton(
+          label: _isUploadingProof ? 'Envoi de la capture…' : "J'ai effectué le paiement",
+          icon: Icons.check_circle_outline_rounded,
+          loading: _isConfirmingPayment,
+          onPressed: _isConfirmingPayment ? null : _notifyPaymentDone,
+        ),
+        const SizedBox(height: 8),
+        TextButton(onPressed: _goToHistory, child: const Text("Retour à l'accueil")),
+      ]),
+    );
+  }
+
+  // Ancienne mise en page (v2), conservée.
+  // ignore: unused_element
+  Widget _legacyBuild(BuildContext context) {
     const highlight = TextStyle(
       fontWeight: FontWeight.w700,
       color: AppColors.primary,

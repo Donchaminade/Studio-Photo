@@ -7,6 +7,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import 'package:printing/printing.dart';
+import 'package:Picon/widgets/picon_premium.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class ReceiptScreen extends StatelessWidget {
   final Map<String, Map<String, dynamic>> orderDetails;
@@ -122,7 +124,11 @@ class ReceiptScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => _PrintedReceiptView(screen: this);
+
+  // Ancienne mise en page du reçu (v2), conservée.
+  // ignore: unused_element
+  Widget _legacyBuild(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -174,6 +180,7 @@ class ReceiptScreen extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildHeader() {
     return const Column(
       children: [
@@ -195,6 +202,7 @@ class ReceiptScreen extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildInfoSection() {
     return Column(
       children: [
@@ -207,6 +215,7 @@ class ReceiptScreen extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildItemsSection() {
     return ListView.separated(
       shrinkWrap: true,
@@ -237,6 +246,7 @@ class ReceiptScreen extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildTotalsSection() {
     final totalPrice = _calculateTotalPrice(orderDetails, paymentMethod);
     return Column(
@@ -265,6 +275,7 @@ class ReceiptScreen extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildQrCode() {
     return Center(
       child: Column(
@@ -282,6 +293,7 @@ class ReceiptScreen extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildActionButtons(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -388,4 +400,191 @@ class TicketClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+/// Reçu v3 : écran marine, ticket qui s'imprime (réf. Det3T7LJmXD).
+class _PrintedReceiptView extends StatefulWidget {
+  final ReceiptScreen screen;
+  const _PrintedReceiptView({required this.screen});
+  @override
+  State<_PrintedReceiptView> createState() => _PrintedReceiptViewState();
+}
+
+class _PrintedReceiptViewState extends State<_PrintedReceiptView> {
+  int _run = 0;
+  bool _printed = false;
+  final DateTime _date = DateTime.now();
+
+  ReceiptScreen get r => widget.screen;
+
+  Widget _ticket() {
+    final total = r._calculateTotalPrice(r.orderDetails, r.paymentMethod);
+    final express = r.paymentMethod.contains('Xpress') || r.paymentMethod.contains('Express');
+    TextStyle mono([double size = 13, FontWeight w = FontWeight.w500]) =>
+        kTicketMono.copyWith(fontSize: size, fontWeight: w);
+    Widget line(String a, String b, {bool bold = false}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Text(a, style: mono(bold ? 15 : 13, bold ? FontWeight.w800 : FontWeight.w500))),
+            const SizedBox(width: 8),
+            Text(b, style: mono(bold ? 15 : 13, bold ? FontWeight.w800 : FontWeight.w600)),
+          ]),
+        );
+    return ClipPath(
+      clipper: const ZigZagClipper(tooth: 9),
+      child: Container(
+        width: double.infinity,
+        color: const Color(0xFFFAFAFA),
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Center(child: Image.asset('assets/images/pro.png', height: 34)),
+          const SizedBox(height: 6),
+          Center(child: Text('STUDIO PHOTO • LOMÉ', style: mono(11, FontWeight.w700).copyWith(letterSpacing: 2))),
+          const TicketDashes(),
+          line('COMMANDE', '#${r.orderId}'),
+          line('DATE', DateFormat('dd/MM/yyyy HH:mm').format(_date)),
+          line('CLIENT', r.userName),
+          if (r.userPhone.isNotEmpty && !r.userPhone.contains('XXX')) line('CONTACT', r.userPhone),
+          const TicketDashes(),
+          ...r.orderDetails.values.map((item) {
+            final price = r.prices[item['size']] ?? 0;
+            final q = item['quantity'] as int;
+            return line('${q}x ${item['size']}', '${(price * q).toStringAsFixed(0)} F');
+          }),
+          if (express && r.orderDetails.keys.length <= 10) line('Forfait Xpress', '1500 F'),
+          const TicketDashes(),
+          line('TOTAL', '${total.toStringAsFixed(0)} FCFA', bold: true),
+          line('PAYÉ AVEC', r.paymentMethod.toUpperCase()),
+          line('STATUT', 'TRANSMISE'),
+          const TicketDashes(),
+          Center(
+            child: BarcodeWidget(
+              barcode: Barcode.code128(),
+              data: 'PIC-${r.orderId}',
+              width: 210,
+              height: 54,
+              drawText: false,
+              color: const Color(0xFF1B2333),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Center(child: Text('PIC-${r.orderId}', style: mono(11, FontWeight.w700).copyWith(letterSpacing: 2))),
+          const SizedBox(height: 10),
+          Center(child: Text('Merci pour votre confiance !', style: mono(12, FontWeight.w600))),
+        ]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = reduceMotion(context);
+    return Scaffold(
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0A1C4A), AppColors.navyDeep, Color(0xFF03060F)],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 14, 22, 6),
+              child: Row(children: [
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Votre reçu',
+                        style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 2),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: Text(
+                        _printed ? 'Commande transmise • reçu imprimé' : 'Impression…',
+                        key: ValueKey(_printed),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                      ),
+                    ),
+                  ]),
+                ),
+                const PiconLogoPill(height: 18),
+              ]),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                child: PrintedReceipt(
+                  key: ValueKey(_run),
+                  ticket: _ticket(),
+                  onPrinted: () {
+                    if (mounted) setState(() => _printed = true);
+                  },
+                ),
+              ),
+            ),
+            AnimatedOpacity(
+              duration: Duration(milliseconds: reduced ? 1 : 250),
+              opacity: _printed ? 1 : 0,
+              child: AnimatedSlide(
+                duration: Duration(milliseconds: reduced ? 1 : 250),
+                offset: _printed ? Offset.zero : const Offset(0, 0.25),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 4, 18, 16),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Row(children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => setState(() {
+                            _printed = false;
+                            _run++;
+                          }),
+                          icon: const Icon(Icons.replay_rounded),
+                          label: const Text('Réimprimer'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                            minimumSize: const Size.fromHeight(50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => Printing.layoutPdf(onLayout: (format) => r._generatePdf()),
+                          icon: const Icon(Icons.print_rounded),
+                          label: const Text('PDF'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                            minimumSize: const Size.fromHeight(50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: FilledButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        ),
+                        child: const Text('Terminé', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
 }

@@ -9,6 +9,7 @@ import 'package:Picon/utils/studio_print_advice.dart';
 import 'package:Picon/widgets/music_wave_loader.dart';
 import 'package:Picon/widgets/app_error_feedback.dart';
 import 'package:Picon/widgets/picon_ui.dart';
+import 'package:Picon/widgets/picon_premium.dart';
 import 'package:flutter/material.dart';
 
 class PaymentSelectionScreen extends StatefulWidget {
@@ -161,6 +162,59 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
         false;
   }
 
+  final ValueNotifier<CheckoutPhase> _checkoutPhase = ValueNotifier(CheckoutPhase.processing);
+
+  @override
+  void dispose() {
+    _checkoutPhase.dispose();
+    super.dispose();
+  }
+
+  /// Étape de paiement v3 (réf. DcGgytAzym7) : attend la vraie réponse
+  /// de createOrder, puis coche verte ou croix rouge.
+  void _showCheckoutStage() {
+    _checkoutPhase.value = CheckoutPhase.processing;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: AppColors.navyDeep.withValues(alpha: 0.72),
+      builder: (context) => PopScope(
+        canPop: false,
+        child: Dialog(
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 28, 22, 26),
+            child: ValueListenableBuilder<CheckoutPhase>(
+              valueListenable: _checkoutPhase,
+              builder: (context, phase, _) => AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutCubic,
+                child: CheckoutStage(
+                  phase: phase,
+                  title: switch (phase) {
+                    CheckoutPhase.processing => 'Création de la commande…',
+                    CheckoutPhase.success => 'Commande créée',
+                    CheckoutPhase.error => 'Échec de la commande',
+                  },
+                  subtitle: switch (phase) {
+                    CheckoutPhase.processing =>
+                      '${widget.totalAmount.toStringAsFixed(0)} FCFA • ${_selectedMethodName ?? ''}\nNe fermez pas l’application.',
+                    CheckoutPhase.success => 'Validez maintenant le paiement sur votre téléphone.',
+                    CheckoutPhase.error => 'Aucun montant n’a été débité.',
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Ancien chargeur (v2), conservé.
+  // ignore: unused_element
   void _showLoadingDialog() {
     showDialog(
       context: context,
@@ -275,7 +329,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
     }
 
     setState(() => _isSubmittingOrder = true);
-    _showLoadingDialog();
+    _showCheckoutStage();
 
     try {
       final formatNames = _prices!.keys.toList();
@@ -313,6 +367,10 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
         'deliveryAddress': widget.deliveryAddress,
       });
 
+      if (mounted) {
+        _checkoutPhase.value = CheckoutPhase.success;
+        await Future<void>.delayed(Duration(milliseconds: reduceMotion(context) ? 150 : 1000));
+      }
       if (mounted) Navigator.of(context).pop();
 
       if (mounted) {
@@ -334,6 +392,10 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
       }
     } catch (e) {
       if (mounted) {
+        _checkoutPhase.value = CheckoutPhase.error;
+        await Future<void>.delayed(Duration(milliseconds: reduceMotion(context) ? 150 : 900));
+      }
+      if (mounted) {
         Navigator.of(context).pop();
         await showAppError(context, e);
       }
@@ -346,6 +408,210 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canConfirm = _selectedMethodName != null && !_isSubmittingOrder;
+    final recipient = [widget.customerFirstname, widget.customerLastname]
+        .where((v) => v != null && '$v'.trim().isNotEmpty && '$v' != 'null')
+        .join(' ')
+        .ifEmpty('Non renseigné');
+    return PiconHeroScaffold(
+      title: 'Paiement',
+      subtitle: 'Choisissez votre moyen de paiement Mobile Money.',
+      icon: Icons.account_balance_wallet_rounded,
+      step: 2,
+      bottomBar: _isLoadingPrices
+          ? null
+          : PiconPayBar(
+              amountLabel: 'Total à payer',
+              amount: '${widget.totalAmount.toStringAsFixed(0)} FCFA',
+              action: SizedBox(
+                height: 50,
+                child: FilledButton.icon(
+                  onPressed: canConfirm ? _onConfirmPressed : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.white.withValues(alpha: 0.14),
+                    disabledForegroundColor: Colors.white60,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: Icon(_selectedMethodName == null ? Icons.touch_app_rounded : Icons.lock_rounded, size: 18),
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _isSubmittingOrder
+                          ? 'Création…'
+                          : (_selectedMethodName == null ? 'Choisir un moyen' : 'Payer maintenant'),
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+      child: _isLoadingPrices
+          ? const PiconSkeletonList(count: 3)
+          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Reveal(child: _walletCard()),
+              const SizedBox(height: 16),
+              Reveal(
+                index: 1,
+                child: PiconCard(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    const PiconSectionHeader(icon: Icons.payments_rounded, title: 'Moyen de paiement'),
+                    _methodTile(name: _mixxName, logo: 'assets/logos/mixbyyass.jpg', label: 'Yas (Mixx)', hint: 'Yas 90–93 • 70–73'),
+                    const SizedBox(height: 10),
+                    _methodTile(name: _floozName, logo: 'assets/logos/flooz.webp', label: 'Flooz / Moov', hint: 'Moov 96–99 • 78–79'),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Reveal(
+                index: 2,
+                child: PiconCard(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    const PiconSectionHeader(icon: Icons.local_shipping_rounded, title: 'Livraison'),
+                    PiconKeyValue('Destinataire', recipient),
+                    PiconKeyValue('Mobile Money', _formatPaymentPhoneLine()),
+                    PiconKeyValue('Adresse', widget.deliveryAddress ?? 'Non spécifiée'),
+                    PiconKeyValue('Mode de retrait', widget.isExpress ? 'Express (Prioritaire)' : 'Standard'),
+                    const Divider(height: 22),
+                    PiconKeyValue('Total', '${widget.totalAmount.toStringAsFixed(0)} FCFA', strong: true),
+                  ]),
+                ),
+              ),
+            ]),
+    );
+  }
+
+  /// Carte « portefeuille » animée : change de teinte et de logo selon l'opérateur.
+  Widget _walletCard() {
+    final yas = _selectedMethodName == _mixxName;
+    final flooz = _selectedMethodName == _floozName;
+    final colors = yas
+        ? const [Color(0xFF032A85), Color(0xFF0B4FC2), Color(0xFFF5B700)]
+        : flooz
+            ? const [Color(0xFF032A85), Color(0xFF1E6FD9), Color(0xFF3498DB)]
+            : const [AppColors.navyDeep, AppColors.primary, Color(0xFF1F5FB8)];
+    final reduced = reduceMotion(context);
+    return AnimatedContainer(
+      duration: Duration(milliseconds: reduced ? 1 : 450),
+      curve: Curves.easeOutCubic,
+      height: 190,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
+        boxShadow: [BoxShadow(color: colors[1].withValues(alpha: 0.4), blurRadius: 26, offset: const Offset(0, 14))],
+      ),
+      child: Stack(children: [
+        Positioned(
+          right: -30,
+          top: -40,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.07)),
+          ),
+        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const PiconLogoPill(height: 14),
+            const Spacer(),
+            AnimatedSwitcher(
+              duration: Duration(milliseconds: reduced ? 1 : 300),
+              transitionBuilder: (c, a) => ScaleTransition(scale: a, child: FadeTransition(opacity: a, child: c)),
+              child: _selectedMethodName == null
+                  ? const Icon(Icons.contactless_rounded, color: Colors.white70, key: ValueKey('none'))
+                  : ClipRRect(
+                      key: ValueKey(_selectedMethodName),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        color: Colors.white,
+                        padding: const EdgeInsets.all(3),
+                        child: Image.asset(yas ? 'assets/logos/mixbyyass.jpg' : 'assets/logos/flooz.webp',
+                            width: 42, height: 28, fit: BoxFit.contain),
+                      ),
+                    ),
+            ),
+          ]),
+          const Spacer(),
+          Container(
+            width: 40,
+            height: 28,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              gradient: const LinearGradient(colors: [Color(0xFFE8D48A), Color(0xFFC9A54A)]),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(_formatPaymentPhoneLine(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 17, letterSpacing: 2, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Row(children: [
+            Expanded(
+              child: Text(_selectedMethodName ?? 'Sélectionnez un opérateur',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 12.5)),
+            ),
+            AnimatedFcfa(value: widget.totalAmount, fontSize: 18),
+          ]),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _methodTile({required String name, required String logo, required String label, required String hint}) {
+    final selected = _selectedMethodName == name;
+    return TapScale(
+      onTap: () => _onPaymentMethodSelected(name),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary.withValues(alpha: 0.06) : AppColors.fieldFill,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: selected ? AppColors.primary : AppColors.line, width: selected ? 1.8 : 1),
+        ),
+        child: Row(children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              color: Colors.white,
+              child: Image.asset(logo, width: 52, height: 38, fit: BoxFit.contain),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w800,
+                      color: selected ? AppColors.primary : AppColors.textPrimary)),
+              Text(hint, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            ]),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected ? AppColors.primary : Colors.transparent,
+              border: Border.all(color: selected ? AppColors.primary : AppColors.textSecondary, width: 2),
+            ),
+            child: selected ? const Icon(Icons.check_rounded, size: 15, color: Colors.white) : null,
+          ),
+        ]),
+      ),
+    );
+  }
+
+  // Ancienne mise en page (v2), conservée.
+  // ignore: unused_element
+  Widget _legacyBuild(BuildContext context) {
     final canConfirm = _selectedMethodName != null && !_isSubmittingOrder;
 
     return Scaffold(
@@ -470,6 +736,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
     return '$phone (${MobileOperatorUtils.operatorLabel(op)})';
   }
 
+  // ignore: unused_element
   Widget _buildPaymentMethodSelector() {
     return Container(
       width: double.infinity,
@@ -514,6 +781,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildMethodButton({
     required String name,
     required String logo,
@@ -566,6 +834,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildConfirmButton(bool canConfirm) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -592,6 +861,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildInfoCard({
     required String title,
     required IconData icon,
@@ -631,6 +901,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
