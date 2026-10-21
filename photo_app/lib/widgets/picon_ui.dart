@@ -601,15 +601,92 @@ class BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = Image.asset(
-      'assets/images/pro.png',
-      height: height,
-      fit: BoxFit.contain,
-      cacheWidth: (height * 3).round().clamp(120, 640),
-    );
+    // Nouveau logo PICON (diaphragme, assets/logos/image.png → picon-mark.png)
+    // + mot-symbole. L'ancien assets/images/pro.png reste disponible.
+    final image = PiconWordmark(height: height * 0.62, vertical: true);
     if (reduceMotion(context)) return image;
     return Hero(tag: 'picon-logo', child: image);
   }
+}
+
+/// Diaphragme PICON seul (fond transparent).
+class PiconMark extends StatelessWidget {
+  final double size;
+  const PiconMark({super.key, this.size = 32});
+  @override
+  Widget build(BuildContext context) => Image.asset(
+        'assets/logos/picon-mark.png',
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        cacheWidth: (size * 3).round().clamp(48, 512),
+        semanticLabel: 'PICON',
+      );
+}
+
+/// Diaphragme + « PICON ». [onDark] = texte blanc.
+class PiconWordmark extends StatelessWidget {
+  final double height;
+  final bool onDark;
+  final bool vertical;
+  const PiconWordmark({super.key, this.height = 28, this.onDark = false, this.vertical = false});
+  @override
+  Widget build(BuildContext context) {
+    final text = Text(
+      'PICON',
+      style: TextStyle(
+        fontSize: vertical ? height * 0.42 : height * 0.72,
+        fontWeight: FontWeight.w900,
+        letterSpacing: vertical ? height * 0.08 : height * 0.06,
+        color: onDark ? Colors.white : AppColors.primary,
+        height: 1,
+      ),
+    );
+    if (vertical) {
+      return Column(mainAxisSize: MainAxisSize.min, children: [
+        PiconMark(size: height),
+        SizedBox(height: height * 0.16),
+        text,
+      ]);
+    }
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      PiconMark(size: height),
+      SizedBox(width: height * 0.28),
+      text,
+    ]);
+  }
+}
+
+/// Contenu centré verticalement et horizontalement, largeur max [maxWidth],
+/// avec défilement si l'écran est trop court (ou clavier ouvert).
+class PiconCenteredScroll extends StatelessWidget {
+  final Widget child;
+  final double maxWidth;
+  final EdgeInsets padding;
+  const PiconCenteredScroll({
+    super.key,
+    required this.child,
+    this.maxWidth = 420,
+    this.padding = const EdgeInsets.fromLTRB(20, 16, 20, 24),
+  });
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, box) => SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: padding,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: (box.maxHeight - padding.vertical).clamp(0.0, double.infinity),
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: child,
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 /// Déroule un reçu (hauteur) ou un simple fondu si les animations sont réduites.

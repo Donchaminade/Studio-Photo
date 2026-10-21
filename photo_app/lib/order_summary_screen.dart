@@ -172,11 +172,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Flexible(
-                      child: Image.asset(
-                        'assets/images/pro.png',
-                        height: 40,
-                        fit: BoxFit.contain,
-                      ),
+                      child: const PiconWordmark(height: 34),
                     ),
                     const SizedBox(height: 2),
                   ],

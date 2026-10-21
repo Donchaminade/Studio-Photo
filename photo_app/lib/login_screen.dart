@@ -117,9 +117,10 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           const GeometricBackground(),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            child: PiconCenteredScroll(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 12),
                   const Reveal(child: BrandLogo(height: 96)),
