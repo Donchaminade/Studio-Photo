@@ -655,6 +655,7 @@
             }
         }
     </style>
+    <th:block th:replace="~{admin/fragments/picon-assets :: styles}"></th:block>
 </head>
 
 <body>
@@ -693,9 +694,6 @@
                 <div class="stat-content">
                     <div class="stat-value" id="totalOrders" th:text="${orders != null ? orders.size() : 0}">0</div>
                     <div class="stat-label">Commandes totales</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up mr-1"></i> 15% ce mois
-                    </div>
                 </div>
             </div>
             <div class="stat-card pending-orders">
@@ -705,9 +703,6 @@
                 <div class="stat-content">
                     <div class="stat-value" id="pendingOrders">0</div>
                     <div class="stat-label">En attente</div>
-                    <div class="stat-change negative">
-                        <i class="fas fa-arrow-down mr-1"></i> 8% ce mois
-                    </div>
                 </div>
             </div>
             <div class="stat-card completed-orders">
@@ -717,9 +712,6 @@
                 <div class="stat-content">
                     <div class="stat-value" id="completedOrders">0</div>
                     <div class="stat-label">Terminées</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up mr-1"></i> 22% ce mois
-                    </div>
                 </div>
             </div>
             <div class="stat-card revenue">
@@ -728,10 +720,7 @@
                 </div>
                 <div class="stat-content">
                     <div class="stat-value" id="totalRevenue">0</div>
-                    <div class="stat-label">Revenu total</div>
-                    <div class="stat-change positive">
-                        <i class="fas fa-arrow-up mr-1"></i> 18% ce mois
-                    </div>
+                    <div class="stat-label">Revenu (payé / signalé)</div>
                 </div>
             </div>
         </div>
@@ -800,7 +789,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="order : ${orders}" th:id="'order-' + ${order.id}">
+                    <tr th:each="order : ${orders}" th:id="'order-' + ${order.id}"
+                        th:data-amount="${order.totalAmount}"
+                        th:data-revenue="${(order.refundStatus != null and order.refundStatus.name() == 'REFUNDED') ? '0' : ((order.status.name() == 'PROCESSING' or order.status.name() == 'COMPLETED' or order.paymentStatus == 'CUSTOMER_REPORTED_PAID' or order.paymentStatus == 'PAID') ? '1' : '0')}">
                         <td>
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input order-checkbox"
@@ -828,8 +819,8 @@
                         </td>
                         <td>
                             <div class="font-weight-bold"
-                                th:text="${order.totalAmount != null ? #numbers.formatDecimal(order.totalAmount, 1, 'POINT', 2, 'COMMA') + ' FCFA' : '0 FCFA'}">
-                                1500.00 FCFA</div>
+                                th:text="${order.totalAmount != null ? #numbers.formatDecimal(order.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' FCFA' : '—'}">
+                                3 500 FCFA</div>
                             <small class="text-muted"
                                 th:text="${order.orderItems?.size() ?: 0} + ' article(s)'"></small>
                         </td>
@@ -953,7 +944,7 @@
                         url: '/i18n/French.json'
                     },
                     pageLength: 25,
-                    order: [1, 'desc'] // Tri par date (index 1) descendant par défaut
+                    order: [2, 'desc']
                 });
                 ordersDataTable.on('draw.dt', function () {
                     hideLoading(); // Hide spinner after DataTable redraws (initial load and filters)
@@ -971,17 +962,21 @@
 
                 let totalRevenue = 0;
                 Array.from(visibleRows).forEach(function (rowNode) {
-                    // Assuming the total amount is the 4th column in the current table structure (index 3 for 0-based)
-                    const amountText = $(rowNode).find('td:nth-child(4) .font-weight-bold').text();
-                    const amount = parseFloat(amountText.replace(' FCFA', '').replace(/\s/g, '').replace(',', '.')) || 0;
-                    totalRevenue += amount;
+                    if (rowNode.getAttribute('data-revenue') !== '1') {
+                        return;
+                    }
+                    const raw = rowNode.getAttribute('data-amount');
+                    const amount = raw ? parseFloat(raw) : 0;
+                    if (!isNaN(amount)) {
+                        totalRevenue += amount;
+                    }
                 });
 
                 // Update stats display
                 $('#totalOrders').text(totalOrders);
                 $('#pendingOrders').text(pendingOrders);
                 $('#completedOrders').text(completedOrders);
-                $('#totalRevenue').text(totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' FCFA');
+                $('#totalRevenue').text(Math.round(totalRevenue).toLocaleString('fr-FR') + ' FCFA');
             }
 
             // Initial stats calculation
@@ -1172,6 +1167,7 @@
         });
     </script>
 
+    <th:block th:replace="~{admin/fragments/picon-assets :: scripts}"></th:block>
 </body>
 
 </html>

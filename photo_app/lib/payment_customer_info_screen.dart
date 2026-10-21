@@ -6,6 +6,8 @@ import 'package:Picon/services/sim_info_service.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
 import 'package:Picon/utils/mobile_operator_utils.dart';
+import 'package:Picon/widgets/picon_premium.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 
@@ -93,8 +95,207 @@ class _PaymentCustomerInfoScreenState extends State<PaymentCustomerInfoScreen> {
     );
   }
 
+  Widget _field({
+    required String label,
+    required IconData icon,
+    required TextEditingController controller,
+    String? hint,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    String? Function(String?)? validator,
+    Iterable<String>? autofill,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          validator: validator,
+          autofillHints: autofill,
+          decoration: piconField(label, icon: icon, hint: hint),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
+    final photos = widget.orderDetails.length;
+    final op = _phone.text.isNotEmpty
+        ? MobileOperatorUtils.operatorLabel(MobileOperatorUtils.detectOperator(_phone.text, country: _country))
+        : null;
+    return PiconHeroScaffold(
+      title: 'Vos informations',
+      subtitle: 'Vérifiez vos coordonnées avant le paiement.',
+      icon: Icons.person_pin_circle_rounded,
+      step: 1,
+      bottomBar: PiconPayBar(
+        amountLabel: '$photos photo${photos > 1 ? 's' : ''}${widget.isExpress ? ' • Xpress' : ''}',
+        amount: '${widget.totalAmount.toStringAsFixed(0)} FCFA',
+        action: SizedBox(
+          height: 50,
+          child: FilledButton.icon(
+            onPressed: _continue,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            icon: const Icon(Icons.arrow_forward_rounded),
+            label: const Text('Continuer', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          ),
+        ),
+      ),
+      child: Form(
+        key: _formKey,
+        child: AutofillGroup(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Reveal(
+              child: PiconCard(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  const PiconSectionHeader(icon: Icons.badge_rounded, title: 'Identité'),
+                  _field(
+                    label: 'Prénom',
+                    icon: Icons.person_rounded,
+                    controller: _firstName,
+                    textInputAction: TextInputAction.next,
+                    autofill: const [AutofillHints.givenName],
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Requis' : null,
+                  ),
+                  _field(
+                    label: 'Nom (optionnel)',
+                    icon: Icons.person_outline_rounded,
+                    controller: _lastName,
+                    textInputAction: TextInputAction.next,
+                    autofill: const [AutofillHints.familyName],
+                  ),
+                  _field(
+                    label: 'Email',
+                    icon: Icons.alternate_email_rounded,
+                    controller: _email,
+                    textInputAction: TextInputAction.next,
+                    keyboardType: TextInputType.emailAddress,
+                    autofill: const [AutofillHints.email],
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Requis' : null,
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Reveal(
+              index: 1,
+              child: PiconCard(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  PiconSectionHeader(
+                    icon: Icons.local_shipping_rounded,
+                    title: 'Livraison',
+                    trailing: widget.isExpress
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text('Xpress',
+                                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 12)),
+                          )
+                        : null,
+                  ),
+                  _field(
+                    label: 'Adresse de livraison complète',
+                    icon: Icons.home_rounded,
+                    controller: _address,
+                    textInputAction: TextInputAction.next,
+                    hint: 'Quartier, Rue, Maison...',
+                    autofill: const [AutofillHints.fullStreetAddress],
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Requis' : null,
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Reveal(
+              index: 2,
+              child: PiconCard(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  PiconSectionHeader(
+                    icon: Icons.phone_iphone_rounded,
+                    title: 'Mobile Money',
+                    trailing: op == null
+                        ? null
+                        : Text(op, style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w800)),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: TextFormField(
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.telephoneNumberNational],
+                      validator: (v) => _validatePhone(v, _country),
+                      onChanged: (_) => setState(() {}),
+                      style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.6),
+                      decoration: piconField('Téléphone (Mobile Money)', hint: 'Détecté automatiquement — modifiable')
+                          .copyWith(
+                        prefixIcon: CountryCodePicker(
+                          onChanged: (countryCode) => setState(() => _country = countryCode.code ?? 'TG'),
+                          initialSelection: 'TG',
+                          favorite: const ['+228', '+229', '+225', '+227', '+221'],
+                          countryFilter: const ['BJ', 'TG', 'CI', 'NE', 'SN'],
+                          textStyle: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_detectedSims.isNotEmpty) ...[
+                    const Text('Lignes sur cet appareil',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _detectedSims.map((sim) {
+                        final selected = _phone.text.trim() == sim.localDigits;
+                        return ChoiceChip(
+                          label: Text(sim.label),
+                          selected: selected,
+                          selectedColor: AppColors.primary,
+                          labelStyle: TextStyle(
+                              color: selected ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.w600),
+                          onSelected: (_) => setState(() => _phone.text = sim.localDigits),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.textSecondary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(_phoneHintByCountry(_country),
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ),
+                  ]),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.lock_rounded, size: 14, color: AppColors.textSecondary),
+              SizedBox(width: 6),
+              Flexible(
+                child: Text('Vos données servent uniquement à cette commande.',
+                    textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              ),
+            ]),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  // Ancienne mise en page (v2), conservée.
+  // ignore: unused_element
+  Widget _legacyBuild(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Infos du client'),
@@ -369,6 +570,7 @@ class _PaymentCustomerInfoScreenState extends State<PaymentCustomerInfoScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildField({
     required String label,
     required TextEditingController controller,

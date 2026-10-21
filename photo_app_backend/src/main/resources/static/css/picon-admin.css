@@ -1,0 +1,385 @@
+/* PICON admin — charte Flutter (navy #01163E, blanc, cartes 22px). Police inchangée. */
+:root {
+  --primary-color: #032A85;
+  --primary-dark: #01163E;
+  --navy-deep: #071433;
+  --secondary-color: #3498DB;
+  --success-color: #1F9D55;
+  --warning-color: #f39c12;
+  --danger-color: #D32F2F;
+  --info-color: #3498DB;
+  --dark-color: #1F2937;
+  --light-color: #F5F6F8;
+  --gray-light: #E3E8F0;
+  --field-fill: #F8FAFC;
+  --text-secondary: #757575;
+  --card-shadow: 0 8px 18px rgba(3, 42, 133, 0.08);
+  --shadow: 0 8px 18px rgba(3, 42, 133, 0.08);
+  --radius-card: 22px;
+  --radius-btn: 16px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition: background-color 0.24s var(--ease-out), color 0.24s var(--ease-out), box-shadow 0.24s var(--ease-out), transform 0.24s var(--ease-out), border-color 0.24s var(--ease-out);
+}
+
+html body {
+  font-family: 'Segoe UI', 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--dark-color);
+  background-color: #F5F6F8;
+  background-image:
+    linear-gradient(rgba(1, 22, 62, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(1, 22, 62, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-attachment: fixed;
+}
+
+html body .sidebar {
+  width: 260px;
+  background: #01163E;
+  box-shadow: 8px 0 24px rgba(7, 20, 51, 0.18);
+  overflow-y: auto;
+}
+
+html body .sidebar-header {
+  padding: 20px 18px 16px;
+}
+
+html body .logo {
+  gap: 12px;
+}
+
+html body .sidebar .logo-icon {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+html body .sidebar .logo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+html body .logo-text {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+html body .nav-links {
+  padding: 8px 10px 24px;
+}
+
+html body .nav-links a {
+  border-radius: 12px;
+  border-left: none;
+  margin: 2px 0;
+  padding: 12px 14px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+html body .nav-links a:hover,
+html body .nav-links a.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  box-shadow: inset 3px 0 0 #3498DB;
+}
+
+html body .main-content {
+  margin-left: 260px;
+}
+
+html body .top-bar {
+  padding: 14px 28px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 0 #E3E8F0;
+}
+
+html body .search-box input {
+  border-radius: 16px;
+  border-color: #E3E8F0;
+  background: #F8FAFC;
+}
+
+html body .search-box input:focus {
+  border-color: #032A85;
+  box-shadow: 0 0 0 0.15rem rgba(3, 42, 133, 0.12);
+}
+
+html body .user-avatar {
+  background: #01163E;
+  margin-right: 0;
+  margin-left: 10px;
+}
+
+html body .content-wrapper {
+  padding: 28px 32px 40px;
+}
+
+html body .welcome-banner,
+html body .page-header {
+  background: #01163E;
+  color: #fff;
+  border-radius: var(--radius-card);
+  border: none;
+  box-shadow: var(--card-shadow);
+}
+
+html body .page-header {
+  background: #fff;
+  color: var(--dark-color);
+  border-left: none;
+  padding: 24px 28px;
+}
+
+html body .page-header h1 {
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+html body .welcome-title,
+html body .section-title {
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+html body .stat-card,
+html body .dashboard-section,
+html body .action-card,
+html body .card,
+html body .dataTables_wrapper,
+html body .filter-section {
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  border: 1px solid rgba(227, 232, 240, 0.8);
+}
+
+html body .stat-card:hover,
+html body .action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(3, 42, 133, 0.12);
+}
+
+html body .stat-card.users::before { background-color: #01163E; }
+html body .stat-card.photos::before { background-color: #3498DB; }
+html body .stat-card.orders::before { background-color: #1F9D55; }
+html body .stat-card.revenue::before { background-color: #3498DB; }
+
+html body .btn-primary,
+html body .btn-login {
+  background: #032A85;
+  border-color: #032A85;
+  border-radius: var(--radius-btn);
+  font-weight: 700;
+}
+
+html body .btn-primary:hover,
+html body .btn-login:hover {
+  background: #01163E;
+  border-color: #01163E;
+  transform: none;
+}
+
+html body .btn-outline-primary {
+  color: #032A85;
+  border-color: #032A85;
+  border-radius: 14px;
+}
+
+html body .form-control,
+html body .filter-select,
+html body .custom-select {
+  border-radius: 16px;
+  border-color: #E3E8F0;
+  background: #F8FAFC;
+}
+
+html body .form-control:focus {
+  border-color: #032A85;
+  box-shadow: 0 0 0 0.15rem rgba(3, 42, 133, 0.12);
+}
+
+html body .table thead th {
+  border-top: none;
+  color: #01163E;
+  font-weight: 700;
+}
+
+html body .badge,
+html body .status-badge {
+  border-radius: 999px;
+}
+
+html body .footer {
+  background: transparent;
+  border-top: 1px solid #E3E8F0;
+}
+
+#piconSidebarToggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: #F8FAFC;
+  color: #01163E;
+  margin-right: 12px;
+}
+
+.picon-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 20, 51, 0.45);
+  z-index: 999;
+}
+
+/* Login */
+body.picon-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+body.picon-login .login-container {
+  display: flex;
+  width: 100%;
+  max-width: 1040px;
+  min-height: 620px;
+  background: #fff;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(3, 42, 133, 0.12);
+}
+
+body.picon-login .form-section {
+  flex: 1;
+  padding: 56px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+body.picon-login .info-section {
+  flex: 1;
+  background: #01163E;
+  color: #fff;
+  padding: 56px 48px;
+  position: relative;
+  overflow: hidden;
+}
+
+body.picon-login .info-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+body.picon-login .logo-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  overflow: hidden;
+  margin-right: 14px;
+}
+
+body.picon-login .logo-text {
+  color: #01163E;
+  font-weight: 800;
+  background: none;
+}
+
+body.picon-login .btn-login {
+  height: 52px;
+}
+
+body.picon-login .form-control {
+  height: 52px;
+  padding-left: 48px;
+}
+
+/* Motion */
+.js-motion .hero-load:not(.is-in),
+.js-motion .section-fade-up:not(.is-in),
+.js-motion .card-slide-up:not(.is-in),
+.js-motion .text-fade:not(.is-in) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.js-motion .card-zoom:not(.is-in) {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
+.js-motion .hero-load,
+.js-motion .section-fade-up,
+.js-motion .card-slide-up,
+.js-motion .card-zoom,
+.js-motion .text-fade {
+  animation: none;
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+  transition-delay: var(--reveal-delay, 0s);
+}
+
+.js-motion .is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 1200px) {
+  html body .sidebar {
+    width: 72px;
+  }
+  html body .main-content {
+    margin-left: 72px;
+  }
+  html body .logo-text,
+  html body .nav-links span {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  #piconSidebarToggle { display: inline-flex; align-items: center; justify-content: center; }
+  html body .sidebar {
+    transform: translateX(-110%);
+    width: 260px;
+  }
+  html body .sidebar.picon-open {
+    transform: translateX(0);
+  }
+  html body .main-content { margin-left: 0; }
+  .picon-sidebar-backdrop.is-visible { display: block; }
+  html body .logo-text,
+  html body .nav-links span { opacity: 1; }
+  body.picon-login .login-container { flex-direction: column; min-height: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .js-motion .hero-load:not(.is-in),
+  .js-motion .section-fade-up:not(.is-in),
+  .js-motion .card-slide-up:not(.is-in),
+  .js-motion .card-zoom:not(.is-in),
+  .js-motion .text-fade:not(.is-in) {
+    opacity: 1;
+    transform: none;
+  }
+}

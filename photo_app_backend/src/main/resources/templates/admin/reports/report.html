@@ -411,6 +411,7 @@
             }
         }
     </style>
+    <th:block th:replace="~{admin/fragments/picon-assets :: styles}"></th:block>
 </head>
 
 <body>
@@ -566,8 +567,12 @@
             // Function to load report data
             function loadReportData(startDate, endDate) {
                 // Fetch Summary Stats
-                fetch(`/admin/api/reports/summary?startDate=${startDate}&endDate=${endDate}`)
+                fetch(`/admin/api/reports/summary?startDate=${startDate}&endDate=${endDate}`, { credentials: 'same-origin' })
                     .then(response => {
+                        if (response.status === 401) {
+                            window.location.href = '/admin/login';
+                            throw new Error('session');
+                        }
                         if (!response.ok) throw new Error('Network response was not ok');
                         return response.json();
                     })
@@ -579,10 +584,10 @@
                     })
                     .catch(error => {
                         console.error('Error fetching report summary stats:', error);
-                        document.getElementById('reportNewUsers').innerText = 'N/A';
-                        document.getElementById('reportTotalOrders').innerText = 'N/A';
-                        document.getElementById('reportTotalBookings').innerText = 'N/A';
-                        document.getElementById('reportTotalRevenue').innerText = 'N/A';
+                        document.getElementById('reportNewUsers').innerText = '—';
+                        document.getElementById('reportTotalOrders').innerText = '—';
+                        document.getElementById('reportTotalBookings').innerText = '—';
+                        document.getElementById('reportTotalRevenue').innerText = '—';
                     });
 
                 // Fetch Recent Orders
@@ -675,6 +680,7 @@
         });
         /*]]>*/
     </script>
+    <th:block th:replace="~{admin/fragments/picon-assets :: scripts}"></th:block>
 </body>
 
 </html>

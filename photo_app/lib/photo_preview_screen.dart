@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/widgets/picon_ui.dart';
+import 'package:Picon/widgets/picon_premium.dart';
 import 'package:Picon/utils/print_quality_utils.dart';
 import 'package:Picon/utils/image_helper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -434,34 +436,51 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
         _localDetails[selectedImage]?['size'] as String? ??
             (widget.prices.keys.firstOrNull ?? '');
 
+    final top = MediaQuery.paddingOf(context).top;
+    Widget glass(IconData icon, String tip, VoidCallback onTap) => TapScale(
+          tooltip: tip,
+          onTap: onTap,
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+        );
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        title: const Text('Choisir le format'),
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(96),
+        child: Container(
+          padding: EdgeInsets.fromLTRB(14, top + 8, 14, 14),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primaryDark, AppColors.primary, Color(0xFF1F5FB8)],
             ),
-            child: IconButton(
-              icon: const Icon(Icons.close, color: AppColors.primary, size: 20),
-              tooltip: 'Annuler',
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
           ),
+          child: Row(children: [
+            glass(Icons.close_rounded, 'Annuler', () => Navigator.of(context).pop(false)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                const Text('Choisir le format',
+                    style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900)),
+                Text('Photo ${_selectedIndex + 1} sur ${widget.images.length} • $selectedDimension',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 12.5)),
+              ]),
+            ),
+            glass(Icons.add_photo_alternate_rounded, 'Ajouter des photos', _addMorePhotos),
+          ]),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            tooltip: 'Ajouter des photos',
-            onPressed: _addMorePhotos,
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -572,6 +591,38 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
         ),
       ),
     );
+  }
+
+  // Ancienne barre d'application (v2), conservée.
+  // ignore: unused_element
+  PreferredSizeWidget _legacyAppBar(BuildContext context) {
+    return AppBar(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        title: const Text('Choisir le format'),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.close, color: AppColors.primary, size: 20),
+              tooltip: 'Annuler',
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            tooltip: 'Ajouter des photos',
+            onPressed: _addMorePhotos,
+          ),
+          const SizedBox(width: 8),
+        ],
+      );
   }
 
   Widget _buildThumbnailStrip() {
@@ -1106,6 +1157,38 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
   }
 
   Widget _buildConfirmButton() {
+    var total = 0.0;
+    var count = 0;
+    for (final d in _localDetails.values) {
+      final q = (d['quantity'] as num?)?.toInt() ?? 1;
+      total += (widget.prices[d['size']] ?? 0) * q;
+      count += q;
+    }
+    return PiconPayBar(
+      amountLabel: '$count tirage${count > 1 ? 's' : ''} • estimation',
+      amount: '${total.toStringAsFixed(0)} FCFA',
+      action: SizedBox(
+        height: 50,
+        child: FilledButton.icon(
+          onPressed: _confirm,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.accent,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+          label: const FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text('Confirmer', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Ancien bouton (v2), conservé.
+  // ignore: unused_element
+  Widget _legacyConfirmButton() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: ElevatedButton.icon(

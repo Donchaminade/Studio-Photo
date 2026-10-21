@@ -4,6 +4,7 @@ import com.studiophoto.photoappbackend.admin.dto.DashboardStatsDTO;
 import com.studiophoto.photoappbackend.order.OrderItemRepository;
 import com.studiophoto.photoappbackend.order.OrderRepository;
 import com.studiophoto.photoappbackend.order.OrderStatus;
+import com.studiophoto.photoappbackend.order.OrderTotals;
 import com.studiophoto.photoappbackend.repository.UserRepository;
 import com.studiophoto.photoappbackend.booking.BookingRepository;
 import com.studiophoto.photoappbackend.booking.BookingStatus;
@@ -32,13 +33,14 @@ public class DashboardService {
         if (totalPhotos == null) {
             totalPhotos = 0L;
         }
-        long totalPendingOrders = orderRepository.countByStatus(OrderStatus.PENDING);
+        long totalPendingOrders = orderRepository.countByStatusIn(
+                Arrays.asList(OrderStatus.PENDING, OrderStatus.PENDING_PAYMENT));
 
         YearMonth currentMonth = YearMonth.now();
         LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
         LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
 
-        List<OrderStatus> revenueStatuses = Arrays.asList(OrderStatus.COMPLETED, OrderStatus.PROCESSING);
+        List<OrderStatus> revenueStatuses = OrderTotals.confirmedPaidStatuses();
         BigDecimal totalRevenue = orderRepository.sumTotalAmountByStatusInAndCreatedAtBetween(
                 revenueStatuses, startOfMonth, endOfMonth);
 
@@ -64,14 +66,14 @@ public class DashboardService {
     }
 
     public List<com.studiophoto.photoappbackend.admin.dto.ClientRevenueDTO> getTopClientsByRevenue() {
-        List<OrderStatus> revenueStatuses = Arrays.asList(OrderStatus.COMPLETED, OrderStatus.PROCESSING);
+        List<OrderStatus> revenueStatuses = OrderTotals.confirmedPaidStatuses();
         return orderRepository.findTopClientsByRevenue(revenueStatuses, org.springframework.data.domain.PageRequest.of(0, 5));
     }
 
     public com.studiophoto.photoappbackend.admin.dto.RevenueChartDTO getYearlyRevenueChart() {
         List<String> labels = new java.util.ArrayList<>();
         List<BigDecimal> data = new java.util.ArrayList<>();
-        List<OrderStatus> revenueStatuses = Arrays.asList(OrderStatus.COMPLETED, OrderStatus.PROCESSING);
+        List<OrderStatus> revenueStatuses = OrderTotals.confirmedPaidStatuses();
 
         YearMonth currentMonth = YearMonth.now();
         for (int i = 5; i >= 0; i--) {
