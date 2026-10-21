@@ -10,6 +10,8 @@
 
 # Typical local output paths
 dossier_production/*.jar
+dossier_production/*.log
+**/*.salive
 photo_app/releases/*.aab
 photo_app/releases/*.aab.sha1
 photo_app/releases/*-mapping.txt
