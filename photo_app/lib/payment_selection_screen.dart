@@ -8,6 +8,7 @@ import 'package:Picon/utils/mobile_operator_utils.dart';
 import 'package:Picon/utils/studio_print_advice.dart';
 import 'package:Picon/widgets/music_wave_loader.dart';
 import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
 
 class PaymentSelectionScreen extends StatefulWidget {
@@ -367,7 +368,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
         ),
       ),
       body: _isLoadingPrices
-          ? const Center(child: CircularProgressIndicator())
+          ? const PiconSkeletonList(count: 3)
           : Stack(
               children: [
                 GeometricBackground(),
@@ -393,12 +394,17 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
                               'Total à payer',
                               style: TextStyle(color: Colors.white70, fontSize: 14),
                             ),
-                            Text(
-                              '${widget.totalAmount.toStringAsFixed(0)} FCFA',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '${widget.totalAmount.toStringAsFixed(0)} FCFA',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -417,7 +423,10 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
                                 _buildInfoRow(
                                   Icons.person_outline,
                                   'Destinataire',
-                                  '${widget.customerFirstname} ${widget.customerLastname}',
+                                  [widget.customerFirstname, widget.customerLastname]
+                                          .where((v) => v != null && '$v'.trim().isNotEmpty && '$v' != 'null')
+                                          .join(' ')
+                                          .ifEmpty('Non renseigné'),
                                 ),
                                 _buildInfoRow(
                                   Icons.phone_outlined,
@@ -603,12 +612,14 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
             children: [
               Icon(icon, color: AppColors.primary, size: 22),
               const SizedBox(width: 10),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  color: AppColors.primary,
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ],
@@ -688,4 +699,8 @@ class _PaymentInstructionStep extends StatelessWidget {
       ],
     );
   }
+}
+
+extension _EmptyText on String {
+  String ifEmpty(String fallback) => trim().isEmpty ? fallback : this;
 }

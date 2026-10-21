@@ -2,6 +2,11 @@ import 'package:Picon/booking_screen.dart';
 import 'package:Picon/confirmation_screen.dart';
 import 'package:Picon/contact_screen.dart';
 import 'package:Picon/edit_profile_page.dart';
+import 'package:Picon/edit_profile_screen.dart' as eps;
+import 'package:Picon/booking_status_screen.dart';
+import 'package:Picon/screens/permissions_onboarding_screen.dart';
+import 'package:Picon/payment_customer_info_screen.dart';
+import 'package:Picon/payment_success_screen.dart';
 import 'package:Picon/history_screen.dart';
 import 'package:Picon/home_screen.dart';
 import 'package:Picon/login_screen.dart';
@@ -53,13 +58,24 @@ void main() {
       currentEmail: 'tega@studio.tg',
       currentPhone: '90123456',
     ),
-    'home': const HomeScreen(userName: 'Tega', userId: 1),
+    'home': const HomeScreen(userName: 'Tega', userLastName: 'A.', userEmail: 'tega@studio.tg', userId: 1),
+    'edit-full': const eps.EditProfilePage(
+      currentName: 'Tega',
+      currentLastName: 'A.',
+      currentEmail: 'tega@studio.tg',
+      currentPhone: '90123456',
+    ),
+    'booking-status': const BookingStatusScreen(),
+    'permissions': PermissionsOnboardingScreen(onComplete: () {}),
+    'customer': PaymentCustomerInfoScreen(orderDetails: order, totalAmount: 600, isExpress: false),
+    'success': const PaymentSuccessScreen(orderId: '1042'),
     'profile': ProfilePage(
       userName: 'Tega',
+      userLastName: 'A.',
       userEmail: 'tega@studio.tg',
       avatar: null,
       onAvatarChanged: (_) {},
-      onProfileUpdated: (_, __) {},
+      onProfileUpdated: (_, __, ___) {},
     ),
   };
 

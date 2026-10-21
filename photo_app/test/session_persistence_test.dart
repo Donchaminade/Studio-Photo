@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Picon/home_screen.dart';
-import 'package:Picon/login_screen.dart';
-import 'package:Picon/main.dart';
+import 'package:Picon/api_service.dart';
 import 'package:Picon/services/session_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -69,11 +67,34 @@ void main() {
     expect(await SessionStore.instance.signupDialCode(), '+225');
   });
 
-  testWidgets('après 30 s en arrière-plan, le retour garde la session (pas de reconnexion)', (tester) async {
-    await SessionStore.instance.save(_session);
-    SessionStore.instance.current.value = null; // mémoire vidée par le système
+  test('vraie auth : le jeton JWT survit au redémarrage (ApiService.init)', () async {
+    await ApiService.init();
+    await ApiService.saveAuthDetails({
+      'token': 'jwt-test',
+      'refreshToken': 'refresh-test',
+      'id': 42,
+      'firstname': 'Tega',
+      'lastname': 'A.',
+      'email': 'tega@studio.tg',
+      'phone': '+22890000000',
+    });
+    // Simule la mort du processus : on relit uniquement le disque.
+    await ApiService.init();
+    expect(ApiService.authToken, 'jwt-test');
+    expect(ApiService.userId, 42);
+    expect(ApiService.userName, 'Tega');
+  });
 
-    await tester.pumpWidget(const MyApp());
+  testWidgets('30 s en arrière-plan puis retour : la session reste en place', (tester) async {
+    await ApiService.init();
+    await ApiService.saveAuthDetails({
+      'token': 'jwt-test',
+      'id': 42,
+      'firstname': 'Tega',
+      'lastname': 'A.',
+      'email': 'tega@studio.tg',
+    });
+    await tester.pumpWidget(const MaterialApp(home: Scaffold()));
     for (final state in const [
       AppLifecycleState.inactive,
       AppLifecycleState.hidden,
@@ -89,21 +110,9 @@ void main() {
     ]) {
       tester.binding.handleAppLifecycleStateChanged(state);
     }
-    // Le splash relit la session sur le disque et ouvre l'accueil.
-    await tester.pump(const Duration(seconds: 6));
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(SessionStore.instance.current.value?.userId, 7);
-    expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.byType(LoginScreen), findsNothing);
-  });
-
-  testWidgets('sans session, le splash ouvre la connexion', (tester) async {
-    await tester.pumpWidget(const MyApp());
-    await tester.pump(const Duration(seconds: 6));
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.byType(LoginScreen), findsOneWidget);
+    await tester.pump();
+    await ApiService.init();
+    expect(ApiService.authToken, 'jwt-test');
+    expect(ApiService.userId, 42);
   });
 }

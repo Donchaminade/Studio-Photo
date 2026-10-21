@@ -139,7 +139,7 @@ class PaymentSuccessScreen extends StatelessWidget {
           children: [
             const Positioned.fill(child: GeometricBackground()),
             Center(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20.0),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(28),

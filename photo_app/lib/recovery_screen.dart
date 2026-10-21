@@ -78,7 +78,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(
                 height: 120,
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: PiconSkeleton(width: 220, height: 56, radius: 16)),
               );
             }
             final info = snapshot.data;

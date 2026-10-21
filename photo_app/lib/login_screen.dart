@@ -153,7 +153,9 @@ class _LoginScreenState extends State<LoginScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            const Center(child: _SecureBadge()),
+            const SizedBox(height: 16),
             PillToggle(
               labels: const ['Téléphone', 'Email'],
               index: _isLoginWithPhone ? 0 : 1,
@@ -258,6 +260,45 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Badge « connexion sécurisée » (réf. login secure DcOUIemTImO) : le cadenas
+/// se transforme une fois en bouclier, puis reste fixe.
+class _SecureBadge extends StatelessWidget {
+  const _SecureBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = reduceMotion(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: reduced ? 1 : 0, end: 1),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutBack,
+            builder: (context, t, _) => Icon(
+              t < 0.6 ? Icons.lock_outline_rounded : Icons.verified_user_outlined,
+              size: 16,
+              color: Color.lerp(AppColors.textSecondary, AppColors.primary, t.clamp(0, 1)),
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Text(
+            'Connexion sécurisée',
+            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700, fontSize: 12),
+          ),
+        ],
       ),
     );
   }

@@ -60,7 +60,10 @@ class _PricingScreenState extends State<PricingScreen> {
             future: _pricesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Colors.white));
+                return const Padding(
+                  padding: EdgeInsets.fromLTRB(40, 70, 40, 90),
+                  child: PiconSkeleton(height: double.infinity, radius: 28, dark: true),
+                );
               }
               if (snapshot.hasError) {
                 return AppInlineError(
