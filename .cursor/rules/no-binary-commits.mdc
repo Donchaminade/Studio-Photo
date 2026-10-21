@@ -1,0 +1,31 @@
+---
+description: Never commit or push JAR, APK, AAB, keystore, or key.properties unless the user asks explicitly
+alwaysApply: true
+---
+
+# Binaires et secrets — hors Git
+
+Ne jamais `git add`, commit, ni push de ces artefacts, **sauf demande explicite** de l'utilisateur :
+
+- `*.jar`, `*.apk`, `*.aab`, `*.aab.sha1`
+- keystore (`*.keystore`, `*.jks`) et `key.properties`
+
+## Builds locaux
+
+Les builds restent sur le disque uniquement :
+
+- `dossier_production/` (JAR backend)
+- `photo_app/releases/` (AAB / APK / mappings Play)
+
+## Exemples
+
+```text
+# ❌ BAD — même si le fichier est déjà sur le disque
+git add dossier_production/photo-app-backend-0.0.1-SNAPSHOT.jar
+git add photo_app/releases/*.aab photo_app/android/key.properties
+
+# ✅ GOOD — sources et ignore seulement
+git add .gitignore photo_app/.gitignore .cursor/rules/no-binary-commits.mdc
+```
+
+Si l'utilisateur demande un commit large (`git add .`, « commit tout »), exclure ces fichiers. Ne pas les supprimer du disque : `git rm --cached` seulement.

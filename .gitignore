@@ -1,0 +1,22 @@
+# Built binaries — stay on disk, never commit
+*.jar
+*.apk
+*.aab
+*.aab.sha1
+
+# Gradle / Maven wrappers remain versioned when present
+!**/gradle-wrapper.jar
+!**/maven-wrapper.jar
+
+# Typical local output paths
+dossier_production/*.jar
+photo_app/releases/*.aab
+photo_app/releases/*.aab.sha1
+photo_app/releases/*-mapping.txt
+**/app-release.apk
+photo_app/build/
+
+# Signing secrets — never commit
+key.properties
+*.keystore
+*.jks
