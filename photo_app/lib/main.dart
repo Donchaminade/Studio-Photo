@@ -1,17 +1,26 @@
+import 'package:Picon/api_service.dart';
+import 'package:Picon/home_screen.dart';
+import 'package:Picon/login_screen.dart';
+import 'package:Picon/screens/app_bootstrap_screen.dart';
+import 'package:Picon/signup_screen.dart';
+import 'package:Picon/splash_screen.dart';
+import 'package:Picon/utils/app_theme.dart';
+import 'package:Picon/utils/session_controller.dart';
+import 'package:Picon/widgets/connectivity_wrapper.dart';
+import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_app/home_screen.dart';
-import 'package:photo_app/login_screen.dart';
-import 'package:photo_app/services/firebase_bootstrap.dart';
-import 'package:photo_app/services/session_store.dart';
-import 'package:photo_app/signup_screen.dart';
-import 'package:photo_app/splash_screen.dart';
-import 'package:photo_app/utils/app_theme.dart';
+import 'package:flutter/services.dart';
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Firebase est optionnel tant que la configuration n'est pas fournie.
-  await FirebaseBootstrap.init();
-  runApp(const MyApp());
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  await ApiService.init();
+  runApp(
+    DevicePreview(
+      enabled: false,
+      builder: (context) => const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -21,66 +30,53 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class _MyAppState extends State<MyApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  /// Au retour au premier plan, on recharge la session depuis le disque au
-  /// lieu de la considérer comme perdue : aucun délai d'inactivité ne
-  /// déconnecte l'utilisateur.
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      SessionStore.instance.restore();
-    }
+    SessionController.bind(_navigatorKey);
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      locale: DevicePreview.locale(context),
+      builder: (context, child) {
+        child = DevicePreview.appBuilder(context, child);
+        return ConnectivityWrapper(child: child);
+      },
+      navigatorKey: _navigatorKey,
       title: 'Photo App',
       theme: buildPiconTheme(),
       debugShowCheckedModeBanner: false,
       scrollBehavior: const _PiconScrollBehavior(),
-      initialRoute: '/splash',
+      home: const SplashScreen(),
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/splash':
+            return MaterialPageRoute(builder: (context) => const SplashScreen());
+          case '/bootstrap':
             return MaterialPageRoute(
-              builder: (context) => const SplashScreen(),
+              builder: (context) => const AppBootstrapScreen(),
             );
           case '/login':
-            return MaterialPageRoute(
-              builder: (context) => const LoginScreen(),
-            );
+            return MaterialPageRoute(builder: (context) => const LoginScreen());
           case '/signup':
-            return MaterialPageRoute(
-              builder: (context) => const SignupScreen(),
-            );
+            return MaterialPageRoute(builder: (context) => const SignupScreen());
           case '/home':
-            final args = settings.arguments
-                as Map<String, dynamic>?; // Récupération des arguments
-            final session = SessionStore.instance.current.value;
+            final args = settings.arguments as Map<String, dynamic>?;
             return MaterialPageRoute(
               builder: (context) => HomeScreen(
-                userName:
-                    args?['userName'] ?? session?.userName ?? 'Utilisateur',
-                userId: args?['userId'] ?? session?.userId ?? 0,
+                userName: args?['userName'] as String? ?? 'Utilisateur',
+                userLastName: args?['userLastName'] as String? ?? '',
+                userEmail: args?['userEmail'] as String? ?? '',
+                userId: args?['userId'] as int? ?? 0,
               ),
             );
           default:
-            return MaterialPageRoute(
-              builder: (context) => const LoginScreen(),
-            );
+            return MaterialPageRoute(builder: (context) => const LoginScreen());
         }
       },
     );
@@ -92,7 +88,10 @@ class _PiconScrollBehavior extends MaterialScrollBehavior {
 
   @override
   Widget buildOverscrollIndicator(
-      BuildContext context, Widget child, ScrollableDetails details) {
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
     return child;
   }
 }

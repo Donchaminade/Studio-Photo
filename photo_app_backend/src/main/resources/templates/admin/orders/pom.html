@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title>Détails de la Commande - Studio Photo Admin</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4567b7;
+            --primary-dark: #3455a0;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
+            --dark-color: #2c3e50;
+            --light-color: #f8f9fa;
+            --gray-light: #ecf0f1;
+            --shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.12);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fb;
+            color: var(--dark-color);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            background: rgba(255, 255, 255, 0.2);
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-links {
+            padding: 20px 0;
+        }
+
+        .nav-links li {
+            list-style: none;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: white;
+        }
+
+        .nav-links i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 0;
+            transition: var(--transition);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .user-details {
+            margin-right: 20px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        .user-role {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        /* Content Wrapper */
+        .content-wrapper {
+            padding: 30px;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .page-header h1 i {
+            color: var(--primary-color);
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .btn-primary-action {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px rgba(69, 103, 183, 0.3);
+        }
+
+        .btn-primary-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(69, 103, 183, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-outline-action {
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-outline-action:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        /* Main Layout */
+        .order-details-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 992px) {
+            .order-details-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Info Cards */
+        .info-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .info-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: var(--primary-color);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .info-label i {
+            color: var(--primary-color);
+            width: 16px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .info-value-amount {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        /* Status Badge */
+        .status-badge-large {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .badge-pending {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+            border: 2px solid rgba(243, 156, 18, 0.2);
+        }
+
+        .badge-confirmed {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+            border: 2px solid rgba(46, 204, 113, 0.2);
+        }
+
+        .badge-cancelled {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+            border: 2px solid rgba(231, 76, 60, 0.2);
+        }
+
+        .badge-completed {
+            background-color: rgba(149, 165, 166, 0.1);
+            color: #95a5a6;
+            border: 2px solid rgba(149, 165, 166, 0.2);
+        }
+
+        /* Customer Info */
+        .customer-profile {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .customer-avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 32px;
+        }
+
+        .customer-details h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .customer-details p {
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        /* Photos Section */
+        .photos-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .photos-section:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .photos-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .photos-title i {
+            color: var(--primary-color);
+        }
+
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .photo-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .photo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .photo-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .photo-card-details {
+            padding: 20px;
+        }
+
+        .photo-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--dark-color);
+        }
+
+        .photo-specs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .photo-spec-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .photo-spec-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 3px;
+        }
+
+        .photo-spec-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        /* Timeline */
+        .timeline-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            margin-top: 30px;
+        }
+
+        .timeline {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 20px;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .timeline-date {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        /* Empty State */
+        .empty-photos {
+            text-align: center;
+            padding: 60px 30px;
+        }
+
+        .empty-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 40px;
+            color: var(--primary-color);
+        }
+
+        .empty-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+
+        .empty-text {
+            color: #7f8c8d;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+            border-top: 1px solid var(--gray-light);
+            background: white;
+            margin-top: 30px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 70px;
+                overflow: hidden;
+            }
+
+            .sidebar:hover {
+                width: 250px;
+            }
+
+            .logo-text, .nav-links span {
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .sidebar:hover .logo-text,
+            .sidebar:hover .nav-links span {
+                opacity: 1;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .sidebar:hover ~ .main-content {
+                margin-left: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .top-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .page-header h1 {
+                font-size: 24px;
+            }
+
+            .page-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .photos-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .content-wrapper {
+                padding: 20px;
+            }
+
+            .customer-profile {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .photo-specs {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Sidebar Navigation -->
+<nav class="sidebar">
+    <div class="sidebar-header">
+        <a href="/admin/dashboard" class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-camera"></i>
+            </div>
+            <div class="logo-text">Studio Photo</div>
+        </a>
+    </div>
+    <ul class="nav-links">
+        <li><a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+        <li><a href="/admin/users"><i class="fas fa-user-friends"></i><span>Utilisateurs</span></a></li>
+        <li><a href="/admin/promotions"><i class="fas fa-bullhorn"></i><span>Promotions</span></a></li>
+        <li><a href="/admin/featured-content"><i class="fas fa-star"></i><span>Contenu Mis en Avant</span></a></li>
+        <li><a href="/admin/bookings"><i class="fas fa-calendar-check"></i><span>Réservations</span></a></li>
+        <li><a href="#"><i class="fas fa-photo-video"></i><span>Photos</span></a></li>
+        <li><a href="/admin/upload-folders"><i class="fas fa-folder-open"></i><span>Dossiers</span></a></li>
+        <li><a href="/admin/orders" class="active"><i class="fas fa-shopping-basket"></i><span>Commandes</span></a></li>
+        <li><a href="#"><i class="fas fa-calendar-alt"></i><span>Rendez-vous</span></a></li>
+        <li><a href="#"><i class="fas fa-chart-line"></i><span>Statistiques</span></a></li>
+        <li><a href="#"><i class="fas fa-cog"></i><span>Paramètres</span></a></li>
+    </ul>
+</nav>
+
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Top Bar -->
+    <header class="top-bar">
+        <div></div>
+        <div class="user-info" th:if="${#authentication.principal != null}">
+            <div class="user-details">
+                <div class="user-name" th:text="${#authentication.principal.firstname + ' ' + #authentication.principal.lastname}"></div>
+                <div class="user-role">Administrateur</div>
+            </div>
+            <div class="user-avatar" id="userInitials"></div>
+            <form th:action="@{/logout}" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper" th:if="${order}">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>
+                <i class="fas fa-file-alt"></i>
+                Détails de la Commande #<span th:text="${order.id}"></span>
+            </h1>
+            <div class="page-actions">
+                <a href="/admin/orders" class="btn-action btn-outline-action">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+                <a th:href="@{/admin/orders/{id}/download-pdf(id=${order.id})}" class="btn-action btn-primary-action">
+                    <i class="fas fa-download"></i> Télécharger PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Details Layout -->
+        <div class="order-details-layout">
+            <!-- Order Information -->
+            <div class="info-card">
+                <h3 class="card-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    Informations de la Commande
+                </h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-hashtag"></i> N° Commande</span>
+                        <span class="info-value" th:text="'#' + ${order.id}">#12345</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-calendar"></i> Date</span>
+                        <span class="info-value" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">29/01/2026 10:00</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-tag"></i> Statut</span>
+                        <span class="status-badge-large" th:classappend="'badge-' + ${#strings.toLowerCase(order.status.name())}" th:text="${order.status.displayName}">En attente</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-money-bill-wave"></i> Montant Total</span>
+                        <span class="info-value-amount" th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">15 000 FCFA</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Information -->
+            <div class="info-card">
+                <h3 class="card-title">
+                    <i class="fas fa-user-circle"></i>
+                    Informations Client
+                </h3>
+                <div class="customer-profile">
+                    <div class="customer-avatar-large" th:text="${(order.user?.firstname?.substring(0,1) ?: '') + (order.user?.lastname?.substring(0,1) ?: '')}">JD</div>
+                    <div class="customer-details">
+                        <h3 th:text="${order.user?.firstname + ' ' + order.user?.lastname ?: 'Client anonyme'}">John Doe</h3>
+                        <p><i class="fas fa-envelope mr-2"></i> <span th:text="${order.user?.email ?: 'Non renseigné'}">john@email.com</span></p>
+                        <p><i class="fas fa-phone mr-2"></i> <span th:text="${order.user?.phoneNumber ?: 'Non renseigné'}">+33 1 23 45 67 89</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Information -->
+            <div class="info-card">
+                <h3 class="card-title">
+                    <i class="fas fa-credit-card"></i>
+                    Informations de Paiement
+                </h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-wallet"></i> Méthode</span>
+                        <span class="info-value" th:text="${order.paymentMethod}">Mobile Money</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-credit-card"></i> Transaction</span>
+                        <span class="info-value" th:text="${order.transactionId ?: 'Non disponible'}">TRX123456</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-clock"></i> Date Paiement</span>
+                        <span class="info-value" th:text="${order.paymentDate ? #temporals.format(order.paymentDate, 'dd/MM/yyyy HH:mm') : 'Non payé'}">29/01/2026 10:05</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-check-circle"></i> Statut</span>
+                        <span class="info-value" th:text="${order.paymentStatus ?: 'En attente'}">Payé</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Information -->
+            <div class="info-card">
+                <h3 class="card-title">
+                    <i class="fas fa-truck"></i>
+                    Informations de Livraison
+                </h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-box"></i> Type</span>
+                        <span class="info-value" th:text="${order.deliveryType}">Standard</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label"><i class="fas fa-clock"></i> Délai estimé</span>
+                        <span class="info-value" th:text="${order.estimatedDelivery ?: '3-5 jours ouvrés'}">3-5 jours</span>
+                    </div>
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label"><i class="fas fa-map-marker-alt"></i> Adresse de livraison</span>
+                        <span class="info-value" th:text="${order.deliveryAddress ?: 'Non renseignée'}">123 Rue de la Photo, 75001 Paris</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Photos Section -->
+        <div class="photos-section">
+            <h3 class="photos-title">
+                <i class="fas fa-camera-retro"></i>
+                Photos de la Commande (<span th:text="${order.orderItems?.size() ?: 0}"></span>)
+            </h3>
+
+            <div th:if="${!order.orderItems.isEmpty()}" class="photos-grid">
+                <div class="photo-card" th:each="item : ${order.orderItems}">
+                    <img th:src="${item.imageUrl}" alt="Photo de commande">
+                    <div class="photo-card-details">
+                        <div class="photo-card-title">Photo #<span th:text="${item.id}"></span></div>
+                        <div class="photo-specs">
+                            <div class="photo-spec-item">
+                                <span class="photo-spec-label">Format</span>
+                                <span class="photo-spec-value" th:text="${item.photoSize}">20x30 cm</span>
+                            </div>
+                            <div class="photo-spec-item">
+                                <span class="photo-spec-label">Quantité</span>
+                                <span class="photo-spec-value" th:text="${item.quantity}">2</span>
+                            </div>
+                            <div class="photo-spec-item">
+                                <span class="photo-spec-label">Prix unitaire</span>
+                                <span class="photo-spec-value" th:text="${#numbers.formatDecimal(item.price, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">1 500</span>
+                            </div>
+                            <div class="photo-spec-item">
+                                <span class="photo-spec-label">Total</span>
+                                <span class="photo-spec-value" th:text="${#numbers.formatDecimal(item.price * item.quantity, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">3 000</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${order.orderItems.isEmpty()}" class="empty-photos">
+                <div class="empty-icon">
+                    <i class="fas fa-images"></i>
+                </div>
+                <h4 class="empty-title">Aucune photo trouvée</h4>
+                <p class="empty-text">Cette commande ne contient aucune photo pour le moment.</p>
+            </div>
+        </div>
+
+        <!-- Order Timeline -->
+        <div class="timeline-card">
+            <h3 class="card-title">
+                <i class="fas fa-history"></i>
+                Historique de la Commande
+            </h3>
+            <ul class="timeline">
+                <li class="timeline-item">
+                    <div class="timeline-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Commande créée</div>
+                        <div class="timeline-date" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">29/01/2026 10:00</div>
+                    </div>
+                </li>
+                <li th:if="${order.paymentDate != null}" class="timeline-item">
+                    <div class="timeline-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Paiement confirmé</div>
+                        <div class="timeline-date" th:text="${#temporals.format(order.paymentDate, 'dd/MM/yyyy HH:mm')}">29/01/2026 10:05</div>
+                    </div>
+                </li>
+                <li th:if="${order.status.name() == 'CONFIRMED'}" class="timeline-item">
+                    <div class="timeline-icon">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Commande confirmée</div>
+                        <div class="timeline-date" th:text="${#temporals.format(order.confirmedDate ?: order.updatedAt, 'dd/MM/yyyy HH:mm')}">30/01/2026 09:30</div>
+                    </div>
+                </li>
+                <li th:if="${order.status.name() == 'COMPLETED'}" class="timeline-item">
+                    <div class="timeline-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Commande terminée</div>
+                        <div class="timeline-date" th:text="${#temporals.format(order.completedDate ?: order.updatedAt, 'dd/MM/yyyy HH:mm')}">31/01/2026 14:20</div>
+                    </div>
+                </li>
+                <li th:if="${order.status.name() == 'CANCELLED'}" class="timeline-item">
+                    <div class="timeline-icon" style="background: linear-gradient(135deg, var(--danger-color), #c0392b);">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Commande annulée</div>
+                        <div class="timeline-date" th:text="${#temporals.format(order.cancelledDate ?: order.updatedAt, 'dd/MM/yyyy HH:mm')}">30/01/2026 11:15</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Studio Photo Admin. Tous droits réservés. | Version 2.1.0</p>
+    </footer>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://unpkg.com/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // User initials
+        const userName = $('.user-name').text();
+        const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+        $('#userInitials').text(initials);
+
+        // Loading overlay
+        function showLoading() {
+            $('#loadingOverlay').fadeIn();
+        }
+
+        function hideLoading() {
+            $('#loadingOverlay').fadeOut();
+        }
+
+        // Show loading when returning to list
+        $('.btn-outline-action').on('click', function() {
+            showLoading();
+        });
+    });
+</script>
+</body>
+
+</html>

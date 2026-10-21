@@ -1,48 +1,27 @@
+import 'package:Picon/portfolio_screen.dart';
+import 'package:Picon/utils/app_theme.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_app/booking_screen.dart';
-import 'package:photo_app/home_screen.dart';
-import 'package:photo_app/pricing_screen.dart';
-import 'package:photo_app/utils/app_theme.dart';
-
-Future<void> _settle(WidgetTester tester) async {
-  for (var i = 0; i < 12; i++) {
-    await tester.pump(const Duration(milliseconds: 250));
-  }
-}
 
 void main() {
-  setUp(() {});
-
-  testWidgets('choisir un tarif ajoute le tirage au panier', (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(theme: buildPiconTheme(), home: const HomeScreen(userName: 'Tega', userId: 1)));
-    await _settle(tester);
-
-    await tester.tap(find.text('Prix & dimensions'));
-    await _settle(tester);
-    expect(find.byType(PricingScreen), findsOneWidget);
-
-    await tester.tap(find.text('Ajouter au panier'));
-    await _settle(tester);
-
-    expect(find.byType(PricingScreen), findsNothing);
-    expect(find.text('Tirages choisis'), findsOneWidget);
-    expect(find.textContaining('9x13 cm'), findsWidgets);
-    expect(find.text('Valider'), findsOneWidget);
+  testWidgets('portfolio : squelette pendant le vrai chargement API', (tester) async {
+    await tester.pumpWidget(MaterialApp(theme: buildPiconTheme(), home: const PortfolioScreen()));
+    // Premier rendu : la requête /public/dimensions est encore en cours.
+    expect(find.byType(PiconSkeleton), findsWidgets);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
   });
 
-  testWidgets("le bouton Réserver ouvre l'écran de réservation", (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(theme: buildPiconTheme(), home: const HomeScreen(userName: 'Tega', userId: 1)));
-    await _settle(tester);
-
-    await tester.tap(find.text('Réserver'));
-    await _settle(tester);
-    expect(find.byType(BookingScreen), findsOneWidget);
+  testWidgets('squelettes : liste et grille sans exception', (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(body: Column(children: [
+        Expanded(child: PiconSkeletonList(count: 3)),
+        Expanded(child: PiconSkeletonGrid(count: 4)),
+      ])),
+    ));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(PiconSkeleton), findsWidgets);
   });
 }

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+    <title>Codes USSD de paiement - Studio Photo Admin</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4567b7;
+            --primary-dark: #3455a0;
+            --dark-color: #2c3e50;
+            --shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+        body { background-color: #f5f7fb; }
+        .sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 250px; background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%); z-index: 1000; }
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .logo { display: flex; align-items: center; color: white; text-decoration: none; }
+        .logo-icon { background: rgba(255, 255, 255, 0.2); width: 80px; height: 80px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; }
+        .logo-text { font-size: 20px; font-weight: 700; }
+        .nav-links { padding: 20px 0; }
+        .nav-links li { list-style: none; }
+        .nav-links a { display: flex; align-items: center; padding: 15px 25px; color: rgba(255, 255, 255, 0.8); text-decoration: none; border-left: 3px solid transparent; transition: var(--transition); }
+        .nav-links a:hover, .nav-links a.active { background: rgba(255, 255, 255, 0.1); color: white; border-left-color: white; }
+        .nav-links i { margin-right: 12px; width: 20px; text-align: center; font-size: 18px; }
+        .main-content { margin-left: 250px; }
+        .top-bar { background: white; padding: 15px 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .user-info { display: flex; align-items: center; }
+        .user-name { font-weight: 600; }
+        .content-wrapper { padding: 30px; }
+        .page-header { background: white; border-radius: 12px; padding: 25px; margin-bottom: 30px; box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary-color); }
+        .page-header h1 { font-size: 28px; font-weight: 700; margin: 0; }
+        .page-header h1 i { color: var(--primary-color); margin-right: 15px; }
+        .form-group label { font-weight: 600; }
+        .form-control { border-radius: 8px; font-family: 'Courier New', monospace; }
+        .security-note { background: #fff8e1; border-left: 4px solid #f39c12; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; color: #7a5c00; }
+        .security-note i { margin-right: 8px; }
+        code { background: #eef1f8; padding: 2px 6px; border-radius: 4px; color: var(--primary-dark); }
+    </style>
+</head>
+<body>
+<nav th:replace="~{admin/fragments/sidebar :: sidebar-fragment}"></nav>
+
+<div class="main-content">
+    <div th:insert="~{admin/fragments/header :: mainHeader}"></div>
+
+    <div class="content-wrapper">
+        <div class="page-header">
+            <h1><i class="fas fa-shield-alt"></i>Codes USSD de paiement</h1>
+        </div>
+
+        <div class="security-note">
+            <i class="fas fa-lock"></i>
+            <strong>Données sensibles.</strong>
+            Ces codes marchands ne sont jamais embarqués dans l'application mobile.
+            Le client reçoit uniquement le code final calculé pour sa commande, via une
+            connexion authentifiée. Utilisez le marqueur <code>{amount}</code> à l'emplacement
+            du montant ; il sera remplacé automatiquement par le total de la commande.
+        </div>
+
+        <div class="card p-4 shadow-sm">
+            <form th:action="@{/admin/payment-config/save}" method="post">
+                <div class="form-group">
+                    <label for="yasTemplate"><i class="fas fa-mobile-alt mr-1"></i> Modèle USSD — Yas / Mixx by Yas</label>
+                    <input type="text" id="yasTemplate" name="yasTemplate"
+                           th:value="${config.yasTemplate}" class="form-control" required
+                           placeholder="*145*5*{amount}*1322683#">
+                    <small class="form-text text-muted">Ex : <code>*145*5*{amount}*1322683#</code></small>
+                </div>
+
+                <div class="form-group">
+                    <label for="moovTemplate"><i class="fas fa-mobile-alt mr-1"></i> Modèle USSD — Flooz / Moov Money</label>
+                    <input type="text" id="moovTemplate" name="moovTemplate"
+                           th:value="${config.moovTemplate}" class="form-control" required
+                           placeholder="*155*2*2*140425*140425*{amount}#">
+                    <small class="form-text text-muted">Ex : <code>*155*2*2*140425*140425*{amount}#</code></small>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-3">
+                    <i class="fas fa-save mr-2"></i>Enregistrer
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    $(document).ready(function() {
+        var successMessage = /*[[${successMessage}]]*/ null;
+        var errorMessage = /*[[${errorMessage}]]*/ null;
+        if (successMessage) Swal.fire('Succès', successMessage, 'success');
+        if (errorMessage) Swal.fire('Erreur', errorMessage, 'error');
+
+        const firstName = "[[${#authentication.principal instanceof T(com.studiophoto.photoappbackend.model.User) ? #authentication.principal.firstname : ''}]]";
+        const lastName = "[[${#authentication.principal instanceof T(com.studiophoto.photoappbackend.model.User) ? #authentication.principal.lastname : ''}]]";
+        if (firstName && lastName) {
+            const userInitials = document.getElementById('userInitials');
+            if (userInitials) {
+                userInitials.innerText = firstName.charAt(0) + lastName.charAt(0);
+            }
+        }
+    });
+    /*]]>*/
+</script>
+</body>
+</html>

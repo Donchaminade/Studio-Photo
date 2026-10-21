@@ -1,0 +1,4 @@
+storePassword=VOTRE_MOT_DE_PASSE_KEYSTORE
+keyPassword=VOTRE_MOT_DE_PASSE_KEYSTORE
+keyAlias=picon
+storeFile=../picon-upload.keystore

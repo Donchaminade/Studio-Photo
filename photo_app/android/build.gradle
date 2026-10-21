@@ -9,6 +9,19 @@ rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
+// AGP 9.0 : forcer compileSdk 36 avant evaluationDependsOn (plugins encore en 33).
+subprojects { subproject ->
+    def applyCompileSdk = {
+        if (subproject.hasProperty("android")) {
+            subproject.android.compileSdk 36
+        }
+    }
+    if (subproject.state.executed) {
+        applyCompileSdk()
+    } else {
+        subproject.afterEvaluate { applyCompileSdk() }
+    }
+}
 subprojects {
     project.evaluationDependsOn(":app")
 }

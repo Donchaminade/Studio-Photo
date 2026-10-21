@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:photo_app/utils/geometric_background.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class NoConnectionScreen extends StatelessWidget {
-  const NoConnectionScreen({super.key});
+  final bool isRetrying;
+  final VoidCallback? onRetry;
+
+  const NoConnectionScreen({
+    super.key,
+    this.isRetrying = false,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +33,23 @@ class NoConnectionScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  PiconButton(
-                    label: 'Mode hors ligne',
-                    icon: Icons.arrow_back,
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      }
-                    },
-                  ),
+                  if (onRetry != null)
+                    PiconButton(
+                      label: 'Réessayer',
+                      icon: Icons.refresh_rounded,
+                      loading: isRetrying,
+                      onPressed: isRetrying ? null : onRetry,
+                    )
+                  else
+                    PiconButton(
+                      label: 'Mode hors ligne',
+                      icon: Icons.arrow_back,
+                      onPressed: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        }
+                      },
+                    ),
                   const Spacer(),
                 ],
               ),

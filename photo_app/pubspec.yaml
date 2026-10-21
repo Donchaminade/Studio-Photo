@@ -1,7 +1,7 @@
-name: photo_app
-description: "A new Flutter project with user profile management."
+name: Picon
+description: "Faites vous imprimer vos photos facilement depuis votre mobile."
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.3+11
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -10,6 +10,13 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # For HTTP requests
+  http: ^1.2.2
+
+  # For code generation (models)
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
   # Firebase dependencies for authentication and database
   firebase_auth: ^5.3.3
   firebase_core: ^3.8.0
@@ -17,7 +24,7 @@ dependencies:
   google_sign_in: ^6.2.0
 
   # For caching images
-  cached_network_image: ^3.2.1
+  cached_network_image: ^3.4.1
 
   # To manage local user data
   shared_preferences: ^2.1.0
@@ -33,14 +40,22 @@ dependencies:
   permission_handler: ^11.0.0
   carousel_slider: ^5.1.1
   connectivity_plus: ^5.0.2
-  intl: ^0.19.0
+  intl: ^0.20.2
   flutter_animate: ^4.5.0
   pinput: ^6.0.1
   country_code_picker: ^3.4.1
   video_player: ^2.8.6
-  url_launcher: ^6.3.0
+  url_launcher: ^6.3.2
+  in_app_update: ^4.2.3
   font_awesome_flutter: ^11.0.0
-  http: ^1.2.2
+  printing: ^5.14.2
+  uuid: ^4.5.2
+  barcode_widget: ^2.0.4
+  google_fonts: ^6.3.2
+  stomp_dart_client: ^2.0.0
+  image_size_getter: ^2.2.0
+  flutter_image_compress: ^2.3.0
+  device_preview: ^1.2.0
   flutter_secure_storage: ^11.2.0
 
 dev_dependencies:
@@ -49,22 +64,26 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.13.1
 
+  # For code generation
+  build_runner: ^2.4.11
+  freezed: ^2.5.3
+  json_serializable: ^6.8.0
+
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/status/
     - assets/carousel/
     - assets/logos/mastercard.png
     - assets/logos/flooz.webp
     - assets/logos/mixbyyass.jpg
     - assets/logos/pro.png
-    - assets/splash.mp4
-    - assets/splash1.mp4
 
-flutter_icons:
+flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/logos/pro.png"
-
-
-    
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logos/pro.png"
+  remove_alpha_ios: true

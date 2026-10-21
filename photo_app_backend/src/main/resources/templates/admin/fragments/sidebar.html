@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <!-- Les styles CSS de la sidebar seront probablement dans un fichier CSS externe ou inclus dans la page principale -->
+</head>
+
+<body>
+    <nav class="sidebar" th:fragment="sidebar-fragment">
+        <div class="sidebar-header">
+            <a href="/admin/dashboard" class="logo">
+                <div class="logo-icon">
+                    <img th:src="@{/images/logo.jpeg}" alt="Picon Studio Logo"
+                        style="width: 100%; height: auto; border-radius: 10px;">
+                </div>
+                <div class="logo-text">Picon Studio</div>
+            </a>
+        </div>
+        <ul class="nav-links">
+            <li><a th:href="@{/admin/dashboard}"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+            <li><a th:href="@{/admin/users}"><i class="fas fa-user-friends"></i><span>Utilisateurs</span></a></li>
+            <li><a th:href="@{/admin/promotions}"><i class="fas fa-bullhorn"></i><span>Promotions</span></a></li>
+            <li><a th:href="@{/admin/dimensions}"><i class="fas fa-ruler-combined"></i><span>Dimensions</span></a></li>
+            <li><a th:href="@{/admin/frames}"><i class="fas fa-image"></i><span>Cadres photo</span></a></li>
+            <li><a th:href="@{/admin/featured-content}"><i class="fas fa-star"></i><span>Contenu Mis en Avant</span></a>
+            </li>
+            <li><a th:href="@{/admin/bookings}"><i class="fas fa-calendar-check"></i><span>Réservations</span></a></li>
+            <li><a th:href="@{/admin/orders}"><i class="fas fa-shopping-basket"></i><span>Commandes</span></a></li>
+            <li><a th:href="@{/admin/reports}"><i class="fas fa-chart-line"></i><span>Rapports</span></a></li>
+            <li><a th:href="@{/admin/monitoring}"><i class="fas fa-heartbeat"></i><span>Santé Serveur</span></a></li>
+            <li><a th:href="@{/admin/events}"><i class="fas fa-history"></i><span>Événements</span></a></li>
+            <!--        <li><a th:href="@{/admin/uploads}"><i class="fas fa-folder-open"></i><span>Téléversements</span></a></li>-->
+            <!--        <li><a th:href="@{/admin/statistics}"><i class="fas fa-chart-line"></i><span>Statistiques</span></a></li>-->
+            <li><a th:href="@{/admin/contact-info}"><i class="fas fa-address-book"></i><span>Infos Contact</span></a>
+            </li>
+            <li><a th:href="@{/admin/payment-config}"><i class="fas fa-shield-alt"></i><span>Codes USSD</span></a>
+            </li>
+            <!--        <li><a th:href="@{/admin/settings}"><i class="fas fa-cog"></i><span>Paramètres</span></a></li>-->
+
+        </ul>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const currentPath = window.location.pathname;
+                const navLinks = document.querySelectorAll('.sidebar .nav-links a');
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') && currentPath.startsWith(link.getAttribute('href'))) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        </script>
+    </nav>
+</body>
+
+</html>

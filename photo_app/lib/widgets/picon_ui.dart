@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:photo_app/utils/colors.dart';
+import 'package:Picon/utils/colors.dart';
 
 bool reduceMotion(BuildContext context) {
   final media = MediaQuery.of(context);
@@ -667,6 +667,194 @@ class _UnrollState extends State<Unroll> with SingleTickerProviderStateMixin {
           ),
         );
       },
+    );
+  }
+}
+
+/// Squelette animé (balayage lumineux) affiché pendant un vrai chargement API.
+class PiconSkeleton extends StatefulWidget {
+  final double? width;
+  final double height;
+  final double radius;
+  final bool dark;
+
+  const PiconSkeleton({
+    super.key,
+    this.width,
+    this.height = 16,
+    this.radius = 12,
+    this.dark = false,
+  });
+
+  @override
+  State<PiconSkeleton> createState() => _PiconSkeletonState();
+}
+
+class _PiconSkeletonState extends State<PiconSkeleton> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1300));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (reduceMotion(context)) {
+      _c.stop();
+    } else if (!_c.isAnimating) {
+      _c.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final base = widget.dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE6EBF3);
+    final shine = widget.dark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFF6F8FC);
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final t = _c.value * 3 - 1;
+          return Container(
+            width: widget.width,
+            height: widget.height,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(widget.radius),
+              gradient: LinearGradient(
+                begin: Alignment(t - 1, 0),
+                end: Alignment(t + 1, 0),
+                colors: [base, shine, base],
+                stops: const [0.25, 0.5, 0.75],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Liste de cartes squelettes (historique, notifications, réservations…).
+class PiconSkeletonList extends StatelessWidget {
+  final int count;
+  final EdgeInsetsGeometry padding;
+  final bool dark;
+
+  const PiconSkeletonList({
+    super.key,
+    this.count = 5,
+    this.padding = const EdgeInsets.fromLTRB(16, 12, 16, 16),
+    this.dark = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: padding,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: count,
+      itemBuilder: (context, i) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: dark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: dark ? Colors.white12 : AppColors.line),
+          ),
+          child: Row(
+            children: [
+              PiconSkeleton(width: 52, height: 52, radius: 16, dark: dark),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PiconSkeleton(width: 140.0 + (i % 3) * 30, height: 14, dark: dark),
+                    const SizedBox(height: 10),
+                    PiconSkeleton(width: 90, height: 12, dark: dark),
+                  ],
+                ),
+              ),
+              PiconSkeleton(width: 54, height: 22, radius: 99, dark: dark),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Grille squelette (photos, formats).
+class PiconSkeletonGrid extends StatelessWidget {
+  final int count;
+  final int columns;
+  final double aspect;
+  final bool dark;
+
+  const PiconSkeletonGrid({
+    super.key,
+    this.count = 6,
+    this.columns = 2,
+    this.aspect = 0.8,
+    this.dark = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      itemCount: count,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: aspect,
+      ),
+      itemBuilder: (_, __) => PiconSkeleton(radius: 20, height: double.infinity, dark: dark),
+    );
+  }
+}
+
+/// Chargement de marque (logo + barre fine) pour les écrans de transition.
+class PiconBrandLoader extends StatelessWidget {
+  final String? label;
+  const PiconBrandLoader({super.key, this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const BrandLogo(height: 72),
+            const SizedBox(height: 22),
+            const SizedBox(
+              width: 120,
+              child: ClipRRect(
+                borderRadius: BorderRadius.all(Radius.circular(99)),
+                child: LinearProgressIndicator(
+                  minHeight: 3,
+                  color: AppColors.accent,
+                  backgroundColor: AppColors.line,
+                ),
+              ),
+            ),
+            if (label != null) ...[
+              const SizedBox(height: 12),
+              Text(label!, style: const TextStyle(color: AppColors.textSecondary)),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+    <title>Rapport d'Activité - Studio Photo</title>
+    <style>
+        @page {
+            margin: 1cm;
+            size: A4;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .header-container {
+            width: 100%;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #4567b7;
+            padding-bottom: 20px;
+        }
+
+        .header-table {
+            width: 100%;
+            border: none;
+        }
+
+        .studio-name {
+            color: #4567b7;
+            font-size: 28px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        .report-title {
+            font-size: 18px;
+            color: #666;
+            margin-top: 5px;
+            font-weight: normal;
+        }
+
+        .info-table {
+            width: 100%;
+            margin-bottom: 30px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #4567b7;
+            width: 150px;
+        }
+
+        .section-header {
+            background-color: #4567b7;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        /* KPI Cards style using tables for PDF compatibility */
+        .kpi-table {
+            width: 100%;
+            border-spacing: 10px;
+            border-collapse: separate;
+            margin-left: -10px;
+            margin-right: -10px;
+        }
+
+        .kpi-card {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            text-align: center;
+            width: 25%;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .kpi-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+
+        .data-table th {
+            background-color: #f2f4f8;
+            color: #4567b7;
+            font-weight: bold;
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 2px solid #4567b7;
+            font-size: 12px;
+        }
+
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 11px;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            padding-bottom: 20px;
+        }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: bold; }
+    </style>
+</head>
+
+<body>
+    <div class="header-container">
+        <table class="header-table">
+            <tr>
+                <td>
+                    <div class="studio-name">Studio Photo Picon</div>
+                    <div class="report-title">Rapport d'Activité Administratif</div>
+                </td>
+                <td class="text-right" style="font-size: 12px; color: #666;">
+                    Document officiel de gestion<br />
+                    Généré le: <span th:text="${generatedDate}"></span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="info-table">
+        <tr>
+            <td class="info-label">Période du rapport:</td>
+            <td th:text="'Du ' + ${startDate} + ' au ' + ${endDate}">Du 01/01/2026 au 31/01/2026</td>
+        </tr>
+        <tr>
+            <td class="info-label">Statut du rapport:</td>
+            <td>Définitif / Consolidé</td>
+        </tr>
+    </table>
+
+    <div class="section-header">Indicateurs de Performance (KPIs)</div>
+    <table class="kpi-table">
+        <tr>
+            <td class="kpi-card" style="border-top: 4px solid #4567b7;">
+                <div class="kpi-value" th:text="${report.totalNewUsers}">150</div>
+                <div class="kpi-label">Nouveaux Clients</div>
+            </td>
+            <td class="kpi-card" style="border-top: 4px solid #2ecc71;">
+                <div class="kpi-value" th:text="${report.totalOrders}">200</div>
+                <div class="kpi-label">Commandes Totales</div>
+            </td>
+            <td class="kpi-card" style="border-top: 4px solid #f39c12;">
+                <div class="kpi-value" th:text="${report.totalBookings}">50</div>
+                <div class="kpi-label">Réservations</div>
+            </td>
+            <td class="kpi-card" style="border-top: 4px solid #e74c3c;">
+                <div class="kpi-value" th:text="${#numbers.formatDecimal(report.totalRevenue, 1, 'WHITESPACE', 0, 'COMMA')} + ' FCFA'">150 000 FCFA</div>
+                <div class="kpi-label">Revenu Période</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="section-header">Commandes Récentes sur la Période</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Réf. Commande</th>
+                <th>Utilisateur</th>
+                <th>Date / Heure</th>
+                <th>Statut</th>
+                <th class="text-right">Montant</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="order : ${report.recentOrders}">
+                <td th:text="'#' + ${order.id}">#1234</td>
+                <td th:text="${order.user.firstname + ' ' + order.user.lastname}">John Doe</td>
+                <td th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">15/02/2026 14:30</td>
+                <td>
+                    <span th:text="${order.status}">COMPLETED</span>
+                </td>
+                <td class="text-right font-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'WHITESPACE', 0, 'COMMA')} + ' FCFA'">5 000 FCFA</td>
+            </tr>
+            <tr th:if="${report.recentOrders.isEmpty()}">
+                <td colspan="5" class="text-center">Aucune transaction enregistrée sur cette période.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-header">Nouveaux Comptes Utilisateurs</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Prénom &amp; Nom</th>
+                <th>Adresse Email</th>
+                <th>Téléphone</th>
+                <th>Date d'inscription</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="user : ${report.recentUsers}">
+                <td th:text="${user.id}">101</td>
+                <td th:text="${user.firstname + ' ' + user.lastname}">Jane Smith</td>
+                <td th:text="${user.email}">jane.smith@example.com</td>
+                <td th:text="${user.phone != null ? user.phone : '-'}">+228 00 00 00 00</td>
+                <td th:text="${#temporals.format(user.createdAt, 'dd/MM/yyyy')}">12/02/2026</td>
+            </tr>
+            <tr th:if="${report.recentUsers.isEmpty()}">
+                <td colspan="5" class="text-center">Aucune nouvelle inscription sur cette période.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+<!--        <p>&#169; 2026 Studio Photo Picon - Rapport généré automatiquement par le système de gestion administratif.</p>-->
+        <p>Page 1 sur 1</p>
+    </div>
+</body>
+
+</html>

@@ -13,6 +13,8 @@ class AppColors {
 
   // --- Tons dérivés de la marque, pour la refonte ---
   static const Color navyDeep = Color(0xFF071433);
+  static const Color primaryDark = Color(0xFF01163E);
+  static const Color primaryLight = Color(0xFF4A7AD9);
   static const Color success = Color(0xFF1F9D55);
   static const Color line = Color(0xFFE3E8F0);
   static const Color fieldFill = Color(0xFFF8FAFC);

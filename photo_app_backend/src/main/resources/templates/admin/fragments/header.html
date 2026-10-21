@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Header Fragment</title>
+</head>
+<body>
+    <header th:fragment="mainHeader" class="top-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Rechercher utilisateurs, photos, commandes...">
+        </div>
+        <div class="user-info">
+            <!-- Notification Bell -->
+            <div class="dropdown mr-3">
+                <button class="btn btn-light rounded-circle" type="button" id="dropdownNotification" data-toggle="dropdown" aria-expanded="false" style="position: relative; width: 40px; height: 40px; padding: 0;">
+                    <i class="fas fa-bell"></i>
+                    <span id="notificationBadge" class="badge badge-danger badge-counter d-none" style="position: absolute; top: -5px; right: -5px; padding: .35em .6em; border-radius: 50%;">0</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownNotification" style="width: 400px;">
+                    <h6 class="dropdown-header">Centre de Notifications</h6>
+                    <div id="notificationList">
+                        <!-- Dynamic items will be inserted here -->
+                        <div class="dropdown-item text-center small text-gray-500">Chargement...</div>
+                    </div>
+                    <a class="dropdown-item text-center small text-gray-500" href="/admin/events">Afficher tout le journal</a>
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    fetchNotifications();
+                    // Optional: Refresh every 5 minutes
+                    setInterval(fetchNotifications, 300000);
+                });
+
+                function fetchNotifications() {
+                    fetch('/admin/api/recent-activity')
+                        .then(response => response.json())
+                        .then(activities => {
+                            const badge = document.getElementById('notificationBadge');
+                            const list = document.getElementById('notificationList');
+                            
+                            if (activities.length > 0) {
+                                badge.innerText = activities.length;
+                                badge.classList.remove('d-none');
+                                
+                                list.innerHTML = '';
+                                activities.forEach(activity => {
+                                    const item = `
+                                        <a class="dropdown-item d-flex align-items-center" href="${activity.type === 'order' ? '/admin/orders/' + activity.entityId : '#'}">
+                                            <div class="mr-3">
+                                                <div class="icon-circle" style="background-color: ${activity.color}; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                                                    <i class="${activity.icon}"></i>
+                                                </div>
+                                            </div>
+                                            <div style="white-space: normal;">
+                                                <div class="small text-gray-500">${formatTimestamp(activity.timestamp)}</div>
+                                                <span class="font-weight-bold" style="font-size: 13px;">${activity.description}</span>
+                                            </div>
+                                        </a>
+                                    `;
+                                    list.innerHTML += item;
+                                });
+                            } else {
+                                badge.classList.add('d-none');
+                                list.innerHTML = '<div class="dropdown-item text-center small text-gray-500">Aucune nouvelle notification</div>';
+                            }
+                        })
+                        .catch(err => console.error('Error fetching notifications:', err));
+                }
+
+                function formatTimestamp(timestamp) {
+                    const date = new Date(timestamp);
+                    const now = new Date();
+                    const diff = Math.floor((now - date) / 1000);
+                    
+                    if (diff < 60) return "À l'instant";
+                    if (diff < 3600) return "Il y a " + Math.floor(diff / 60) + " min";
+                    if (diff < 86400) return "Il y a " + Math.floor(diff / 3600) + " h";
+                    
+                    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+                }
+            </script>
+            <!-- User Dropdown -->
+            <div class="dropdown">
+                <a class="d-flex align-items-center text-decoration-none text-dark dropdown-toggle" href="#" role="button" id="dropdownUser" data-toggle="dropdown" aria-expanded="false">
+                    <div class="user-details mr-2">
+                        <div class="user-name" th:text="${#authentication.principal.firstname + ' ' + #authentication.principal.lastname}"></div>
+                        <div class="user-role" sec:authentication="principal.authorities"></div>
+                    </div>
+                    <div class="user-avatar" id="userInitials"></div>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownUser">
+                    <h6 class="dropdown-header" th:text="${#authentication.principal.firstname + ' ' + #authentication.principal.lastname}"></h6>
+                    <a class="dropdown-item" href="/admin/profile"><i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>Mon Profil</a>
+                    <!-- <a class="dropdown-item" href="/admin/settings"><i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>Paramètres</a>
+                    <a class="dropdown-item" href="/admin/help"><i class="fas fa-question-circle fa-sm fa-fw mr-2 text-gray-400"></i>Aide & Support</a> -->
+                    <div class="dropdown-divider"></div>
+                    <form th:action="@{/admin/logout}" method="post">
+                        <button type="submit" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>Déconnexion
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </header>
+</body>
+</html>

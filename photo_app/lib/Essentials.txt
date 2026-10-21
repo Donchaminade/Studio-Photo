@@ -1,0 +1,12 @@
+Pour générer les fichiers de modèles :
+dart run build_runner build --delete-conflicting-outputs
+OU
+flutter pub run build_runner build --delete-conflicting-outputs
+
+flutter pub run flutter_launcher_icons
+
+
+// APK / Play Store
+flutter build appbundle --release
+// Fichier : build\app\outputs\bundle\release\app-release.aab
+// Package : com.photopicon.app — voir PLAYSTORE_DEPLOIEMENT.md

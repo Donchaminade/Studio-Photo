@@ -1,49 +1,22 @@
-import 'package:carousel_slider/carousel_slider.dart';
+import 'dart:ui';
+import 'package:Picon/api_service.dart';
+import 'package:Picon/models/photo_format.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:photo_app/utils/colors.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-class PhotoFormat {
-  final String dimension;
-  final int price;
-  final List<String> images;
-  final String title;
-  final String description;
-  final bool isPopular;
 
-  const PhotoFormat({
-    required this.dimension,
-    required this.price,
-    required this.images,
-    required this.title,
-    required this.description,
-    this.isPopular = false,
-  });
-}
-
-const List<PhotoFormat> photoFormats = [
-  PhotoFormat(dimension: '9x13 cm', price: 75, images: ['assets/carousel/car.jpg', 'assets/carousel/car1.jpg'], title: 'Petit Format Classique', description: 'Idéal pour les albums photos ou les petits cadres. Un souvenir intime et abordable.'),
-  PhotoFormat(dimension: '10x15 cm', price: 150, images: ['assets/carousel/car1.jpg', 'assets/carousel/mxx.jpeg', 'assets/carousel/pflex.jpeg'], title: 'Format Standard', description: 'Le format le plus courant pour partager vos moments. Parfait pour les tirages du quotidien.', isPopular: true),
-  PhotoFormat(dimension: '13x18 cm', price: 125, images: ['assets/carousel/mxx.jpeg', 'assets/carousel/pflex.jpeg'], title: 'Portrait Élégant', description: 'Un choix populaire pour les portraits et les photos de famille. Offre une belle présence.', isPopular: true),
-  PhotoFormat(dimension: '15x21 cm', price: 175, images: ['assets/carousel/pflex.jpeg', 'assets/carousel/Pink Modern Pink October Instagram Post .png'], title: 'Polyvalent et Pratique', description: 'Excellent pour la plupart des photos, offre un bon équilibre entre taille et détail.'),
-  PhotoFormat(dimension: '20x25 cm', price: 375, images: ['assets/carousel/Pink Modern Pink October Instagram Post .png', 'assets/carousel/Ajouter un sous-titre.png'], title: 'Agrandissement Modéré', description: 'Mettez en valeur vos clichés préférés. Idéal pour les petits cadres muraux.', isPopular: true),
-  PhotoFormat(dimension: '20x30 cm', price: 500, images: ['assets/carousel/Ajouter un sous-titre.png', 'assets/images/pro.png', 'assets/logos/mixbyyass.jpg'], title: 'Format A4 Photo', description: 'Le format classique pour une reproduction fidèle. Idéal pour les présentations ou cadres.'),
-  PhotoFormat(dimension: '24x30 cm', price: 750, images: ['assets/images/pro.png', 'assets/logos/mixbyyass.jpg'], title: 'Grand Format Équilibré', description: 'Une taille imposante sans être démesurée. Pour un impact visuel certain.'),
-  PhotoFormat(dimension: '30x40 cm', price: 1250, images: ['assets/logos/mixbyyass.jpg', 'assets/carousel/car.jpg', 'assets/carousel/car1.jpg'], title: 'Galerie d\'Art', description: 'Transformez vos photos en œuvres d\'art. Un choix audacieux et expressif.', isPopular: true),
-  PhotoFormat(dimension: '30x45 cm', price: 1500, images: ['assets/carousel/car.jpg', 'assets/carousel/car1.jpg'], title: 'Panorama Standard', description: 'Parfait pour les paysages ou les photos de groupe. Un champ de vision étendu.'),
-  PhotoFormat(dimension: '30x90 cm', price: 2000, images: ['assets/carousel/car1.jpg', 'assets/carousel/mxx.jpeg'], title: 'Bandeau Panoramique', description: 'Pour des vues panoramiques spectaculaires. Créez un point focal unique.'),
-  PhotoFormat(dimension: '40x50 cm', price: 2500, images: ['assets/carousel/mxx.jpeg', 'assets/carousel/pflex.jpeg'], title: 'Affichage Mural', description: 'Impression grand format pour décorer un mur. Une présence forte et élégante.'),
-  PhotoFormat(dimension: '40x60 cm', price: 3250, images: ['assets/carousel/pflex.jpeg', 'assets/carousel/Pink Modern Pink October Instagram Post .png'], title: 'Impact Visuel Fort', description: 'Le choix des professionnels pour les expositions. Une clarté et un détail exceptionnels.'),
-  PhotoFormat(dimension: '50x60 cm', price: 3750, images: ['assets/carousel/Pink Modern Pink October Instagram Post .png', 'assets/carousel/Ajouter un sous-titre.png'], title: 'Très Grand Format', description: 'Pour immortaliser vos plus beaux souvenirs avec grandeur. Effet "wow" garanti.'),
-  PhotoFormat(dimension: '60x90 cm', price: 4500, images: ['assets/carousel/Ajouter un sous-titre.png', 'assets/images/pro.png'], title: 'Poster Géant', description: 'La taille idéale pour les posters ou les affiches promotionnelles. Attire tous les regards.'),
-  PhotoFormat(dimension: '60x120 cm', price: 6250, images: ['assets/images/pro.png', 'assets/logos/mixbyyass.jpg'], title: 'Immersion Maximale', description: 'La plus grande taille disponible pour une immersion totale. Une déclaration artistique.'),
-];
 
 final NumberFormat currencyFormatter =
     NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
 
+/// ===============================
+/// SCREEN
+/// ===============================
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
 
@@ -52,241 +25,125 @@ class PortfolioScreen extends StatefulWidget {
 }
 
 class _PortfolioScreenState extends State<PortfolioScreen> {
-  final PageController _page = PageController(viewportFraction: 0.86);
-  int _index = 0;
+  late Future<List<PhotoFormat>> _dimensionsFuture;
 
-  void _openDetails(PhotoFormat format) {
+  @override
+  void initState() {
+    super.initState();
+    _dimensionsFuture = ApiService.fetchDimensions();
+  }
+
+  void _openDetails(BuildContext context, PhotoFormat format) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.85),
+      barrierColor: Colors.black.withOpacity(0.85),
       builder: (_) => DimensionDetailDialog(format: format),
     );
   }
 
-  void _go(int index) {
-    if (reduceMotion(context)) {
-      _page.jumpToPage(index);
-    } else {
-      _page.animateToPage(index, duration: const Duration(milliseconds: 350), curve: Curves.easeOutCubic);
-    }
-  }
-
-  @override
-  void dispose() {
-    _page.dispose();
-    super.dispose();
+  Future<void> _refreshDimensions() async {
+    setState(() {
+      _dimensionsFuture = ApiService.fetchDimensions();
+    });
+    await _dimensionsFuture;
   }
 
   @override
   Widget build(BuildContext context) {
-    final format = photoFormats[_index];
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: AppColors.navyDeep,
-        appBar: piconBar('Guide des Dimensions', dark: true),
-        body: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Galerie',
-                        style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    Text(
-                      '${_index + 1} / ${photoFormats.length}',
-                      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: PageView.builder(
-                  controller: _page,
-                  itemCount: photoFormats.length,
-                  onPageChanged: (i) => setState(() => _index = i),
-                  itemBuilder: (context, index) {
-                    final item = photoFormats[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-                      child: _GlassFormatCard(
-                        format: item,
-                        onTap: () => _openDetails(item),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-                child: Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Précédent',
-                      onPressed: _index == 0 ? null : () => _go(_index - 1),
-                      icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
-                    ),
-                    Expanded(
-                      child: Text(
-                        format.dimension,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Suivant',
-                      onPressed: _index == photoFormats.length - 1 ? null : () => _go(_index + 1),
-                      icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 78,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  itemExtent: 76,
-                  itemCount: photoFormats.length,
-                  itemBuilder: (context, index) {
-                    final active = index == _index;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: GestureDetector(
-                        onTap: () => _go(index),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: active ? AppColors.accent : Colors.white24,
-                              width: active ? 2 : 1,
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.asset(
-                              photoFormats[index].images.first,
-                              width: 64,
-                              height: 56,
-                              fit: BoxFit.cover,
-                              cacheWidth: 180,
-                              errorBuilder: (_, __, ___) => const SizedBox(
-                                width: 64,
-                                height: 56,
-                                child: Icon(Icons.image_not_supported, color: Colors.white, size: 20),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.navyDeep,
+      appBar: AppBar(
+        title: const Text('Guide des Dimensions'),
+        
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CircleAvatar(
+            backgroundColor: Colors.white,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
         ),
       ),
-    );
-  }
-}
+      body: Stack(
+        children: [
+          const ColoredBox(color: AppColors.navyDeep, child: SizedBox.expand()),
+          SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _refreshDimensions,
+              color: AppColors.primary,
+              child: FutureBuilder<List<PhotoFormat>>(
+              future: _dimensionsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.fromLTRB(48, 24, 48, 120),
+                    child: PiconSkeleton(height: double.infinity, radius: 28, dark: true),
+                  );
+                } else if (snapshot.hasError) {
+                  return AppInlineError(error: snapshot.error!, onRetry: _refreshDimensions);
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 200),
+                          Center(
+                            child: PiconEmpty(
+                              icon: Icons.photo_size_select_large_outlined,
+                              title: 'Aucune dimension trouvée.',
+                              subtitle: 'Les formats du studio apparaîtront ici.',
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-class _GlassFormatCard extends StatelessWidget {
-  final PhotoFormat format;
-  final VoidCallback onTap;
-
-  const _GlassFormatCard({required this.format, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return TapScale(
-      onTap: onTap,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          color: Colors.white.withValues(alpha: 0.08),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Image.asset(
-                  format.images.first,
-                  fit: BoxFit.cover,
-                  cacheWidth: 900,
-                  errorBuilder: (_, __, ___) => const Center(
-                    child: Icon(Icons.image_not_supported, color: Colors.white54, size: 42),
+                final photoFormats = snapshot.data!;
+                  return _FormatGallery(
+                    formats: photoFormats,
+                    onOpen: (format) => _openDetails(context, format),
+                  );
+                  // Grille d'origine, conservée comme vue alternative.
+                  // ignore: dead_code
+                  return GridView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.78,
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            format.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
-                          ),
-                        ),
-                        if (format.isPopular) const _PopularBadge(),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      format.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.3),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            format.dimension,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            currencyFormatter.format(format.price),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
-                            style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w800, fontSize: 16),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                  itemCount: photoFormats.length,
+                  itemBuilder: (context, index) {
+                    final format = photoFormats[index];
+                    return GestureDetector(
+                      onTap: () => _openDetails(context, format),
+                      child: DimensionTile(format: format),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 }
 
+/// ===============================
+/// TILE
+/// ===============================
 class DimensionTile extends StatelessWidget {
   final PhotoFormat format;
 
@@ -294,7 +151,73 @@ class DimensionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GlassFormatCard(format: format, onTap: () {});
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          CachedNetworkImage(
+            imageUrl: format.images.isEmpty ? '' : ApiService.getFullImageUrl(format.images.first),
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            memCacheWidth: 480,
+            placeholder: (context, url) => const PiconSkeleton(height: double.infinity, radius: 0),
+            errorWidget: (context, url, error) => const Icon(Icons.image_not_supported),
+          ),
+          _TileInfo(format: format),
+          if (format.isPopular) const _PopularBadge(),
+        ],
+      ),
+    );
+  }
+}
+
+class _TileInfo extends StatelessWidget {
+  final PhotoFormat format;
+
+  const _TileInfo({required this.format});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            color: Colors.black.withOpacity(0.45),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    format.dimension,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    currencyFormatter.format(format.price),
+                    style: const TextStyle(
+                        color: Colors.orangeAccent,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -303,27 +226,39 @@ class _PopularBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.accent,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Text(
-        'Populaire',
-        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.accent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text(
+          'Populaire',
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
 }
 
+/// ===============================
+/// DETAIL DIALOG
+/// ===============================
 class DimensionDetailDialog extends StatefulWidget {
   final PhotoFormat format;
 
   const DimensionDetailDialog({super.key, required this.format});
 
   @override
-  State<DimensionDetailDialog> createState() => _DimensionDetailDialogState();
+  State<DimensionDetailDialog> createState() =>
+      _DimensionDetailDialogState();
 }
 
 class _DimensionDetailDialogState extends State<DimensionDetailDialog> {
@@ -334,92 +269,389 @@ class _DimensionDetailDialogState extends State<DimensionDetailDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          color: const Color(0xF0101830),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Stack(
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              color: Colors.black.withOpacity(0.7),
+              child: SingleChildScrollView(
+                child: Column(
                   children: [
                     CarouselSlider(
                       options: CarouselOptions(
-                        height: 280,
+                        height: 300,
                         viewportFraction: 1,
-                        enableInfiniteScroll: widget.format.images.length > 1,
-                        onPageChanged: (i, _) => setState(() => currentIndex = i),
+                        onPageChanged: (i, _) =>
+                            setState(() => currentIndex = i),
                       ),
                       items: widget.format.images.map((img) {
-                        return Image.asset(
-                          img,
+                        return CachedNetworkImage(
+                          imageUrl: ApiService.getFullImageUrl(img),
                           fit: BoxFit.contain,
                           width: double.infinity,
-                          cacheWidth: 1000,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported, color: Colors.white),
+                          placeholder: (context, url) => const PiconSkeleton(height: 300, radius: 0, dark: true),
+                          errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.white54),
                         );
                       }).toList(),
                     ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: IconButton(
-                        tooltip: 'Fermer',
-                        onPressed: () => Navigator.pop(context),
-                        icon: const CircleAvatar(
-                          backgroundColor: Colors.white,
-                          child: Icon(Icons.close, color: AppColors.primary),
-                        ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.format.title,
+                            style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.format.description,
+                            style: const TextStyle(
+                                color: Colors.white70),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: [
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  widget.format.dimension,
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.white),
+                                ),
+                              ),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  currencyFormatter
+                                      .format(widget.format.price),
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.orangeAccent,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          )
+                        ],
                       ),
                     ),
                   ],
                 ),
-                if (widget.format.images.length > 1)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(widget.format.images.length, (i) {
-                        final active = i == currentIndex;
-                        return Container(
-                          width: active ? 16 : 6,
-                          height: 6,
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          decoration: BoxDecoration(
-                            color: active ? AppColors.accent : Colors.white24,
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                        );
-                      }),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 6,
+            right: 6,
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: AppColors.primary), // Use primary color for icon
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ===============================
+/// GALERIE (réf. carrousel verre dépoli DeO_5_FTXn2)
+/// ===============================
+class _FormatGallery extends StatefulWidget {
+  final List<PhotoFormat> formats;
+  final ValueChanged<PhotoFormat> onOpen;
+
+  const _FormatGallery({required this.formats, required this.onOpen});
+
+  @override
+  State<_FormatGallery> createState() => _FormatGalleryState();
+}
+
+class _FormatGalleryState extends State<_FormatGallery> {
+  final PageController _page = PageController(viewportFraction: 0.74);
+  int _index = 0;
+
+  @override
+  void dispose() {
+    _page.dispose();
+    super.dispose();
+  }
+
+  String _cover(PhotoFormat f) => f.images.isEmpty ? '' : ApiService.getFullImageUrl(f.images.first);
+
+  @override
+  Widget build(BuildContext context) {
+    final formats = widget.formats;
+    final current = formats[_index.clamp(0, formats.length - 1)];
+    final reduced = reduceMotion(context);
+    return Stack(
+      children: [
+        // Fond : visuel courant flouté, comme une scène.
+        Positioned.fill(
+          child: AnimatedSwitcher(
+            duration: Duration(milliseconds: reduced ? 1 : 450),
+            child: ImageFiltered(
+              key: ValueKey(current.dimension),
+              imageFilter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+              child: _cover(current).isEmpty
+                  ? const ColoredBox(color: AppColors.primary)
+                  : CachedNetworkImage(
+                      imageUrl: _cover(current),
+                      fit: BoxFit.cover,
+                      memCacheWidth: 200,
+                      errorWidget: (_, __, ___) => const ColoredBox(color: AppColors.primary),
                     ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.format.title,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.navyDeep.withValues(alpha: 0.55),
+                  AppColors.navyDeep.withValues(alpha: 0.92),
+                ],
+              ),
+            ),
+          ),
+        ),
+        CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Galerie des formats',
+                        style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
                       ),
-                      const SizedBox(height: 8),
-                      Text(widget.format.description, style: const TextStyle(color: Colors.white70, height: 1.35)),
-                      const SizedBox(height: 16),
-                      Row(
+                    ),
+                    Text(
+                      '${_index + 1} / ${formats.length}',
+                      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 420,
+                child: RepaintBoundary(
+                  child: PageView.builder(
+                    controller: _page,
+                    itemCount: formats.length,
+                    onPageChanged: (i) => setState(() => _index = i),
+                    itemBuilder: (context, i) {
+                      final f = formats[i];
+                      final active = i == _index;
+                      return AnimatedScale(
+                        scale: active ? 1 : 0.9,
+                        duration: Duration(milliseconds: reduced ? 1 : 260),
+                        curve: Curves.easeOutCubic,
+                        child: TapScale(
+                          onTap: () => widget.onOpen(f),
+                          child: _GlassFormatCard(format: f, cover: _cover(f), active: active),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 64,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  itemCount: formats.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final active = i == _index;
+                    return GestureDetector(
+                      onTap: () => reduced
+                          ? _page.jumpToPage(i)
+                          : _page.animateToPage(i,
+                              duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic),
+                      child: AnimatedContainer(
+                        duration: Duration(milliseconds: reduced ? 1 : 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: active ? AppColors.accent : Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: active ? AppColors.accent : Colors.white24),
+                        ),
+                        child: Text(
+                          formats[i].dimension,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(20, 14, 20, 6),
+                child: Text(
+                  'Tous les formats',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 14,
+                  crossAxisSpacing: 14,
+                  childAspectRatio: 0.78,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => GestureDetector(
+                    onTap: () => widget.onOpen(formats[i]),
+                    child: DimensionTile(format: formats[i]),
+                  ),
+                  childCount: formats.length,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _GlassFormatCard extends StatelessWidget {
+  final PhotoFormat format;
+  final String cover;
+  final bool active;
+
+  const _GlassFormatCard({required this.format, required this.cover, required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: active ? Colors.white.withValues(alpha: 0.55) : Colors.white24,
+            width: active ? 1.4 : 1,
+          ),
+          boxShadow: active
+              ? const [BoxShadow(color: Color(0x66000000), blurRadius: 30, offset: Offset(0, 18))]
+              : const [],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(27),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (cover.isEmpty)
+                const ColoredBox(color: AppColors.primary)
+              else
+                CachedNetworkImage(
+                  imageUrl: cover,
+                  fit: BoxFit.cover,
+                  memCacheWidth: 720,
+                  placeholder: (_, __) => const PiconSkeleton(height: double.infinity, radius: 0, dark: true),
+                  errorWidget: (_, __, ___) => const ColoredBox(
+                    color: AppColors.primary,
+                    child: Icon(Icons.image_not_supported_outlined, color: Colors.white54),
+                  ),
+                ),
+              if (format.isPopular) const _PopularBadge(),
+              Positioned(
+                left: 10,
+                right: 10,
+                bottom: 10,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(widget.format.dimension, style: const TextStyle(fontSize: 18, color: Colors.white)),
-                          const Spacer(),
                           Text(
-                            currencyFormatter.format(widget.format.price),
-                            style: const TextStyle(fontSize: 18, color: AppColors.accent, fontWeight: FontWeight.w800),
+                            format.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800),
+                          ),
+                          if (format.description.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              format.description,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.3),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Text(
+                                format.dimension,
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                                child: Text(
+                                  currencyFormatter.format(format.price),
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

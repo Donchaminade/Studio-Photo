@@ -1,0 +1,6 @@
+on va ajouter le meme filtre qu'on a jouter sur agence sur caisse 
+
+desactivé , activé , ouvert et fermer
+
+mais avant de faire on va créer un nouvelle branch  
+

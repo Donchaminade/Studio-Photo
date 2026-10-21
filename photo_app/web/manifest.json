@@ -1,6 +1,6 @@
 {
-    "name": "photo_app",
-    "short_name": "photo_app",
+    "name": "Picon",
+    "short_name": "Picon",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

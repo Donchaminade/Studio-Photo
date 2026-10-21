@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:photo_app/widgets/picon_ui.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class LoadingButton extends StatefulWidget {
   final Future<void> Function()? onPressed;
