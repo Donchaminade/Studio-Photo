@@ -53,7 +53,7 @@ class ApiService {
   /// Méthode pour la connexion
   static Future<Map<String, dynamic>> login(
       String email, String password) async {
-    final url = '$baseUrl/login.php';
+    const url = '$baseUrl/login.php';
     final body = {'email': email, 'password': password};
 
     final response = await _safePost(url, body);
@@ -63,7 +63,7 @@ class ApiService {
   /// Méthode pour l'inscription
   static Future<Map<String, dynamic>> signup(
       String name, String email, String password) async {
-    final url = '$baseUrl/signup.php';
+    const url = '$baseUrl/signup.php';
     final body = {'name': name, 'email': email, 'password': password};
 
     final response = await _safePost(url, body);
@@ -80,7 +80,7 @@ class ApiService {
 
   /// Méthode pour récupérer les tarifs des tirages
   static Future<List<Map<String, dynamic>>> getPrices() async {
-    final url = '$baseUrl/get_prices.php';
+    const url = '$baseUrl/get_prices.php';
     final response = await _safeGet(url);
     final data = _handleResponse(response);
     // Assumes the API returns a list of objects under the 'prices' key

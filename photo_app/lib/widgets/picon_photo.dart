@@ -25,6 +25,18 @@ class PiconPhoto extends StatelessWidget {
     if (source.isEmpty) {
       return _fallback(width, height);
     }
+    if (source.startsWith('format:')) {
+      // Tirage ajouté depuis les tarifs, sans photo associée pour l'instant.
+      return SizedBox(
+        width: width,
+        height: height,
+        child: const ColoredBox(
+          color: Color(0xFFE6ECF8),
+          child: Center(
+              child: Icon(Icons.print_outlined, color: Color(0xFF032A85))),
+        ),
+      );
+    }
     final pixels = cachePixels.clamp(48, 1400);
     if (source.startsWith('http://') || source.startsWith('https://')) {
       return CachedNetworkImage(
@@ -73,7 +85,8 @@ Widget _fallback(double? width, double? height, {bool broken = true}) {
       color: const Color(0xFFE8EDF5),
       child: broken
           ? const Center(
-              child: Icon(Icons.broken_image_outlined, color: Color(0xFF9AA3B2)),
+              child:
+                  Icon(Icons.broken_image_outlined, color: Color(0xFF9AA3B2)),
             )
           : const SizedBox.expand(),
     ),

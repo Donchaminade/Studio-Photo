@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:photo_app/home_screen.dart';
 import 'package:photo_app/recovery_screen.dart';
+import 'package:photo_app/services/session_store.dart';
 import 'package:photo_app/utils/colors.dart';
 import 'package:photo_app/utils/geometric_background.dart';
 import 'package:photo_app/widgets/phone_prefix.dart';
@@ -24,6 +25,21 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _error = false;
   int _shake = 0;
   bool _isLoginWithPhone = true;
+  String _dialCode = '+228';
+
+  String? _savedDial;
+
+  @override
+  void initState() {
+    super.initState();
+    SessionStore.instance.signupDialCode().then((code) {
+      if (!mounted || code == null || code.isEmpty) return;
+      setState(() {
+        _savedDial = code;
+        _dialCode = code;
+      });
+    }).catchError((Object _) {});
+  }
 
   Future<void> _login() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
@@ -42,6 +58,19 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     await Future.delayed(const Duration(seconds: 3));
+
+    // Session persistante : l'utilisateur reste connecté après une mise en
+    // arrière-plan ou un redémarrage de l'application.
+    await SessionStore.instance.save(
+      UserSession(
+        userId: 1,
+        userName: 'Test User',
+        email: _isLoginWithPhone ? '' : _emailController.text.trim(),
+        dialCode: _isLoginWithPhone ? _dialCode : '',
+        phone: _isLoginWithPhone ? _phoneController.text.trim() : '',
+        token: SessionStore.newToken(),
+      ),
+    );
 
     if (!mounted) return;
     setState(() {
@@ -114,7 +143,9 @@ class _LoginScreenState extends State<LoginScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            const Center(child: _SecureBadge()),
+            const SizedBox(height: 16),
             PillToggle(
               labels: const ['Téléphone', 'Email'],
               index: _isLoginWithPhone ? 0 : 1,
@@ -125,7 +156,11 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const AfricanPhonePrefix(),
+                  AfricanPhonePrefix(
+                    key: ValueKey(_savedDial),
+                    initialSelection: _savedDial ?? 'TG',
+                    onChanged: (code) => _dialCode = code,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextFormField(
@@ -133,7 +168,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: piconField('Numéro de téléphone'),
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
-                      validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
+                      validator: (value) =>
+                          (value?.isEmpty ?? true) ? 'Champ requis' : null,
                     ),
                   ),
                 ],
@@ -146,7 +182,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Champ requis';
-                  if (!RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)) {
+                  if (!RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+                      .hasMatch(value)) {
                     return 'Email invalide';
                   }
                   return null;
@@ -158,17 +195,21 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: _obscureText,
               textInputAction: TextInputAction.done,
               onFieldSubmitted: (_) => _isLoading ? null : _login(),
-              decoration: piconField('Mot de passe', icon: Icons.lock_outline).copyWith(
+              decoration:
+                  piconField('Mot de passe', icon: Icons.lock_outline).copyWith(
                 suffixIcon: IconButton(
                   tooltip: _obscureText ? 'Afficher' : 'Masquer',
                   icon: Icon(
-                    _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscureText
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: AppColors.textSecondary,
                   ),
                   onPressed: () => setState(() => _obscureText = !_obscureText),
                 ),
               ),
-              validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
+              validator: (value) =>
+                  (value?.isEmpty ?? true) ? 'Champ requis' : null,
             ),
             Align(
               alignment: Alignment.centerRight,
@@ -176,7 +217,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const RecoveryScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const RecoveryScreen()),
                   );
                 },
                 child: const Text('Mot de passe oublié ?'),
@@ -194,15 +236,56 @@ class _LoginScreenState extends State<LoginScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('Pas de compte ?', style: TextStyle(color: AppColors.textPrimary)),
+                const Text('Pas de compte ?',
+                    style: TextStyle(color: AppColors.textPrimary)),
                 TextButton(
                   onPressed: () => Navigator.pushNamed(context, '/signup'),
-                  child: const Text("S'inscrire", style: TextStyle(color: AppColors.primary)),
+                  child: const Text("S'inscrire",
+                      style: TextStyle(color: AppColors.primary)),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Badge « connexion sécurisée » (réf. login secure DcOUIemTImO) : le cadenas
+/// s'ouvre une fois, puis reste fixe.
+class _SecureBadge extends StatelessWidget {
+  const _SecureBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = reduceMotion(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: reduced ? 1 : 0, end: 1),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutBack,
+            builder: (context, t, _) => Icon(
+              t < 0.6 ? Icons.lock_outline_rounded : Icons.verified_user_outlined,
+              size: 16,
+              color: Color.lerp(AppColors.textSecondary, AppColors.primary, t),
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Text(
+            'Connexion sécurisée',
+            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700, fontSize: 12),
+          ),
+        ],
       ),
     );
   }
