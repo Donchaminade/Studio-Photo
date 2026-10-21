@@ -1,292 +1,236 @@
-import 'dart:ui';
-import 'package:Picon/api_service.dart';
-import 'package:Picon/models/photo_format.dart';
-import 'package:Picon/utils/colors.dart';
-import 'package:Picon/utils/geometric_background.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-
+import 'package:Picon/api_service.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class PricingScreen extends StatefulWidget {
   const PricingScreen({super.key});
+
+  static final List<Map<String, dynamic>> fallbackPrintPrices = [
+    {'dimension': '9x13 cm', 'price': 75},
+    {'dimension': '10x15 cm', 'price': 150},
+    {'dimension': '13x18 cm', 'price': 125},
+    {'dimension': '15x21 cm', 'price': 175},
+    {'dimension': '20x25 cm', 'price': 375},
+    {'dimension': '20x30 cm', 'price': 500},
+    {'dimension': '24x30 cm', 'price': 750},
+    {'dimension': '30x40 cm', 'price': 1250},
+    {'dimension': '30x45 cm', 'price': 1500},
+    {'dimension': '30x90 cm', 'price': 2000},
+    {'dimension': '40x50 cm', 'price': 2500},
+    {'dimension': '40x60 cm', 'price': 3250},
+    {'dimension': '50x60 cm', 'price': 3750},
+    {'dimension': '60x90 cm', 'price': 4500},
+    {'dimension': '60x120 cm', 'price': 6250},
+  ];
 
   @override
   State<PricingScreen> createState() => _PricingScreenState();
 }
 
 class _PricingScreenState extends State<PricingScreen> {
-  late Future<List<PhotoFormat>> _pricesFuture;
+  late Future<List<Map<String, dynamic>>> _pricesFuture;
 
   @override
   void initState() {
     super.initState();
-    _pricesFuture = ApiService.fetchDimensions();
+    _pricesFuture = _loadPrices();
   }
 
-  Future<void> _refreshPrices() async {
-    setState(() {
-      _pricesFuture = ApiService.fetchDimensions();
-    });
-    await _pricesFuture;
+  Future<List<Map<String, dynamic>>> _loadPrices() async {
+    final dims = await ApiService.fetchDimensions();
+    return [
+      for (final dim in dims) {'dimension': dim.dimension, 'price': dim.price},
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('Prix des Tirages'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.navyDeep,
+        appBar: piconBar('Prix des Tirages', dark: true),
+        body: SafeArea(
+          top: false,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _pricesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Colors.white));
+              }
+              if (snapshot.hasError) {
+                return AppInlineError(
+                  error: snapshot.error!,
+                  onRetry: () {
+                    setState(() => _pricesFuture = _loadPrices());
+                  },
+                );
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return _OfferCarousel(prices: PricingScreen.fallbackPrintPrices, isOffline: true);
+              }
+              return _OfferCarousel(prices: snapshot.data!);
+            },
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          GeometricBackground(),
-          SafeArea(
-            child: RefreshIndicator(
-              onRefresh: _refreshPrices,
-              color: AppColors.primary,
-              child: FutureBuilder<List<PhotoFormat>>(
-                future: _pricesFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                    String errorMessage = snapshot.error.toString();
-                    if (errorMessage.startsWith('Exception: ')) {
-                      errorMessage = errorMessage.substring(11);
-                    }
-                    return Center(
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          const SizedBox(height: 200),
-                          Center(child: Text("Impossible de charger les tarifs. $errorMessage")),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final prices = snapshot.data!;
-                  return _buildGridView(prices);
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
+}
 
-  Widget _buildGridView(List<PhotoFormat> prices, {bool isOffline = false}) {
-    final currencyFormatter = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+class _OfferCarousel extends StatefulWidget {
+  final List<Map<String, dynamic>> prices;
+  final bool isOffline;
 
-    // Fonction rudimentaire pour vérifier si c'est un cadre (>= 20x25)
-    bool isFramed(String dim) {
-      if (dim.contains('20x25') || dim.contains('20 x 25')) return true;
-      if (dim.contains('20x30') || dim.contains('30x40') || dim.contains('40x60') || dim.contains('50x70') || dim.contains('60x80') || dim.contains('60x90') || dim.contains('A4') || dim.contains('A3')) return true;
-      
-      // Essayer d'extraire la première largeur pour une comparaison numérique si format NxM
-      final regex = RegExp(r'^(\d+)[xX]');
-      final match = regex.firstMatch(dim);
-      if (match != null) {
-        final width = int.tryParse(match.group(1) ?? '0') ?? 0;
-        if (width >= 20) return true;
-      }
-      return false;
+  const _OfferCarousel({required this.prices, this.isOffline = false});
+
+  @override
+  State<_OfferCarousel> createState() => _OfferCarouselState();
+}
+
+class _OfferCarouselState extends State<_OfferCarousel> {
+  final PageController _page = PageController(viewportFraction: 0.78);
+  int _index = 0;
+  final _currency = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+
+  @override
+  void dispose() {
+    _page.dispose();
+    super.dispose();
+  }
+
+  void _go(int index) {
+    if (reduceMotion(context)) {
+      _page.jumpToPage(index);
+    } else {
+      _page.animateToPage(index, duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
     }
+  }
 
-    final standardPrints = prices.where((p) => !isFramed(p.dimension)).toList();
-    final framedPrints = prices.where((p) => isFramed(p.dimension)).toList();
+  String _priceLabel(dynamic raw) {
+    final num value = raw is num ? raw : num.tryParse('$raw') ?? 0;
+    return _currency.format(value);
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    final selected = widget.prices[_index];
     return Column(
       children: [
-        if (isOffline)
+        if (widget.isOffline)
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               'Impossible de charger les tarifs en ligne. Affichage des tarifs hors ligne.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: Colors.white70),
             ),
           ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Choisissez un format',
+              style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ),
         Expanded(
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              if (standardPrints.isNotEmpty) ...[
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                    child: Text(
-                      'Tirages Simples',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+          child: PageView.builder(
+            controller: _page,
+            itemCount: widget.prices.length,
+            onPageChanged: (i) => setState(() => _index = i),
+            itemBuilder: (context, index) {
+              final item = widget.prices[index];
+              final active = index == _index;
+              final dimension = '${item['dimension']}';
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+                child: TapScale(
+                  onTap: () => setState(() => _index = index),
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: reduceMotion(context) ? 1 : 220),
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      color: active ? Colors.white.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.06),
+                      border: Border.all(
+                        color: active ? AppColors.accent : Colors.white24,
+                        width: active ? 1.6 : 1,
                       ),
                     ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 1.2,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final item = standardPrints[index];
-                        return _PriceTile(
-                          dimension: item.dimension,
-                          price: currencyFormatter.format(item.price),
-                        );
-                      },
-                      childCount: standardPrints.length,
-                    ),
-                  ),
-                ),
-              ],
-              if (framedPrints.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 32, 16, 8),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Photos avec Cadre',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                        if (active)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: const Text(
+                              'Sélectionné',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
+                        const Spacer(),
                         Text(
-                          'À partir du format 20x25 cm, les photos sont livrées directement avec un cadre photo.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary.withOpacity(0.8),
-                            fontStyle: FontStyle.italic,
-                          ),
+                          dimension,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _priceLabel(item['price']),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.accent, fontSize: 22, fontWeight: FontWeight.w800),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          active ? Icons.check_circle : Icons.circle_outlined,
+                          color: active ? AppColors.accent : Colors.white38,
                         ),
                       ],
                     ),
                   ),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 1.2,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final item = framedPrints[index];
-                        return _PriceTile(
-                          dimension: item.dimension,
-                          price: currencyFormatter.format(item.price),
-                          isFramed: true,
-                        );
-                      },
-                      childCount: framedPrints.length,
-                    ),
-                  ),
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          child: Row(
+            children: [
+              IconButton(
+                tooltip: 'Précédent',
+                onPressed: _index == 0 ? null : () => _go(_index - 1),
+                icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
+              ),
+              Expanded(
+                child: Text(
+                  '${selected['dimension']} · ${_priceLabel(selected['price'])}',
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                 ),
-              ],
-              const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+              ),
+              IconButton(
+                tooltip: 'Suivant',
+                onPressed: _index == widget.prices.length - 1 ? null : () => _go(_index + 1),
+                icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
+              ),
             ],
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PriceTile extends StatelessWidget {
-  final String dimension;
-  final String price;
-  final bool isFramed;
-
-  const _PriceTile({
-    required this.dimension,
-    required this.price,
-    this.isFramed = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.primary, width: 1.0), // Blue primary fine border
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isFramed)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 4.0),
-                  child: Icon(Icons.crop_original, color: AppColors.primary, size: 20),
-                ),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    dimension,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AppColors.textPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    price,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 20,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

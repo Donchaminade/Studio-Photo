@@ -161,18 +161,24 @@ public class AdminUserController {
 
     @DeleteMapping("/api/{id}")
     @ResponseBody
-    public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
-        if (adminUserService.deleteUser(id)) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<?> deleteUser(@PathVariable Integer id) {
+        return adminUserService.deleteUser(id)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/api/bulk-delete")
     @ResponseBody
-    public ResponseEntity<Void> bulkDeleteUsers(@RequestBody List<Integer> ids) {
-        ids.forEach(adminUserService::deleteUser);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> bulkDeleteUsers(@RequestBody List<Integer> ids) {
+        List<Map<String, Object>> results = new java.util.ArrayList<>();
+        for (Integer id : ids) {
+            adminUserService.deleteUser(id).ifPresent(results::add);
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("deleted", results.size());
+        body.put("results", results);
+        body.put("message", results.size() + " utilisateur(s) traité(s). Les comptes avec historique ont été désactivés.");
+        return ResponseEntity.ok(body);
     }
 
     // New API endpoints for user actions

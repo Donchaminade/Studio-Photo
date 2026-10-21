@@ -1,64 +1,59 @@
-import 'package:Picon/utils/colors.dart';
-import 'package:Picon/utils/geometric_background.dart';
 import 'package:flutter/material.dart';
+import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class NoConnectionScreen extends StatelessWidget {
-  const NoConnectionScreen({super.key});
+  final bool isRetrying;
+  final VoidCallback? onRetry;
+
+  const NoConnectionScreen({
+    super.key,
+    this.isRetrying = false,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          GeometricBackground(),
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+          const GeometricBackground(),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.wifi_off,
-                  size: 100,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Pas de connexion Internet',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                children: [
+                  const Spacer(),
+                  const Reveal(
+                    child: PiconEmpty(
+                      icon: Icons.wifi_off_rounded,
+                      title: 'Pas de connexion Internet',
+                      subtitle: 'Veuillez vérifier votre connexion et réessayer.',
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Veuillez vérifier votre connexion et réessayer.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // This button could try to reconnect or navigate to an offline mode
-                    // For now, it just pops the screen
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Mode hors ligne'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textOnPrimary,
-                  ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  if (onRetry != null)
+                    PiconButton(
+                      label: 'Réessayer',
+                      icon: Icons.refresh_rounded,
+                      loading: isRetrying,
+                      onPressed: isRetrying ? null : onRetry,
+                    )
+                  else
+                    PiconButton(
+                      label: 'Mode hors ligne',
+                      icon: Icons.arrow_back,
+                      onPressed: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        }
+                      },
+                    ),
+                  const Spacer(),
+                ],
+              ),
             ),
-          ),
           ),
         ],
       ),

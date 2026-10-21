@@ -1,13 +1,14 @@
 import 'dart:ui';
 import 'package:Picon/api_service.dart';
-import 'package:Picon/models/contact_info.dart';
+import 'package:Picon/confirmation_screen.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/utils/image_helper.dart';
+import 'package:Picon/utils/mobile_operator_utils.dart';
+import 'package:Picon/utils/studio_print_advice.dart';
 import 'package:Picon/widgets/music_wave_loader.dart';
-import 'package:Picon/payment_webview_screen.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:feda_flutter/feda_flutter.dart';
 
 class PaymentSelectionScreen extends StatefulWidget {
   final Map<String, Map<String, dynamic>> orderDetails;
@@ -38,40 +39,18 @@ class PaymentSelectionScreen extends StatefulWidget {
 }
 
 class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
-  String? _selectedMethodName = 'FedaPay';
+  static const String _mixxName = 'Mixx by Yas';
+  static const String _floozName = 'Flooz / Moov Money';
+
+  String? _selectedMethodName;
   Map<String, double>? _prices;
   bool _isLoadingPrices = true;
-
-  final List<Map<String, String>> _paymentMethods = [
-    {
-      'name': 'FedaPay',
-      'logo': 'assets/logos/pro.png',
-      'description': 'Paiement sécurisé via Mobile Money (dans l\'application).'
-    },
-  ];
+  bool _isSubmittingOrder = false;
 
   @override
   void initState() {
     super.initState();
     _fetchPrices();
-    // _fetchContactInfo(); // Removed: no longer needed
-    // Clé FedaPay : injectée au build via --dart-define=FEDAPAY_API_KEY=pk_live_xxx
-    // En dev sans dart-define, bascule automatiquement sur la clé sandbox.
-    const fedaApiKey = String.fromEnvironment(
-      'FEDAPAY_API_KEY',
-      defaultValue: 'pk_sandbox_T07_uKrSPDbodUlB0zTbAoGb',
-    );
-    const fedaEnv = String.fromEnvironment(
-      'FEDAPAY_ENV',
-      defaultValue: 'sandbox',
-    );
-    final feda = FedaFlutter(
-      apiKey: fedaApiKey,
-      environment: fedaEnv == 'live'
-          ? ApiEnvironment.live
-          : ApiEnvironment.sandbox,
-    );
-    feda.initialize();
   }
 
   Future<void> _fetchPrices() async {
@@ -85,12 +64,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
       }
     } catch (e) {
       if (mounted) {
-        String errorMessage = e.toString();
-        if (errorMessage.startsWith('Exception: ')) {
-          errorMessage = errorMessage.substring(11);
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMessage)));
+        await showAppError(context, e);
         setState(() {
           _isLoadingPrices = false;
         });
@@ -98,10 +72,92 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
     }
   }
 
-  void _onMethodSelected(String methodName) {
-    setState(() {
-      _selectedMethodName = methodName;
-    });
+  Future<bool> _showPaymentInstructionsDialog() async {
+    const highlight = TextStyle(
+      fontWeight: FontWeight.w700,
+      color: Colors.deepOrange,
+    );
+
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text(
+              'Avant de payer',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Après le paiement USSD, revenez dans l\'application pour confirmer :',
+                    style: TextStyle(height: 1.35),
+                  ),
+                  const SizedBox(height: 16),
+                  _PaymentInstructionStep(
+                    number: 1,
+                    child: Text.rich(
+                      TextSpan(
+                        style: const TextStyle(height: 1.35),
+                        children: [
+                          const TextSpan(text: 'Faites une '),
+                          TextSpan(text: 'capture d\'écran', style: highlight),
+                          const TextSpan(text: ' de votre paiement'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _PaymentInstructionStep(
+                    number: 2,
+                    child: Text.rich(
+                      TextSpan(
+                        style: const TextStyle(height: 1.35),
+                        children: [
+                          const TextSpan(text: 'Chargez la '),
+                          TextSpan(text: 'capture', style: highlight),
+                          const TextSpan(text: ' pour confirmer'),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _PaymentInstructionStep(
+                    number: 3,
+                    child: Text.rich(
+                      TextSpan(
+                        style: const TextStyle(height: 1.35),
+                        children: [
+                          const TextSpan(text: 'Validez et '),
+                          TextSpan(text: 'attendez', style: highlight),
+                          const TextSpan(text: ' notre confirmation'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('OK, passer au paiement'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _showLoadingDialog() {
@@ -113,107 +169,184 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
         child: const Dialog(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          child: Center(
-            child: MusicWaveLoader(),
-          ),
+          child: Center(child: MusicWaveLoader()),
         ),
       ),
     );
   }
 
-  Future<void> _processPayment() async {
-    if (_selectedMethodName == null || _prices == null) return;
+  PaymentOperatorMismatch? _paymentMismatch() {
+    return MobileOperatorUtils.checkPaymentMatch(
+      phone: widget.customerPhone,
+      paymentMethod: _selectedMethodName ?? '',
+      country: widget.customerCountry ?? 'TG',
+    );
+  }
 
+  Future<bool> _showOperatorMismatchDialog(PaymentOperatorMismatch mismatch) async {
+    final detected = MobileOperatorUtils.operatorLabel(mismatch.detected);
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Color(0xFFE65100)),
+                SizedBox(width: 8),
+                Expanded(child: Text('Numéro et paiement')),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(mismatch.message),
+                const SizedBox(height: 12),
+                Text(
+                  'Numéro détecté : $detected',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  mismatch.suggestedAction,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Modifier'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Continuer quand même'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  void _onPaymentMethodSelected(String name) {
+    setState(() => _selectedMethodName = name);
+    final mismatch = MobileOperatorUtils.checkPaymentMatch(
+      phone: widget.customerPhone,
+      paymentMethod: name,
+      country: widget.customerCountry ?? 'TG',
+    );
+    if (mismatch != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mismatch.message),
+          backgroundColor: const Color(0xFFE65100),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onConfirmPressed() async {
+    if (_selectedMethodName == null || _prices == null || _isSubmittingOrder) {
+      return;
+    }
+
+    final mismatch = _paymentMismatch();
+    if (mismatch != null) {
+      final force = await _showOperatorMismatchDialog(mismatch);
+      if (!force || !mounted) return;
+    }
+
+    final proceed = await _showPaymentInstructionsDialog();
+    if (!proceed || !mounted) return;
+
+    await _processPayment();
+  }
+
+  Future<void> _processPayment() async {
+    if (_selectedMethodName == null || _prices == null || _isSubmittingOrder) {
+      return;
+    }
+
+    setState(() => _isSubmittingOrder = true);
     _showLoadingDialog();
 
     try {
-      final List<Map<String, dynamic>> items =
-          widget.orderDetails.entries.map((entry) {
+      final formatNames = _prices!.keys.toList();
+      final items = <Map<String, dynamic>>[];
+
+      for (final entry in widget.orderDetails.entries) {
         final details = entry.value;
-        return {
+        final chosenSize = details['size'] as String;
+        final imageSize = await getImageDimensions(entry.key);
+        final advice = buildStudioPrintAdvice(
+          imageSize,
+          chosenSize,
+          formatNames,
+        );
+
+        items.add({
           'imageUrl': entry.key,
-          'size': details['size'],
+          'size': chosenSize,
           'quantity': details['quantity'],
-          'price': _prices![details['size']], // Add price per unit if needed by backend for order item creation
-        };
-      }).toList();
+          'price': _prices![chosenSize],
+          'withFrame': details['withFrame'] == true,
+          if (details['withFrame'] == true) 'frameId': details['frameId'],
+          ...advice.toOrderItemFields(),
+        });
+      }
 
       if (ApiService.userId == null) {
-        throw "Veuillez vous reconnecter pour continuer le paiement.";
+        throw Exception('Veuillez vous reconnecter pour continuer le paiement.');
       }
 
-      final orderPayload = {
-        'isExpress': widget.isExpress, // Use widget.isExpress
+      final createdOrder = await ApiService.createOrder({
+        'isExpress': widget.isExpress,
         'paymentMethod': _selectedMethodName!,
         'items': items,
-        'userId': ApiService.userId,
-        'totalAmount': widget.totalAmount, // Pass totalAmount
-        'customerFirstname': widget.customerFirstname,
-        'customerLastname': widget.customerLastname,
-        'customerEmail': widget.customerEmail,
-        'customerPhone': widget.customerPhone,
-        'customerCountry': widget.customerCountry,
         'deliveryAddress': widget.deliveryAddress,
-      };
+      });
 
-      // --- Payment Integration Logic ---
-      String paymentUrl = "";
-      if (_selectedMethodName == 'FedaPay') {
-         final response = await ApiService.initiateFedapayPayment(orderPayload);
-         paymentUrl = response['paymentUrl'] as String;
-         final orderId = response['orderId'] as String;
-         ApiService.setPendingPayment(
-           orderDetails: widget.orderDetails,
-           prices: _prices!,
-           paymentMethod: _selectedMethodName!,
-           orderId: orderId,
-         );
-      } else {
-        throw "Méthode de paiement non supportée.";
-      }
-
-      if (mounted) Navigator.of(context).pop(); // Pop loader
+      if (mounted) Navigator.of(context).pop();
 
       if (mounted) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => PaymentWebViewScreen(
-              paymentUrl: paymentUrl,
+            builder: (context) => ConfirmationScreen(
+              orderDetails: widget.orderDetails,
+              paymentMethod: _selectedMethodName!,
+              totalAmount: widget.totalAmount,
+              orderId: createdOrder.id,
+              launchUssdOnOpen: true,
+              isExpress: widget.isExpress,
+              paymentPhone: widget.customerPhone,
+              customerCountry: widget.customerCountry ?? 'TG',
             ),
           ),
         );
       }
-
-      // On attend le deep link de succès/annulation avant d'aller au reçu.
     } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop(); // Pop loader on error
-        String errorMessage = e.toString();
-        if (errorMessage.startsWith('Exception: ')) {
-          errorMessage = errorMessage.substring(11);
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.red),
-        );
+        Navigator.of(context).pop();
+        await showAppError(context, e);
       }
-    }
-  }
-
-  String _getDescription(String? methodName) {
-    if (methodName == null) return '';
-    try {
-      final method = _paymentMethods.firstWhere((m) => m['name'] == methodName);
-      return method['description'] ?? '';
-    } catch (e) {
-      return '';
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmittingOrder = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final canConfirm = _selectedMethodName != null && !_isSubmittingOrder;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Confirmation finale'),
@@ -233,178 +366,254 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
           ),
         ),
       ),
-      body:
-          (_isLoadingPrices /* || _isLoadingContactInfo */) // _isLoadingContactInfo removed
-              ? const Center(child: CircularProgressIndicator())
-              : Stack(
+      body: _isLoadingPrices
+          ? const Center(child: CircularProgressIndicator())
+          : Stack(
+              children: [
+                GeometricBackground(),
+                Column(
                   children: [
-                    GeometricBackground(),
-                    Column(
-                      children: [
-                        // ── Badge montant total ──
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [AppColors.primary, AppColors.accent],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppColors.primary, AppColors.accent],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Total à payer',
+                              style: TextStyle(color: Colors.white70, fontSize: 14),
+                            ),
+                            Text(
+                              '${widget.totalAmount.toStringAsFixed(0)} FCFA',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
                               ),
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Total à payer',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                Flexible(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      '${widget.totalAmount.toStringAsFixed(0)} FCFA',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Text(
-                            'Veuillez confirmer vos informations avant de procéder au paiement sécurisé.',
-                            style: TextStyle(color: AppColors.textPrimary.withOpacity(0.7), fontSize: 13),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                // Bloc Info Client
-                                _buildInfoCard(
-                                  title: 'Informations de livraison',
-                                  icon: Icons.local_shipping_outlined,
-                                  children: [
-                                    _buildInfoRow(Icons.person_outline, 'Destinataire', '${widget.customerFirstname} ${widget.customerLastname}'),
-                                    _buildInfoRow(Icons.phone_outlined, 'Téléphone', widget.customerPhone ?? 'Non spécifié'),
-                                    _buildInfoRow(Icons.map_outlined, 'Adresse de livraison', widget.deliveryAddress ?? "Non spécifiée"),
-                                    _buildInfoRow(Icons.speed_outlined, 'Mode de retrait', widget.isExpress ? "Express (Prioritaire)" : "Standard"),
-                                  ],
-                                ),
-                                const SizedBox(height: 20),
-                                // Bloc Logos de confiance
-                                Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.lock_outline, size: 16, color: Colors.green),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'Paiement 100% sécurisé',
-                                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                        children: [
-                                          _buildTrustLogo('assets/logos/pro.png'), // Feda
-                                          _buildTrustLogo('assets/logos/mixbyyass.jpg'), // Yass
-                                          _buildTrustLogo('assets/logos/mastercard.png'),
-                                          _buildTrustLogo('assets/logos/flooz.webp'),
-                                          const Icon(Icons.credit_card, size: 32, color: AppColors.primary),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'Cartes Bancaires & Mobile Money (MTN, Moov, Flooz, MixxYas Wave)',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(fontSize: 11, color: AppColors.textSecondary.withOpacity(0.8)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        _buildConfirmButton(),
-                      ],
+                      ),
                     ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            _buildInfoCard(
+                              title: 'Informations de livraison',
+                              icon: Icons.local_shipping_outlined,
+                              children: [
+                                _buildInfoRow(
+                                  Icons.person_outline,
+                                  'Destinataire',
+                                  '${widget.customerFirstname} ${widget.customerLastname}',
+                                ),
+                                _buildInfoRow(
+                                  Icons.phone_outlined,
+                                  'Mobile Money',
+                                  _formatPaymentPhoneLine(),
+                                ),
+                                _buildInfoRow(
+                                  Icons.map_outlined,
+                                  'Adresse de livraison',
+                                  widget.deliveryAddress ?? 'Non spécifiée',
+                                ),
+                                _buildInfoRow(
+                                  Icons.speed_outlined,
+                                  'Mode de retrait',
+                                  widget.isExpress ? 'Express (Prioritaire)' : 'Standard',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            _buildPaymentMethodSelector(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    _buildConfirmButton(canConfirm),
                   ],
                 ),
+              ],
+            ),
     );
   }
 
-  Widget _buildInfoCard({required String title, required IconData icon, required List<Widget> children}) {
+  String _formatPaymentPhoneLine() {
+    final phone = widget.customerPhone ?? 'Non spécifié';
+    if (phone == 'Non spécifié') return phone;
+    final op = MobileOperatorUtils.detectOperator(
+      phone,
+      country: widget.customerCountry ?? 'TG',
+    );
+    if (op == MobileOperator.unknown) return phone;
+    return '$phone (${MobileOperatorUtils.operatorLabel(op)})';
+  }
+
+  Widget _buildPaymentMethodSelector() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Choisissez votre moyen de paiement',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Sélectionnez Yas ou Flooz pour continuer',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          _buildMethodButton(
+            name: _mixxName,
+            logo: 'assets/logos/mixbyyass.jpg',
+            label: 'Yas (Mixx)',
+          ),
+          const SizedBox(height: 12),
+          _buildMethodButton(
+            name: _floozName,
+            logo: 'assets/logos/flooz.webp',
+            label: 'Flooz / Moov',
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMethodButton({
+    required String name,
+    required String logo,
+    required String label,
+  }) {
+    final selected = _selectedMethodName == name;
+
+    return Material(
+      color: selected
+          ? AppColors.primary.withValues(alpha: 0.12)
+          : Colors.white.withValues(alpha: 0.35),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _onPaymentMethodSelected(name),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? AppColors.primary : Colors.grey.withValues(alpha: 0.35),
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(logo, width: 48, height: 36, fit: BoxFit.contain),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? AppColors.primary : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Icon(
+                selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                color: selected ? AppColors.primary : AppColors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfirmButton(bool canConfirm) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          foregroundColor: AppColors.textOnPrimary,
+          backgroundColor: canConfirm ? AppColors.primary : Colors.grey,
+          disabledForegroundColor: Colors.white70,
+          disabledBackgroundColor: Colors.grey.shade400,
+          minimumSize: const Size(double.infinity, 54),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        onPressed: canConfirm ? _onConfirmPressed : null,
+        child: Text(
+          _isSubmittingOrder
+              ? 'Création de la commande...'
+              : canConfirm
+                  ? 'Confirmer et payer ${widget.totalAmount.toStringAsFixed(0)} FCFA'
+                  : 'Choisissez Yas ou Flooz pour continuer',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+              Icon(icon, color: AppColors.primary, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: AppColors.primary,
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
               ),
-              const SizedBox(width: 12),
-              Flexible(child: FittedBox(fit: BoxFit.scaleDown, child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.primary, letterSpacing: 0.3)))),
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Divider(height: 1, thickness: 0.5, color: Colors.white24),
-          ),
+          const Divider(height: 28, color: Colors.white24),
           ...children,
         ],
       ),
@@ -413,19 +622,32 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: AppColors.primary.withOpacity(0.6)),
-          const SizedBox(width: 14),
+          Icon(icon, size: 18, color: AppColors.primary.withValues(alpha: 0.6)),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textSecondary.withOpacity(0.7), letterSpacing: 0.5)),
-                const SizedBox(height: 4),
-                Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -433,40 +655,37 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
       ),
     );
   }
+}
 
-  Widget _buildTrustLogo(String assetPath) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2)],
-      ),
-      child: Image.asset(assetPath, width: 35, height: 25, fit: BoxFit.contain),
-    );
-  }
+class _PaymentInstructionStep extends StatelessWidget {
+  final int number;
+  final Widget child;
 
-  Widget _buildConfirmButton() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          foregroundColor: AppColors.textOnPrimary,
+  const _PaymentInstructionStep({
+    required this.number,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 14,
           backgroundColor: AppColors.primary,
-          minimumSize: const Size(double.infinity, 54),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 8,
-          shadowColor: AppColors.primary.withOpacity(0.4),
-        ),
-        onPressed: _processPayment,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
           child: Text(
-            'Confirmer et Payer ${widget.totalAmount.toStringAsFixed(0)} FCFA',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            '$number',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-      ),
+        const SizedBox(width: 12),
+        Expanded(child: child),
+      ],
     );
   }
 }

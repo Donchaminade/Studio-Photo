@@ -48,7 +48,17 @@ public class JwtService {
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(new HashMap<>(), userDetails, refreshExpiration);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("typ", "refresh");
+        return buildToken(claims, userDetails, refreshExpiration);
+    }
+
+    public boolean isRefreshToken(String token) {
+        try {
+            return "refresh".equals(extractAllClaims(token).get("typ"));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {

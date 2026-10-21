@@ -1,6 +1,7 @@
 import 'package:Picon/models/order.dart';
 import 'package:Picon/models/order_item.dart';
 import 'package:Picon/utils/colors.dart';
+import 'package:Picon/widgets/safe_photo_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -14,7 +15,7 @@ class OrderDetailScreen extends StatelessWidget {
       case 'COMPLETED':
         return {'text': 'Terminée', 'color': Colors.green.shade700, 'icon': Icons.check_circle};
       case 'PROCESSING':
-        return {'text': 'En cours', 'color': Colors.blue.shade700, 'icon': Icons.sync};
+        return {'text': 'En cours', 'color': AppColors.primary, 'icon': Icons.sync};
       case 'CANCELLED':
         return {'text': 'Annulée', 'color': Colors.red.shade700, 'icon': Icons.cancel};
       case 'PENDING':
@@ -115,15 +116,12 @@ class OrderDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8.0),
-              child: Image.network(
-                item.imageUrl,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                errorBuilder: (ctx, err, st) => const Icon(Icons.photo, size: 80, color: AppColors.textSecondary),
-              ),
+            SafePhotoThumbnail(
+              item.imageUrl,
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              borderRadius: BorderRadius.circular(8),
             ),
             const SizedBox(width: 16),
             Expanded(

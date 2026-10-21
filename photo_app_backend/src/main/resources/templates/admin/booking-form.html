@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${booking.id == null ? 'Nouvelle Réservation' : 'Modifier Réservation'}">Booking Form - Studio Photo Admin</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title th:text="${booking.id == null ? 'Nouvelle Réservation' : 'Modifier Réservation'}">Booking Form - Studio Photo Admin</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">

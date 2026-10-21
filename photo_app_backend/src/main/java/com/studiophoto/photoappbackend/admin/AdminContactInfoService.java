@@ -33,6 +33,7 @@ public class AdminContactInfoService {
 
         contactInfo.setAddress(request.getAddress());
         contactInfo.setPhoneNumber(request.getPhoneNumber());
+        contactInfo.setWhatsappNumber(request.getWhatsappNumber());
         contactInfo.setEmail(request.getEmail());
         contactInfo.setOpeningHours(request.getOpeningHours());
         contactInfo.setFacebookUrl(request.getFacebookUrl());
@@ -48,6 +49,7 @@ public class AdminContactInfoService {
                 .id(contactInfo.getId())
                 .address(contactInfo.getAddress())
                 .phoneNumber(contactInfo.getPhoneNumber())
+                .whatsappNumber(contactInfo.getWhatsappNumber())
                 .email(contactInfo.getEmail())
                 .openingHours(contactInfo.getOpeningHours())
                 .facebookUrl(contactInfo.getFacebookUrl())

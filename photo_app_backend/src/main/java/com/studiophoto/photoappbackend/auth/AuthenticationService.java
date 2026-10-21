@@ -6,12 +6,15 @@ import com.studiophoto.photoappbackend.model.User;
 import com.studiophoto.photoappbackend.repository.UserRepository;
 import com.studiophoto.photoappbackend.security.JwtService;
 import com.studiophoto.photoappbackend.service.ActivityService;
+import com.studiophoto.photoappbackend.util.PhoneUtils;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,21 +32,29 @@ public class AuthenticationService {
 
     public AuthenticationResponse register(RegisterRequest request) {
         boolean emailExists = userRepository.existsByEmail(request.getEmail());
-        boolean phoneExists = userRepository.existsByPhone(request.getPhone());
+        String normalizedPhone = PhoneUtils.normalize(request.getPhone());
+        boolean phoneExists = PhoneUtils.lookupVariants(request.getPhone()).stream()
+                .anyMatch(userRepository::existsByPhone);
 
         if (emailExists && phoneExists) {
-            throw new IllegalStateException("L'adresse email et le numéro de téléphone sont déjà utilisés.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "L'adresse email et le numéro de téléphone sont déjà utilisés.");
         } else if (emailExists) {
-            throw new IllegalStateException("Cette adresse email est déjà utilisée.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cette adresse email est déjà utilisée.");
         } else if (phoneExists) {
-            throw new IllegalStateException("Ce numéro de téléphone est déjà utilisé.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ce numéro de téléphone est déjà utilisé.");
         }
+        String firstname = request.getFirstname().trim();
+        String lastname = request.getLastname() != null ? request.getLastname().trim() : "";
+        if (lastname.isBlank()) {
+            lastname = firstname;
+        }
+
         var user = User.builder()
-                .firstname(request.getFirstname())
-                .lastname(request.getLastname())
+                .firstname(firstname)
+                .lastname(lastname)
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .phone(request.getPhone())
+                .phone(normalizedPhone)
                 .pin(request.getPin()) // PIN is no longer hashed
                 .role(Role.USER)
                 .status(Status.ACTIVE) // Default to ACTIVE to allow immediate login
@@ -53,47 +64,69 @@ public class AuthenticationService {
 
         activityService.logActivity(savedUser.getEmail(), "REGISTER", "Nouvelle inscription via API");
 
-        String jwtToken = jwtService.generateToken(savedUser);
-
-        return AuthenticationResponse.builder()
-                .token(jwtToken)
-                .id(savedUser.getId())
-                .firstname(savedUser.getFirstname())
-                .lastname(savedUser.getLastname())
-                .email(savedUser.getEmail())
-                .phone(savedUser.getPhone())
-                .role(savedUser.getRole())
-                .build();
+        return toAuthResponse(savedUser);
     }
 
     public AuthenticationResponse authenticate(LoginRequest request) {
-        String identifier = request.getEmail() != null && !request.getEmail().isEmpty()
-                ? request.getEmail()
-                : request.getPhone();
+        String identifier = request.getEmail() != null && !request.getEmail().isBlank()
+                ? request.getEmail().trim()
+                : request.getPhone() != null ? request.getPhone().trim() : null;
 
         if (identifier == null || identifier.isEmpty()) {
-            throw new IllegalArgumentException("L'email ou le numéro de téléphone doit être fourni.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "L'email ou le numéro de téléphone doit être fourni.");
         }
 
+        User user = resolveUserByIdentifier(identifier)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "Email/Téléphone ou mot de passe incorrect."));
+
+        if (!user.isEnabled()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "Votre compte n'est pas actif. Contactez le studio Photo.");
+        }
+
+        // JWT utilise toujours l'email comme identifiant (voir User.getUsername())
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            identifier,
+                            user.getEmail(),
                             request.getPassword()));
         } catch (Exception e) {
-            throw new RuntimeException("Email/Téléphone ou mot de passe incorrect.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "Email/Téléphone ou mot de passe incorrect.");
         }
-
-        User user = userRepository.findByEmail(identifier)
-                .or(() -> userRepository.findByPhone(identifier))
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'identifiant : " + identifier));
 
         activityService.logActivity(user.getEmail(), "LOGIN", "Connexion réussie");
 
-        String jwtToken = jwtService.generateToken(user);
+        return toAuthResponse(user);
+    }
 
+    public AuthenticationResponse refresh(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank() || !jwtService.isRefreshToken(refreshToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "Votre session a expiré. Reconnectez-vous.");
+        }
+        String username;
+        try {
+            username = jwtService.extractUsername(refreshToken);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "Votre session a expiré. Reconnectez-vous.");
+        }
+        User user = userRepository.findByEmail(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "Votre session a expiré. Reconnectez-vous."));
+        if (!user.isEnabled() || !jwtService.isTokenValid(refreshToken, user)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "Votre session a expiré. Reconnectez-vous.");
+        }
+        return toAuthResponse(user);
+    }
+
+    private AuthenticationResponse toAuthResponse(User user) {
         return AuthenticationResponse.builder()
-                .token(jwtToken)
+                .token(jwtService.generateToken(user))
+                .refreshToken(jwtService.generateRefreshToken(user))
                 .id(user.getId())
                 .firstname(user.getFirstname())
                 .lastname(user.getLastname())
@@ -104,8 +137,7 @@ public class AuthenticationService {
     }
 
     public String verifyPinForPasswordReset(String identifier, String pin) {
-        Optional<User> userOpt = userRepository.findByEmail(identifier)
-                .or(() -> userRepository.findByPhone(identifier));
+        Optional<User> userOpt = resolveUserByIdentifier(identifier);
 
         if (userOpt.isEmpty()) {
             if (identifier.contains("@")) {
@@ -140,8 +172,7 @@ public class AuthenticationService {
             throw new RuntimeException("Lien de réinitialisation invalide ou expiré.");
         }
 
-        User user = userRepository.findByEmail(username)
-                .or(() -> userRepository.findByPhone(username))
+        User user = resolveUserByIdentifier(username)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé."));
 
         final Claims claims = jwtService.extractAllClaims(token);
@@ -153,5 +184,16 @@ public class AuthenticationService {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+    }
+
+    private Optional<User> resolveUserByIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return Optional.empty();
+        }
+        String trimmed = identifier.trim();
+        if (trimmed.contains("@")) {
+            return userRepository.findByEmail(trimmed);
+        }
+        return userRepository.findFirstByPhoneIn(PhoneUtils.lookupVariants(trimmed));
     }
 }

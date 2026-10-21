@@ -1,8 +1,12 @@
 import 'package:Picon/api_service.dart';
+import 'package:Picon/confirmation_screen.dart';
 import 'package:Picon/models/order.dart';
 import 'package:Picon/models/order_item.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/auth_network_image.dart';
+import 'package:Picon/widgets/safe_photo_thumbnail.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +21,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   late Future<void> _fetchDataFuture;
   List<Order> _allOrders = [];
+  Map<int, Map<String, dynamic>> _ordersMeta = {};
   String? _selectedFilter;
 
   @override
@@ -38,19 +43,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _fetchAllHistory() async {
     try {
-      final orders = await ApiService.fetchMyOrders();
+      final rawOrders = await ApiService.fetchMyOrdersRaw();
+      final orders = rawOrders.map((json) => Order.fromJson(json)).toList();
+      final metaMap = <int, Map<String, dynamic>>{};
+      for (final raw in rawOrders) {
+        final id = raw['id'];
+        if (id is int) {
+          metaMap[id] = raw;
+        } else if (id is num) {
+          metaMap[id.toInt()] = raw;
+        }
+      }
       setState(() {
         _allOrders = orders;
+        _ordersMeta = metaMap;
       });
     } catch (e) {
       if (mounted) {
-        String errorMessage = e.toString();
-        if (errorMessage.startsWith('Exception: ')) {
-          errorMessage = errorMessage.substring(11);
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-        );
+        await showAppError(context, e);
       }
     }
   }
@@ -111,7 +121,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               final filteredOrders = _selectedFilter == null
                   ? visibleOrders
                   : visibleOrders
-                      .where((o) => o.status == _selectedFilter)
+                      .where((o) => _matchesFilter(_selectedFilter!, o))
                       .toList();
 
               return RefreshIndicator(
@@ -152,10 +162,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         .toList();
 
     final ongoing = visibleOrders
-        .where((o) =>
-            o.status == 'PENDING' ||
-            o.status == 'PENDING_PAYMENT' ||
-            o.status == 'PROCESSING')
+        .where((o) {
+          final status = _effectiveStatus(o);
+          return status == 'PENDING' ||
+              status == 'PENDING_PAYMENT' ||
+              status == 'PENDING_PAYMENT_REVIEW' ||
+              status == 'PROCESSING';
+        })
         .length;
     final completed =
         visibleOrders.where((o) => o.status == 'COMPLETED').length;
@@ -220,11 +233,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
             const SizedBox(width: 8),
             _filterChip('PENDING', 'En attente'),
             const SizedBox(width: 8),
-            _filterChip('PENDING_PAYMENT', 'Paiement en attente'),
+            _filterChip('PENDING_PAYMENT', 'En attente paiement'),
+            const SizedBox(width: 8),
+            _filterChip('PENDING_PAYMENT_REVIEW', 'En vérification'),
             const SizedBox(width: 8),
             _filterChip('PROCESSING', 'Payées'),
             const SizedBox(width: 8),
             _filterChip('COMPLETED', 'Terminées'),
+            const SizedBox(width: 8),
+            _filterChip('REFUND_PENDING', 'Remb. en cours'),
+            const SizedBox(width: 8),
+            _filterChip('REFUNDED', 'Remboursées'),
             const SizedBox(width: 8),
             _filterChip('CANCELLED', 'Annulées'),
           ],
@@ -304,7 +323,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       fontWeight: FontWeight.w900, color: AppColors.primary),
                 ),
               ),
-              _statusMiniBadge(order.status),
+              _statusMiniBadge(_effectiveStatus(order)),
             ],
           ),
           children: [
@@ -357,7 +376,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         order.deliveryAddress!),
                   ],
                   const SizedBox(height: 16),
-                  _statusLargeView(order.status),
+                  _statusLargeView(_effectiveStatus(order)),
+                  if (_shouldShowFinalizePaymentButton(order)) ...[
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _resumePayment(order),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        icon: const Icon(Icons.payment_outlined),
+                        label: const Text('Finaliser le paiement'),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -372,15 +407,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              item.imageUrl ?? '',
+          GestureDetector(
+            onTap: () => _showImagePreviewDialog(item.imageUrl),
+            child: SafePhotoThumbnail(
+              item.imageUrl,
               width: 50,
               height: 50,
               fit: BoxFit.cover,
-              errorBuilder: (ctx, err, st) => const Icon(Icons.photo,
-                  size: 50, color: AppColors.textSecondary),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
           const SizedBox(width: 12),
@@ -389,7 +423,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Format: ${item.photoSize ?? '—'}',
+                  'Format: ${item.photoSize}',
                   style: const TextStyle(
                       fontWeight: FontWeight.w600, fontSize: 14),
                 ),
@@ -404,11 +438,53 @@ class _HistoryScreenState extends State<HistoryScreen> {
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              '${((item.pricePerUnit ?? 0) * item.quantity).toStringAsFixed(0)} FCFA',
+              '${(item.pricePerUnit * item.quantity).toStringAsFixed(0)} FCFA',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showImagePreviewDialog(String imageSource) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        backgroundColor: Colors.black.withOpacity(0.85),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 4.0,
+                child: AuthNetworkImage(
+                  imageSource,
+                  fit: BoxFit.contain,
+                  errorWidget: const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'Impossible de charger l\'aperçu.',
+                        style: TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -546,14 +622,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 'PROCESSING':
         return {
           'text': 'Payé',
-          'color': Colors.blue.shade700,
+          'color': AppColors.primary,
           'icon': Icons.payment
         };
       case 'PENDING_PAYMENT':
         return {
-          'text': 'Paiement en attente',
-          'color': Colors.orange.shade800,
-          'icon': Icons.lock_clock
+          'text': 'En attente de paiement',
+          'color': Colors.orange.shade700,
+          'icon': Icons.payments_outlined
+        };
+      case 'PENDING_PAYMENT_REVIEW':
+        return {
+          'text': 'En vérification',
+          'color': Colors.deepOrange.shade700,
+          'icon': Icons.verified_user_outlined
+        };
+      case 'REFUND_PENDING':
+        return {
+          'text': 'Remboursement en cours',
+          'color': Colors.amber.shade800,
+          'icon': Icons.hourglass_top
+        };
+      case 'REFUNDED':
+        return {
+          'text': 'Remboursée',
+          'color': Colors.teal.shade700,
+          'icon': Icons.undo
         };
       case 'PENDING':
         return {
@@ -574,6 +668,77 @@ class _HistoryScreenState extends State<HistoryScreen> {
           'icon': Icons.help_outline
         };
     }
+  }
+
+  bool _matchesFilter(String filter, Order order) {
+    final status = _effectiveStatus(order);
+    if (filter == 'PENDING_PAYMENT') {
+      return status == 'PENDING_PAYMENT';
+    }
+    if (filter == 'PENDING_PAYMENT_REVIEW') {
+      return status == 'PENDING_PAYMENT_REVIEW';
+    }
+    if (filter == 'REFUND_PENDING' || filter == 'REFUNDED') {
+      return status == filter;
+    }
+    if (filter == 'CANCELLED') {
+      return order.status.toUpperCase() == 'CANCELLED' && status != 'REFUNDED';
+    }
+    return status == filter;
+  }
+
+  String _effectiveStatus(Order order) {
+    final meta = _ordersMeta[order.id] ?? const <String, dynamic>{};
+    final paymentStatus =
+        (meta['paymentStatus']?.toString().toUpperCase() ?? '').trim();
+    final refundStatus =
+        (meta['refundStatus']?.toString().toUpperCase() ?? '').trim();
+
+    if (refundStatus == 'REFUNDED' || paymentStatus == 'REFUNDED') {
+      return 'REFUNDED';
+    }
+    if (refundStatus == 'REFUND_PENDING') {
+      return 'REFUND_PENDING';
+    }
+
+    final hasProof = (meta['paymentProofImageUrl']?.toString().trim().isNotEmpty ??
+            false) ||
+        (meta['paymentProofText']?.toString().trim().isNotEmpty ?? false) ||
+        (meta['paymentProofType']?.toString().trim().isNotEmpty ?? false);
+
+    if (paymentStatus == 'PAID' || order.status.toUpperCase() == 'PROCESSING') {
+      return 'PROCESSING';
+    }
+
+    if (order.status.toUpperCase() == 'PENDING_PAYMENT') {
+      if (paymentStatus == 'CUSTOMER_REPORTED_PAID' || hasProof) {
+        return 'PENDING_PAYMENT_REVIEW';
+      }
+      return 'PENDING_PAYMENT';
+    }
+    return order.status;
+  }
+
+  bool _shouldShowFinalizePaymentButton(Order order) {
+    final status = _effectiveStatus(order);
+    return status == 'PENDING_PAYMENT';
+  }
+
+  void _resumePayment(Order order) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConfirmationScreen(
+          orderDetails: const {},
+          paymentMethod: order.paymentMethod,
+          totalAmount: order.totalAmount,
+          orderId: order.id,
+          launchUssdOnOpen: true,
+          paymentPhone: ApiService.userPhone,
+          customerCountry: 'TG',
+        ),
+      ),
+    );
   }
 
   void _showOrderDetails(Order order) {
@@ -619,6 +784,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   final item = order.orderItems[index];
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
+                    leading: GestureDetector(
+                      onTap: () => _showImagePreviewDialog(item.imageUrl),
+                      child: SafePhotoThumbnail(
+                        item.imageUrl,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                     title: Text('Format ${item.photoSize}'),
                     subtitle: Text('Quantité: ${item.quantity}'),
                     trailing: Text(
@@ -745,8 +920,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     content: Text('Commande annulée avec succès')));
                 _fetchAllHistory();
               } catch (e) {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text('Erreur: $e')));
+                if (context.mounted) {
+                  await showAppError(context, e);
+                }
               }
             },
             child: const Text('OUI, ANNULER',
@@ -764,21 +940,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _confirmSoftDeleteWarning(Order order) {
+    final canDeleteFromDatabase = _effectiveStatus(order) == 'PENDING_PAYMENT';
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_sweep_outlined, color: Colors.red),
-            SizedBox(width: 8),
+            const Icon(Icons.delete_sweep_outlined, color: Colors.red),
+            const SizedBox(width: 8),
             Expanded(
-                child: Text('Masquer la commande',
-                    style: TextStyle(fontSize: 18))),
+                child: Text(
+              canDeleteFromDatabase
+                  ? 'Supprimer la commande'
+                  : 'Masquer la commande',
+              style: const TextStyle(fontSize: 18),
+            )),
           ],
         ),
-        content: const Text(
-          'Voulez-vous vraiment retirer cette commande de votre historique ?',
+        content: Text(
+          canDeleteFromDatabase
+              ? 'Cette commande est en attente de paiement. Elle sera supprimée définitivement de la base et disparaîtra aussi côté admin. Continuer ?'
+              : 'Voulez-vous vraiment retirer cette commande de votre historique ?',
         ),
         actions: [
           TextButton(
@@ -788,22 +971,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await ApiService.hideOrderLocally(order.id);
-              if (mounted) {
-                setState(
-                    () {}); // Force la reconstruction pour appliquer le filtre hiddenOrders
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text('Commande masquée avec succès.'),
-                  backgroundColor: Colors.black87,
-                  duration: Duration(seconds: 2),
-                ));
+              try {
+                if (canDeleteFromDatabase) {
+                  await ApiService.deletePendingPaymentOrder(order.id);
+                  await _fetchAllHistory();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text(
+                          'Commande supprimée définitivement avec succès.'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ));
+                  }
+                } else {
+                  await ApiService.hideOrderLocally(order.id);
+                  if (mounted) {
+                    setState(() {});
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(
+                      content: Text('Commande masquée avec succès.'),
+                      backgroundColor: Colors.black87,
+                      duration: Duration(seconds: 2),
+                    ));
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Suppression impossible: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Masquer'),
+            child: Text(canDeleteFromDatabase ? 'Supprimer' : 'Masquer'),
           ),
         ],
       ),

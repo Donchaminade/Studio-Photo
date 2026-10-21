@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${pageTitle}">Formulaire Dimension - Admin</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title th:text="${pageTitle}">Formulaire Dimension - Admin</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
@@ -101,9 +103,17 @@
                         <input type="text" id="name" th:field="*{name}" class="form-control" required />
                     </div>
                     <div class="form-group col-md-6">
-                        <label for="price">Prix (FCFA)</label>
+                        <label for="price">Prix tirage (FCFA)</label>
                         <input type="number" id="price" th:field="*{price}" class="form-control" required step="0.01" />
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="framePrice">Prix cadre (FCFA)</label>
+                    <input type="number" id="framePrice" th:field="*{framePrice}" class="form-control" step="0.01" min="0" />
+                    <small class="form-text text-muted">
+                        Laissez vide pour ne pas proposer de cadre sur ce format. Le client pourra refuser le cadre sur mobile.
+                    </small>
                 </div>
 
                 <div class="form-group">
@@ -119,7 +129,13 @@
                 <div class="form-group">
                     <label for="fileInput">Images</label>
                     <input type="file" id="fileInput" name="files" class="form-control-file" accept="image/*" multiple />
-                    <small class="form-text text-muted">Sélectionnez une ou plusieurs images (JPG, PNG).</small>
+                    <small class="form-text text-muted">JPG, PNG. Les images &gt; 1 Mo sont compressées automatiquement avant envoi.</small>
+                    <small class="form-text text-muted d-block mt-1">
+                        Si vous sélectionnez de nouveaux fichiers, ils <strong>remplacent</strong> toutes les images actuelles
+                        (nouveaux fichiers uploadés + nouvelles URLs enregistrées en base). Aucun besoin de restaurer d’anciens fichiers.
+                        Sans nouveau fichier, les images existantes sont conservées.
+                    </small>
+                    <small id="uploadStatus" class="form-text text-primary"></small>
 
                     <!-- Prévisualisation des images existantes -->
                     <div th:if="${dimension.images != null and not #lists.isEmpty(dimension.images)}">
@@ -154,9 +170,12 @@
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<th:block th:replace="~{admin/fragments/image-compress-script :: image-compress-script}"></th:block>
 <script th:inline="javascript">
     /*<![CDATA[*/
     $(document).ready(function() {
+        AdminImageUpload.attach({ form: 'form', input: '#fileInput', statusSelector: '#uploadStatus' });
+
         // Loading overlay
         function showLoading() {
             $('#loadingOverlay').fadeIn();

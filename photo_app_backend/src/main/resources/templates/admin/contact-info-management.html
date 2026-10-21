@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Informations de Contact - Picon Studio Admin</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title>Gestion des Informations de Contact - Picon Studio Admin</title>
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -640,6 +642,17 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="whatsappNumber"><i class="fab fa-whatsapp"></i> Numéro WhatsApp (commandes)</label>
+                        <input type="tel" class="form-control" id="whatsappNumber" name="whatsappNumber"
+                               th:value="${contactInfo.whatsappNumber}"
+                               placeholder="Ex: +228 98 52 62 26">
+                        <small class="form-text text-muted">
+                            Numéro vers lequel les récapitulatifs de commande sont envoyés sur WhatsApp.
+                            Si vide, le numéro par défaut (+228 98 52 62 26) est utilisé.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
                         <label for="email"><i class="fas fa-envelope"></i> Email</label>
                         <input type="email" class="form-control" id="email" name="email"
                                th:value="${contactInfo.email}"
@@ -778,6 +791,7 @@
                 id: $('#contactInfoId').val() === '' ? null : $('#contactInfoId').val(),
                 address: $('#address').val(),
                 phoneNumber: $('#phoneNumber').val(),
+                whatsappNumber: $('#whatsappNumber').val(),
                 email: $('#email').val(),
                 openingHours: $('#openingHours').val(),
                 facebookUrl: $('#facebookUrl').val(),

@@ -1,6 +1,7 @@
 package com.studiophoto.photoappbackend.booking;
 
 import com.studiophoto.photoappbackend.model.User;
+import com.studiophoto.photoappbackend.notification.UserNotificationService;
 import com.studiophoto.photoappbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository; // Pour vérifier l'existence de l'utilisateur
+    private final UserNotificationService userNotificationService;
 
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
@@ -78,9 +80,12 @@ public class BookingService {
     public Booking updateBookingStatus(Long id, BookingStatus newStatus) {
         return bookingRepository.findById(id)
                 .map(booking -> {
+                    BookingStatus previousStatus = booking.getStatus();
                     booking.setStatus(newStatus);
                     booking.setUpdatedAt(LocalDateTime.now());
-                    return bookingRepository.save(booking);
+                    Booking saved = bookingRepository.save(booking);
+                    userNotificationService.onBookingStatusUpdated(saved, previousStatus, newStatus);
+                    return saved;
                 })
                 .orElseThrow(() -> new IllegalArgumentException("Réservation non trouvée avec l'ID : " + id));
     }

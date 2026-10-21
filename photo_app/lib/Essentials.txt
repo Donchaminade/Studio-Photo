@@ -6,8 +6,7 @@ flutter pub run build_runner build --delete-conflicting-outputs
 flutter pub run flutter_launcher_icons
 
 
-//Mettre en prod (FedaPay LIVE)
-flutter build apk --dart-define=FEDAPAY_API_KEY=pk_live_VOTRE_CLE --dart-define=FEDAPAY_ENV=live
-
-//En test (FedaPay sandbox) — clé sandbox utilisée par défaut, aucun dart-define nécessaire
-flutter run
+// APK / Play Store
+flutter build appbundle --release
+// Fichier : build\app\outputs\bundle\release\app-release.aab
+// Package : com.photopicon.app — voir PLAYSTORE_DEPLOIEMENT.md

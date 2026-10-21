@@ -8,6 +8,9 @@ import 'package:Picon/utils/print_quality_utils.dart';
 import 'package:Picon/utils/image_helper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:Picon/api_service.dart';
+import 'package:Picon/models/photo_frame.dart';
+import 'package:Picon/utils/order_line_pricing.dart';
+import 'package:Picon/widgets/auth_network_image.dart';
 
 // ─────────────────────────────────────────────
 //  Modèle de classement d'un format d'impression
@@ -15,24 +18,21 @@ import 'package:Picon/api_service.dart';
 class _FormatOption {
   final String dimension;
   final double price;
-  final PrintQuality quality;
-  final double keepFraction;
-  final double dpi;
-  final bool isNative;
+  final PrintFitAnalysis analysis;
+  final bool isRecommended;
 
   const _FormatOption({
     required this.dimension,
     required this.price,
-    required this.quality,
-    required this.keepFraction,
-    required this.dpi,
-    this.isNative = false,
+    required this.analysis,
+    this.isRecommended = false,
   });
 
+  PrintQuality get quality => analysis.quality;
   Color get color => qualityColor(quality);
   Color get lightColor => qualityLightColor(quality);
   IconData get icon => qualityIcon(quality);
-  String get label => qualityLabel(quality);
+  String get label => qualityLabelForAnalysis(analysis);
 }
 
 // ─────────────────────────────────────────────
@@ -42,12 +42,16 @@ class PhotoPreviewScreen extends StatefulWidget {
   final List<String> images;
   final Map<String, Map<String, dynamic>> photoDetails;
   final Map<String, double> prices;
+  final Map<String, double?> framePrices;
+  final List<PhotoFrame> frames;
 
   const PhotoPreviewScreen({
     super.key,
     required this.images,
     required this.photoDetails,
     required this.prices,
+    this.framePrices = const {},
+    this.frames = const [],
   });
 
   @override
@@ -89,6 +93,10 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
           widget.photoDetails[img] ?? {'size': widget.prices.keys.firstOrNull ?? '', 'quantity': 1},
         ),
     };
+    for (final img in widget.images) {
+      final size = _localDetails[img]?['size'] as String? ?? '';
+      _syncFrameDefaults(img, size);
+    }
 
     // Préchargement asynchrone
     _preloadAndAssignBestFormats();
@@ -105,30 +113,16 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
       final size = await _loadImageSize(img);
       if (!mounted) return;
       if (_localDetails[img] != null) {
-        final best = _bestFormatFor(size);
+        final best = findBestFormatForImage(size, widget.prices.keys);
         if (_localDetails[img]!['_autoAssigned'] != true) {
           setState(() {
             _localDetails[img]!['size'] = best;
             _localDetails[img]!['_autoAssigned'] = true;
+            _syncFrameDefaults(img, best);
           });
         }
       }
     }
-  }
-
-  String _bestFormatFor(Size imageSize) {
-    if (widget.prices.isEmpty) return '10x15 cm';
-    final imgAspect = imageSize.width / imageSize.height;
-    String best = widget.prices.keys.first;
-    double bestDiff = double.infinity;
-    for (final dim in widget.prices.keys) {
-      final diff = (dimensionAspect(dim) - imgAspect).abs();
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        best = dim;
-      }
-    }
-    return best;
   }
 
   Future<Size> _loadImageSize(String imageUrl) {
@@ -147,44 +141,90 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
     return future;
   }
 
-  double _keepFractionLocal(Size imageSize, double targetAspect) =>
-      computeKeepFraction(imageSize, targetAspect);
-
   List<_FormatOption> _buildFormatOptions(Size imageSize) {
-    final nativeDim = _bestFormatFor(imageSize);
+    final recommendedDim = findBestFormatForImage(imageSize, widget.prices.keys);
     final options = widget.prices.entries.map((e) {
-      final aspect = dimensionAspect(e.key);
-      final keep = _keepFractionLocal(imageSize, aspect);
-      final dpi = computeDpi(imageSize, e.key);
+      final analysis = analyzePrintFit(imageSize, e.key);
       return _FormatOption(
         dimension: e.key,
         price: e.value,
-        quality: qualityFromDpi(dpi),
-        keepFraction: keep,
-        dpi: dpi,
-        isNative: e.key == nativeDim,
+        analysis: analysis,
+        isRecommended: e.key == recommendedDim,
       );
     }).toList();
 
     options.sort((a, b) {
-      if (a.isNative && !b.isNative) return -1;
-      if (!a.isNative && b.isNative) return 1;
+      if (a.isRecommended && !b.isRecommended) return -1;
+      if (!a.isRecommended && b.isRecommended) return 1;
       return a.quality.index.compareTo(b.quality.index);
     });
     return options;
+  }
+
+  bool _offersFrame(String dimension) =>
+      OrderLinePricing.offersFrame(widget.framePrices[dimension]);
+
+  void _syncFrameDefaults(String imageUrl, String dimension) {
+    final details = _localDetails[imageUrl];
+    if (details == null) return;
+
+    if (_offersFrame(dimension) && widget.frames.isNotEmpty) {
+      details['withFrame'] = true;
+      final currentId = details['frameId'];
+      PhotoFrame? selected;
+      if (currentId != null) {
+        for (final frame in widget.frames) {
+          if (frame.id == currentId) {
+            selected = frame;
+            break;
+          }
+        }
+      }
+      selected ??= widget.frames.first;
+      details['frameId'] = selected.id;
+      details['frameName'] = selected.name;
+      details['frameImageUrl'] = selected.primaryImage;
+    } else {
+      details['withFrame'] = false;
+      details.remove('frameId');
+      details.remove('frameName');
+      details.remove('frameImageUrl');
+    }
+  }
+
+  void _applyFrameSelection(Map<String, dynamic> details, PhotoFrame frame) {
+    details['frameId'] = frame.id;
+    details['frameName'] = frame.name;
+    details['frameImageUrl'] = frame.primaryImage;
   }
 
   Future<bool> _hasUnsuitablePhotos() async {
     for (final img in widget.images) {
       final dim = _localDetails[img]?['size'] as String? ?? '';
       final imageSize = await _loadImageSize(img);
-      final dpi = computeDpi(imageSize, dim);
-      if (qualityFromDpi(dpi) == PrintQuality.tooSmall) return true;
+      if (analyzePrintFit(imageSize, dim).quality == PrintQuality.tooSmall) {
+        return true;
+      }
     }
     return false;
   }
 
   Future<void> _confirm() async {
+    for (final entry in _localDetails.entries) {
+      final size = entry.value['size'] as String? ?? '';
+      if (entry.value['withFrame'] == true && _offersFrame(size)) {
+        if (entry.value['frameId'] == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Choisissez un cadre parmi les images proposées.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+      }
+    }
+
     final hasUnsuitable = await _hasUnsuitablePhotos();
     if (!mounted) return;
 
@@ -246,21 +286,11 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
     for (int i = 0; i < images.length; i++) {
       final url = images[i];
       final size = sizes[i];
-
-      String? bestDim;
-      double bestDpi = -1;
-      for (final dim in widget.prices.keys) {
-        final d = computeDpi(size, dim);
-        if (d > bestDpi) {
-          bestDpi = d;
-          bestDim = dim;
-        }
-      }
-      if (bestDim != null) {
-        _localDetails[url] ??= {};
-        _localDetails[url]!['size'] = bestDim;
-        _localDetails[url]!['_autoAssigned'] = true;
-      }
+      final bestDim = findBestFormatForImage(size, widget.prices.keys);
+      _localDetails[url] ??= {};
+      _localDetails[url]!['size'] = bestDim;
+      _localDetails[url]!['_autoAssigned'] = true;
+      _syncFrameDefaults(url, bestDim);
     }
 
     if (mounted) {
@@ -283,7 +313,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
     final picker = ImagePicker();
     List<XFile> pickedFiles = [];
     try {
-      pickedFiles = await picker.pickMultiImage(imageQuality: 50);
+      pickedFiles = await picker.pickMultiImage();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -341,11 +371,19 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
   }
 
   Widget _buildImage(String url, {BoxFit fit = BoxFit.cover, Alignment alignment = Alignment.center}) {
-    if (url.startsWith('http')) {
+    // Résoudre les URLs relatives (ex: /uploads/...) en URLs absolues
+    final resolvedUrl = ApiService.getFullImageUrl(url);
+
+    if (resolvedUrl.startsWith('http')) {
+      final headers = <String, String>{};
+      if (ApiService.authToken != null) {
+        headers['Authorization'] = 'Bearer ${ApiService.authToken}';
+      }
       return Image.network(
-        url,
+        resolvedUrl,
         fit: fit,
         alignment: alignment,
+        headers: headers,
         errorBuilder: (context, error, stackTrace) => const Center(
           child: Icon(Icons.broken_image, color: Colors.grey, size: 30),
         ),
@@ -363,7 +401,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
       );
     } else {
       return Image.file(
-        File(url),
+        File(resolvedUrl),
         fit: fit,
         alignment: alignment,
         errorBuilder: (context, error, stackTrace) => const Center(
@@ -395,7 +433,6 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
     final selectedDimension =
         _localDetails[selectedImage]?['size'] as String? ??
             (widget.prices.keys.firstOrNull ?? '');
-    final targetAspect = dimensionAspect(selectedDimension);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -447,6 +484,13 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                     );
                   },
                 ),
+                if (_offersFrame(selectedDimension) && widget.frames.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildFrameSelector(
+                    selectedImage: selectedImage,
+                    selectedDimension: selectedDimension,
+                  ),
+                ],
                 const SizedBox(height: 12),
 
                 // ── Bouton Suggestion (Auto-optimiser) ──
@@ -482,31 +526,28 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                 const SizedBox(height: 12),
 
                 Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final maxW = constraints.maxWidth;
-                      final maxH = constraints.maxHeight * 0.76;
-                      double pW = maxW - 32;
-                      double pH = pW / targetAspect;
-                      if (pH > maxH) {
-                        pH = maxH;
-                        pW = pH * targetAspect;
-                      }
-                      return FutureBuilder<Size>(
-                        future: _loadImageSize(selectedImage),
-                        builder: (context, snap) {
-                          final imageSize =
-                              snap.data ?? const Size(1, 1);
-                          final keep =
-                              computeKeepFraction(imageSize, targetAspect);
-                          final dpi = computeDpi(imageSize, selectedDimension);
-                          final q = qualityFromDpi(dpi);
+                  child: FutureBuilder<Size>(
+                    future: _loadImageSize(selectedImage),
+                    builder: (context, snap) {
+                      final imageSize = snap.data ?? const Size(1, 1);
+                      final analysis =
+                          analyzePrintFit(imageSize, selectedDimension);
+                      final targetAspect = analysis.displayAspect;
+
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final maxW = constraints.maxWidth;
+                          final maxH = constraints.maxHeight * 0.76;
+                          double pW = maxW - 32;
+                          double pH = pW / targetAspect;
+                          if (pH > maxH) {
+                            pH = maxH;
+                            pW = pH * targetAspect;
+                          }
                           final opt = _FormatOption(
                             dimension: selectedDimension,
                             price: 0,
-                            quality: q,
-                            keepFraction: keep,
-                            dpi: dpi,
+                            analysis: analysis,
                           );
                           return SingleChildScrollView(
                             child: _buildPreviewCard(
@@ -515,6 +556,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                               previewW: pW,
                               previewH: pH,
                               option: opt,
+                              analysis: analysis,
                             ),
                           );
                         },
@@ -577,9 +619,8 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                     FutureBuilder<Size>(
                       future: _loadImageSize(url),
                       builder: (context, snap) {
-                        if (snap.hasData) {
-                          final dpi = computeDpi(snap.data!, dim);
-                          final q = qualityFromDpi(dpi);
+                        if (snap.hasData && dim.isNotEmpty) {
+                          final q = analyzePrintFit(snap.data!, dim).quality;
                           return Positioned(
                             top: 2,
                             right: 2,
@@ -636,6 +677,202 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
     );
   }
 
+  Widget _buildFrameSelector({
+    required String selectedImage,
+    required String selectedDimension,
+  }) {
+    final details = _localDetails[selectedImage] ?? {};
+    final withFrame = details['withFrame'] == true;
+    final framePrice = widget.framePrices[selectedDimension] ?? 0;
+    final printPrice = widget.prices[selectedDimension] ?? 0;
+    final selectedFrameId = details['frameId'] as int?;
+    final unitTotal = OrderLinePricing.unitTotal(
+      printPrice: printPrice,
+      framePrice: framePrice,
+      withFrame: withFrame,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.photo_size_select_large,
+                    color: AppColors.primary, size: 20),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Cadre photo',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                ),
+                Text(
+                  '${unitTotal.toStringAsFixed(0)} FCFA',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tirage ${printPrice.toStringAsFixed(0)} F'
+              '${withFrame ? ' + cadre ${framePrice.toStringAsFixed(0)} F' : ''}',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary.withOpacity(0.9),
+              ),
+            ),
+            const SizedBox(height: 10),
+            RadioListTile<bool>(
+              value: true,
+              groupValue: withFrame,
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(
+                'Avec cadre (+${framePrice.toStringAsFixed(0)} F)',
+                style: const TextStyle(fontSize: 14),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  details['withFrame'] = true;
+                  _syncFrameDefaults(selectedImage, selectedDimension);
+                });
+              },
+            ),
+            RadioListTile<bool>(
+              value: false,
+              groupValue: withFrame,
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: const Text('Sans cadre', style: TextStyle(fontSize: 14)),
+              onChanged: (value) {
+                setState(() {
+                  details['withFrame'] = false;
+                  details.remove('frameId');
+                  details.remove('frameName');
+                  details.remove('frameImageUrl');
+                });
+              },
+            ),
+            if (withFrame) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Choisissez votre cadre :',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 130,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: widget.frames.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final frame = widget.frames[index];
+                    final isSelected = selectedFrameId == frame.id;
+                    final imageUrl = frame.primaryImage;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _applyFrameSelection(details, frame);
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 110,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade300,
+                            width: isSelected ? 3 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primary.withOpacity(0.25),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(11)),
+                                child: imageUrl != null
+                                    ? AuthNetworkImage(
+                                        imageUrl,
+                                        width: 110,
+                                        height: 90,
+                                        fit: BoxFit.cover,
+                                        errorWidget: const Center(
+                                          child: Icon(Icons.image_not_supported),
+                                        ),
+                                      )
+                                    : Container(
+                                        width: 110,
+                                        color: Colors.grey.shade200,
+                                        child: const Icon(Icons.image_outlined,
+                                            size: 32),
+                                      ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 6),
+                              child: Text(
+                                frame.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFormatDropdown({
     required String selectedImage,
     required String selectedDimension,
@@ -686,7 +923,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                         ),
                       ),
                     ),
-                    if (opt.isNative)
+                    if (opt.isRecommended)
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
@@ -695,7 +932,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text(
-                          'Natif',
+                          'Recommandé',
                           style: TextStyle(
                             color: AppColors.primary,
                             fontSize: 10,
@@ -712,6 +949,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                 setState(() {
                   _localDetails[selectedImage]!['size'] = val;
                   _localDetails[selectedImage]!['_autoAssigned'] = true;
+                  _syncFrameDefaults(selectedImage, val);
                 });
               }
             },
@@ -727,9 +965,8 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
     required double previewW,
     required double previewH,
     required _FormatOption option,
+    required PrintFitAnalysis analysis,
   }) {
-    final int percentage = (option.keepFraction * 100).toInt();
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -758,15 +995,40 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          _buildQualityIndicator(option, percentage, imageSize),
+          const SizedBox(height: 12),
+          if (analysis.orientationSwapped)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Orientation adaptée : tirage ${analysis.effectiveSizeLabel}',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.primary.withOpacity(0.85),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              printPreviewHint(analysis),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade700,
+                height: 1.35,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildQualityIndicator(option, analysis),
         ],
       ),
     );
   }
 
-  Widget _buildQualityIndicator(
-      _FormatOption option, int percentage, Size imageSize) {
+  Widget _buildQualityIndicator(_FormatOption option, PrintFitAnalysis analysis) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -800,7 +1062,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                       ),
                     ),
                     Text(
-                      'Qualité basée sur ${option.dpi.toInt()} DPI',
+                      '${analysis.dpi.toInt()} DPI · ${cropSummary(analysis)}',
                       style: TextStyle(
                         color: option.color.withOpacity(0.7),
                         fontSize: 13,
@@ -812,19 +1074,24 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
               ),
             ],
           ),
-          if (option.quality == PrintQuality.tooSmall) ...[
+          if (qualityAdviceForAnalysis(analysis) != null) ...[
             const SizedBox(height: 12),
-            const Divider(height: 1, color: Colors.white54),
+            Divider(height: 1, color: option.color.withOpacity(0.25)),
             const SizedBox(height: 12),
             Row(
-              children: const [
-                Icon(Icons.lightbulb_outline, color: Color(0xFFC62828), size: 16),
-                SizedBox(width: 8),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.lightbulb_outline,
+                  color: option.color.withOpacity(0.9),
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Conseil : Choisissez un format plus petit pour cette photo.',
+                    'Conseil : ${qualityAdviceForAnalysis(analysis)}',
                     style: TextStyle(
-                      color: Color(0xFFC62828),
+                      color: option.color.withOpacity(0.95),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),

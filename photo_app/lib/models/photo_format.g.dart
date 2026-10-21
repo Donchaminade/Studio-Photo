@@ -15,6 +15,7 @@ _$PhotoFormatImpl _$$PhotoFormatImplFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String,
       description: json['description'] as String,
       isPopular: json['isPopular'] as bool? ?? false,
+      framePrice: (json['framePrice'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$$PhotoFormatImplToJson(_$PhotoFormatImpl instance) =>
@@ -25,4 +26,5 @@ Map<String, dynamic> _$$PhotoFormatImplToJson(_$PhotoFormatImpl instance) =>
       'title': instance.title,
       'description': instance.description,
       'isPopular': instance.isPopular,
+      'framePrice': instance.framePrice,
     };

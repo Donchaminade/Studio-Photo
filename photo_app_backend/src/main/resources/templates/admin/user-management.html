@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Utilisateurs - Studio Photo Admin</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title>Gestion des Utilisateurs - Studio Photo Admin</title>
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -23,6 +25,9 @@
             --dark-color: #2c3e50;
             --light-color: #f8f9fa;
             --gray-light: #ecf0f1;
+            --input-border: #94a3b8;
+            --input-border-hover: #64748b;
+            --input-bg: #ffffff;
             --shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
             --transition: all 0.3s ease;
         }
@@ -503,7 +508,7 @@
             padding: 20px 30px;
         }
 
-        /* Form Styling */
+        /* Form Styling — bordures visibles (champs + listes déroulantes) */
         .form-group {
             margin-bottom: 25px;
         }
@@ -513,73 +518,101 @@
             font-size: 14px;
             color: var(--dark-color);
             margin-bottom: 8px;
+            display: block;
         }
 
-        .form-control {
-            border: 2px solid #eef1f7;
+        .content-wrapper .form-control,
+        #userModal .form-control {
+            border: 2px solid var(--input-border) !important;
             border-radius: 8px;
             padding: 12px 15px;
             font-size: 14px;
             transition: var(--transition);
-            background-color: #fafbfd;
-        }
-
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(69, 103, 183, 0.15);
-            background-color: white;
-        }
-
-        /* Styling for Select2 to match form-control */
-        .select2-container--default .select2-selection--single {
-            height: 48px;
-            /* Approximate height of form-control with padding */
-            border: 2px solid #eef1f7 !important;
-            /* Enforce border */
-            border-radius: 8px;
-            padding: 10px 15px;
-            /* Adjust padding to match form-control visual */
-            background-color: #fafbfd !important;
-            /* Enforce background color */
-            transition: var(--transition);
-        }
-
-        .select2-container--default.select2-container--focus .select2-selection--single {
-            border-color: var(--primary-color) !important;
-            /* Enforce focus border color */
-            box-shadow: 0 0 0 0.2rem rgba(69, 103, 183, 0.15);
-            background-color: white !important;
-            /* Enforce focus background */
-        }
-
-        /* Ensure the rendered text also uses the correct padding/line-height */
-        .select2-container--default .select2-selection--single .select2-selection__rendered {
-            line-height: 28px;
-            /* Adjust line-height to center text vertically */
-            padding-left: 0;
-            /* Remove default padding for consistency */
+            background-color: var(--input-bg) !important;
             color: var(--dark-color);
-            /* Ensure text color is consistent */
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+            min-height: 48px;
         }
 
-        .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: 46px;
-            /* Adjust arrow height to match input */
-            right: 15px;
+        .content-wrapper .form-control:hover,
+        #userModal .form-control:hover {
+            border-color: var(--input-border-hover) !important;
         }
 
-        .select2-container--default .select2-selection--single .select2-selection__arrow b {
-            border-color: #888 transparent transparent transparent !important;
-            /* Make arrow darker */
-            border-width: 6px 4px 0 4px !important;
-            /* Make arrow slightly larger */
+        .content-wrapper .form-control:focus,
+        #userModal .form-control:focus {
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 0 3px rgba(69, 103, 183, 0.22);
+            background-color: #ffffff !important;
+            outline: none;
+        }
+
+        /* Select2 — même rendu que les inputs texte */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container--default .select2-selection--single {
+            height: 48px !important;
+            border: 2px solid var(--input-border) !important;
+            border-radius: 8px !important;
+            padding: 8px 40px 8px 14px !important;
+            background-color: var(--input-bg) !important;
+            transition: var(--transition);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
         }
 
         .select2-container--default .select2-selection--single:hover {
+            border-color: var(--input-border-hover) !important;
             cursor: pointer;
-            /* Indicate it's clickable */
+        }
+
+        .select2-container--default.select2-container--focus .select2-selection--single,
+        .select2-container--default.select2-container--open .select2-selection--single {
             border-color: var(--primary-color) !important;
-            /* Consistent hover with focus */
+            box-shadow: 0 0 0 3px rgba(69, 103, 183, 0.22) !important;
+            background-color: #ffffff !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 30px !important;
+            padding-left: 0 !important;
+            color: var(--dark-color) !important;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #64748b !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 44px !important;
+            right: 12px !important;
+            width: 24px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #475569 transparent transparent transparent !important;
+            border-width: 7px 5px 0 5px !important;
+            margin-top: -2px;
+        }
+
+        .select2-dropdown {
+            border: 2px solid var(--input-border) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+            overflow: hidden;
+        }
+
+        .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: var(--primary-color) !important;
+        }
+
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border: 2px solid var(--input-border) !important;
+            border-radius: 6px !important;
+            padding: 8px 10px !important;
         }
 
         .password-toggle {
@@ -1101,10 +1134,12 @@
     <script th:inline="javascript">
         /*<![CDATA[*/
         $(document).ready(function () {
-            // Initialize Select2
-            $('.select2').select2({
+            // Select2 — sans thème bootstrap (non chargé) ; listes du modal bien visibles
+            $('#filterStatus').select2({ width: '100%' });
+            $('#role, #status').select2({
                 width: '100%',
-                theme: 'bootstrap'
+                dropdownParent: $('#userModal'),
+                minimumResultsForSearch: Infinity
             });
 
             // Event listener for the "Change password" checkbox
@@ -1460,12 +1495,12 @@
                 const userId = $(this).data('id');
                 Swal.fire({
                     title: 'Confirmation',
-                    text: 'Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.',
+                    text: 'Supprimer cet utilisateur ? S\'il a des commandes ou réservations, le compte sera désactivé (historique conservé). Sinon, suppression définitive.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Oui, supprimer !',
+                    confirmButtonText: 'Oui, supprimer',
                     cancelButtonText: 'Annuler'
                 }).then((result) => {
                     if (result.isConfirmed) {
@@ -1476,12 +1511,13 @@
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content
                             }
                         })
-                            .then(response => {
+                            .then(async response => {
+                                hideLoading();
                                 if (response.ok) {
-                                    hideLoading();
+                                    const data = await response.json().catch(() => ({}));
                                     Swal.fire({
-                                        title: 'Supprimé !',
-                                        text: 'L\'utilisateur a été supprimé.',
+                                        title: data.mode === 'soft' ? 'Compte désactivé' : 'Supprimé',
+                                        text: data.message || 'L\'utilisateur a été traité.',
                                         icon: 'success',
                                         confirmButtonColor: '#4567b7'
                                     }).then(() => {
@@ -1489,9 +1525,9 @@
                                         loadStats();
                                     });
                                 } else {
-                                    Swal.fire('Erreur', 'Erreur lors de la suppression de l\'utilisateur.', 'error');
+                                    const err = await response.json().catch(() => ({}));
+                                    Swal.fire('Erreur', err.message || 'Erreur lors de la suppression de l\'utilisateur.', 'error');
                                 }
-                                hideLoading();
                             })
                             .catch(error => {
                                 console.error('Error deleting user:', error);
@@ -1723,12 +1759,12 @@
 
                 Swal.fire({
                     title: 'Action groupée',
-                    text: `Voulez-vous vraiment supprimer les ${selectedIds.length} utilisateurs sélectionnés ? Cette action supprimera également leurs commandes et réservations.`,
+                    text: `Traiter ${selectedIds.length} utilisateur(s) ? Les comptes avec commandes/réservations seront désactivés (historique conservé) ; les autres seront supprimés définitivement.`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#e74c3c',
                     cancelButtonColor: '#95a5a6',
-                    confirmButtonText: 'Oui, supprimer tout',
+                    confirmButtonText: 'Oui, continuer',
                     cancelButtonText: 'Annuler'
                 }).then((result) => {
                     if (result.isConfirmed) {
@@ -1739,17 +1775,19 @@
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content
                             },
-                            body: JSON.stringify(selectedIds)
-                        }).then(response => {
+                            body: JSON.stringify(selectedIds.map(id => parseInt(id, 10)))
+                        }).then(async response => {
+                            hideLoading();
                             if (response.ok) {
+                                const data = await response.json().catch(() => ({}));
                                 table.ajax.reload();
                                 loadStats();
                                 selectAll.prop('checked', false);
                                 updateBulkDeleteBtn();
-                                Swal.fire('Succès', 'Utilisateurs supprimés.', 'success');
+                                Swal.fire('Succès', data.message || 'Utilisateurs traités.', 'success');
                             } else {
-                                hideLoading();
-                                Swal.fire('Erreur', 'Une erreur est survenue lors de la suppression.', 'error');
+                                const err = await response.json().catch(() => ({}));
+                                Swal.fire('Erreur', err.message || 'Une erreur est survenue lors de la suppression.', 'error');
                             }
                         }).catch(error => {
                             hideLoading();

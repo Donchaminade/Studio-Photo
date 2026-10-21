@@ -2,6 +2,7 @@ import 'package:Picon/api_service.dart';
 import 'package:Picon/models/booking.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -51,11 +52,10 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
                 }
                 
                 if (snapshot.hasError) {
-                  String errorMessage = snapshot.error.toString();
-                  if (errorMessage.startsWith('Exception: ')) {
-                    errorMessage = errorMessage.substring(11);
-                  }
-                  return _buildErrorState(errorMessage);
+                  return AppInlineError(
+                    error: snapshot.error!,
+                    onRetry: _refreshBookings,
+                  );
                 }
 
                 final bookings = snapshot.data ?? [];
@@ -249,33 +249,6 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
     ).animate().fadeIn();
   }
 
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 60, color: AppColors.error),
-            const SizedBox(height: 16),
-            Text(
-              'Oups ! Une erreur est survenue.',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(error, style: const TextStyle(color: AppColors.textSecondary), textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _refreshBookings,
-              child: const Text('Réessayer'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Map<String, dynamic> _getStatusInfo(String status) {
     switch (status) {
       case 'CONFIRMED':
@@ -285,7 +258,7 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
       case 'CANCELLED':
         return {'text': 'Annulée', 'color': Colors.red.shade700, 'icon': Icons.cancel};
       case 'COMPLETED':
-        return {'text': 'Terminée', 'color': Colors.blue.shade700, 'icon': Icons.task_alt};
+        return {'text': 'Terminée', 'color': AppColors.primary, 'icon': Icons.task_alt};
       default:
         return {'text': status, 'color': Colors.grey.shade700, 'icon': Icons.help_outline};
     }

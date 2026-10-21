@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détails de la Commande - Studio Photo Admin</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title>Détails de la Commande - Studio Photo Admin</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
@@ -557,6 +559,72 @@
             color: var(--primary-color);
         }
 
+        .studio-print-advice {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border-left: 4px solid var(--info-color);
+            background: #f0f7ff;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--dark-color);
+        }
+
+        .studio-print-advice.advice-perfect {
+            border-left-color: var(--success-color);
+            background: #eafaf1;
+        }
+
+        .studio-print-advice.advice-correct {
+            border-left-color: var(--warning-color);
+            background: #fef9e7;
+        }
+
+        .studio-print-advice.advice-too-small {
+            border-left-color: var(--danger-color);
+            background: #fdedec;
+        }
+
+        .studio-print-advice-title {
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 8px;
+        }
+
+        .studio-print-advice-body {
+            white-space: pre-line;
+        }
+
+        .studio-suggested-format {
+            color: var(--success-color) !important;
+        }
+
+        .quality-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .quality-badge.perfect {
+            background: rgba(46, 204, 113, 0.15);
+            color: #1e8449;
+        }
+
+        .quality-badge.correct {
+            background: rgba(243, 156, 18, 0.15);
+            color: #b7950b;
+        }
+
+        .quality-badge.too-small {
+            background: rgba(231, 76, 60, 0.15);
+            color: #c0392b;
+        }
+
         .photo-group-header {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -790,6 +858,15 @@
 
     <!-- Content Wrapper -->
     <div class="content-wrapper" th:if="${order}">
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+
         <!-- Page Header -->
         <div class="page-header">
             <h1>
@@ -870,7 +947,112 @@
                         <span class="info-label"><i class="fas fa-check-circle"></i> Statut</span>
                         <span class="info-value" th:text="${order.paymentStatus ?: 'En attente'}">Payé</span>
                     </div>
+                    <div class="info-item" th:if="${order.paymentReference != null && !order.paymentReference.isEmpty()}">
+                        <span class="info-label"><i class="fas fa-fingerprint"></i> Référence</span>
+                        <span class="info-value" th:text="${order.paymentReference}">TX123456789</span>
+                    </div>
+                    <div class="info-item" th:if="${order.paymentProofType != null && !order.paymentProofType.isEmpty()}">
+                        <span class="info-label"><i class="fas fa-file-signature"></i> Type de preuve</span>
+                        <span class="info-value" th:text="${order.paymentProofType}">MESSAGE</span>
+                    </div>
+                    <div class="info-item" style="grid-column: span 2;"
+                         th:if="${order.paymentProofText != null && !order.paymentProofText.isEmpty()}">
+                        <span class="info-label"><i class="fas fa-comment-dots"></i> Message fourni</span>
+                        <span class="info-value" th:text="${order.paymentProofText}">Paiement effectue...</span>
+                    </div>
+                    <div class="info-item" style="grid-column: span 2;"
+                         th:if="${order.paymentProofImageUrl != null && !order.paymentProofImageUrl.isEmpty()}">
+                        <span class="info-label"><i class="fas fa-image"></i> Capture fournie</span>
+                        <a th:href="${order.paymentProofImageUrl}" target="_blank" class="info-value">
+                            Ouvrir la capture
+                        </a>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Refund Information -->
+            <div class="info-card" th:if="${order.refundStatus != null && order.refundStatus.name() != 'NONE'}">
+                <h3 class="card-title">
+                    <i class="fas fa-undo-alt"></i>
+                    Remboursement
+                </h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Statut remboursement</span>
+                        <span class="info-value" th:text="${order.refundStatus.displayName}">En cours</span>
+                    </div>
+                    <div class="info-item" th:if="${order.refundAmount != null}">
+                        <span class="info-label">Montant remboursé</span>
+                        <span class="info-value"
+                              th:text="${#numbers.formatDecimal(order.refundAmount, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">0 FCFA</span>
+                    </div>
+                    <div class="info-item" th:if="${order.refundReason != null && !order.refundReason.isEmpty()}"
+                         style="grid-column: span 2;">
+                        <span class="info-label">Motif (client)</span>
+                        <span class="info-value" th:text="${order.refundReason}">—</span>
+                    </div>
+                    <div class="info-item" th:if="${order.refundReference != null && !order.refundReference.isEmpty()}">
+                        <span class="info-label">Réf. remboursement</span>
+                        <span class="info-value" th:text="${order.refundReference}">—</span>
+                    </div>
+                    <div class="info-item" th:if="${order.refundedAt != null}">
+                        <span class="info-label">Date confirmation</span>
+                        <span class="info-value"
+                              th:text="${#temporals.format(order.refundedAt, 'dd/MM/yyyy HH:mm')}">—</span>
+                    </div>
+                    <div class="info-item" th:if="${order.refundedBy != null}">
+                        <span class="info-label">Traité par</span>
+                        <span class="info-value" th:text="${order.refundedBy}">admin</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin actions: refund workflow -->
+            <div class="info-card"
+                 th:if="${order.status.name() == 'PROCESSING' && order.paymentStatus == 'PAID' && (order.refundStatus == null || order.refundStatus.name() == 'NONE')}">
+                <h3 class="card-title"><i class="fas fa-hand-holding-usd"></i> Annulation &amp; remboursement</h3>
+                <p class="text-muted mb-3">
+                    Commande payée en traitement : effectuez le remboursement USSD manuellement vers le client,
+                    puis enregistrez l'opération ici. Montant par défaut : total commande (100 %).
+                </p>
+                <form th:action="@{/admin/orders/{id}/initiate-refund(id=${order.id})}" method="post" class="mb-0">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label>Montant (FCFA)</label>
+                            <input type="number" step="1" min="1" name="refundAmount" class="form-control"
+                                   th:value="${order.totalAmount}" th:placeholder="${order.totalAmount}"/>
+                            <small class="form-text text-muted">Laisser le total pour un remboursement à 100 %.</small>
+                        </div>
+                        <div class="form-group col-md-8">
+                            <label>Motif (obligatoire si partiel)</label>
+                            <input type="text" name="refundReason" class="form-control"
+                                   placeholder="Ex. frais déjà engagés, accord client…"/>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-undo"></i> Initier le remboursement
+                    </button>
+                </form>
+            </div>
+
+            <div class="info-card" th:if="${order.refundStatus != null && order.refundStatus.name() == 'REFUND_PENDING'}">
+                <h3 class="card-title"><i class="fas fa-check-double"></i> Confirmer le remboursement USSD</h3>
+                <p class="text-muted mb-3">
+                    Après avoir envoyé <strong th:text="${order.refundAmount != null ? #numbers.formatDecimal(order.refundAmount, 1, 'POINT', 2, 'COMMA') + ' FCFA' : 'le montant'}">0 FCFA</strong>
+                    au client via Mixx/Flooz, saisissez la référence de transaction.
+                </p>
+                <form th:action="@{/admin/orders/{id}/confirm-refund(id=${order.id})}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div class="form-group">
+                        <label>Référence transaction remboursement *</label>
+                        <input type="text" name="refundReference" class="form-control" required
+                               placeholder="Référence opérateur"/>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Confirmer le remboursement
+                    </button>
+                </form>
             </div>
 
             <!-- Delivery Information -->
@@ -916,13 +1098,54 @@
                                     <span class="photo-spec-value" th:text="${item.quantity}">2</span>
                                 </div>
                                 <div class="photo-spec-item">
-                                    <span class="photo-spec-label">Prix unitaire</span>
+                                    <span class="photo-spec-label">Prix tirage</span>
                                     <span class="photo-spec-value" th:text="${#numbers.formatDecimal(item.pricePerUnit, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">1 500</span>
+                                </div>
+                                <div class="photo-spec-item" th:if="${item.withFrame}">
+                                    <span class="photo-spec-label">Cadre choisi</span>
+                                    <span class="photo-spec-value">
+                                        <span th:text="${item.frameName != null ? item.frameName : 'Oui'}">Cadre classique</span>
+                                        <span th:if="${item.framePrice != null and item.framePrice > 0}"
+                                              th:text="| (+${#numbers.formatDecimal(item.framePrice, 1, 'POINT', 2, 'COMMA')} FCFA)|"> (+2 000 FCFA)</span>
+                                    </span>
+                                </div>
+                                <div class="photo-spec-item" th:if="${item.withFrame and item.frameImageUrl != null and !item.frameImageUrl.isEmpty()}" style="grid-column: 1 / -1;">
+                                    <span class="photo-spec-label">Image du cadre</span>
+                                    <div class="photo-spec-value" style="margin-top: 8px;">
+                                        <img th:src="${item.frameImageUrl}"
+                                             alt="Cadre choisi par le client"
+                                             style="max-width: 160px; max-height: 160px; border-radius: 10px; border: 2px solid #e0e6f0; object-fit: cover;">
+                                    </div>
+                                </div>
+                                <div class="photo-spec-item" th:unless="${item.withFrame}">
+                                    <span class="photo-spec-label">Cadre</span>
+                                    <span class="photo-spec-value text-muted">Sans cadre</span>
                                 </div>
                                 <div class="photo-spec-item">
                                     <span class="photo-spec-label">Total</span>
-                                    <span class="photo-spec-value" th:text="${#numbers.formatDecimal(item.pricePerUnit * item.quantity, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">3 000</span>
+                                    <span class="photo-spec-value" th:text="${#numbers.formatDecimal((item.pricePerUnit + (item.framePrice != null ? item.framePrice : 0)) * item.quantity, 1, 'POINT', 2, 'COMMA') + ' FCFA'}">3 000</span>
                                 </div>
+                                <div class="photo-spec-item" th:if="${item.chosenPrintQuality != null}">
+                                    <span class="photo-spec-label">Qualité choisie</span>
+                                    <span class="photo-spec-value">
+                                        <span class="quality-badge"
+                                              th:classappend="${item.chosenPrintQuality == 'PERFECT' ? ' perfect' : (item.chosenPrintQuality == 'CORRECT' ? ' correct' : ' too-small')}"
+                                              th:text="${item.chosenPrintQuality == 'PERFECT' ? 'Parfaite' : (item.chosenPrintQuality == 'CORRECT' ? 'Correcte' : 'Insuffisante')}">—</span>
+                                    </span>
+                                </div>
+                                <div class="photo-spec-item" th:if="${item.suggestedPhotoSize != null and !item.suggestedPhotoSize.isEmpty()}">
+                                    <span class="photo-spec-label">Format conseillé</span>
+                                    <span class="photo-spec-value studio-suggested-format" th:text="${item.suggestedPhotoSize}">9x13 cm</span>
+                                </div>
+                            </div>
+                            <div th:if="${item.studioPrintAdvice != null and !item.studioPrintAdvice.isEmpty()}"
+                                 class="studio-print-advice"
+                                 th:classappend="${item.chosenPrintQuality == 'PERFECT' ? ' advice-perfect' : (item.chosenPrintQuality == 'CORRECT' ? ' advice-correct' : ' advice-too-small')}">
+                                <div class="studio-print-advice-title">
+                                    <i class="fas fa-magic"></i>
+                                    Conseil studio (automatique)
+                                </div>
+                                <div class="studio-print-advice-body" th:text="${item.studioPrintAdvice}">—</div>
                             </div>
                         </div>
                     </div>
@@ -954,7 +1177,25 @@
                         <div class="timeline-date" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">29/01/2026 10:00</div>
                     </div>
                 </li>
-            </div>
+                <li class="timeline-item" th:if="${order.refundStatus != null && order.refundStatus.name() == 'REFUND_PENDING'}">
+                    <div class="timeline-icon" style="background: var(--warning-color);">
+                        <i class="fas fa-undo"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Remboursement initié</div>
+                        <div class="timeline-date">En attente de confirmation USSD</div>
+                    </div>
+                </li>
+                <li class="timeline-item" th:if="${order.refundStatus != null && order.refundStatus.name() == 'REFUNDED'}">
+                    <div class="timeline-icon" style="background: var(--success-color);">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Remboursement confirmé</div>
+                        <div class="timeline-date" th:text="${order.refundedAt != null ? #temporals.format(order.refundedAt, 'dd/MM/yyyy HH:mm') : ''}">—</div>
+                    </div>
+                </li>
+            </ul>
         </div>
 
         <!-- Footer -->

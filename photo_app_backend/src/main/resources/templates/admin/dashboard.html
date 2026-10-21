@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Studio Photo</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title>Admin Dashboard - Studio Photo</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet"
@@ -841,6 +843,17 @@
             $('#loadingOverlay').fadeOut();
         }
 
+        function fetchAdmin(path) {
+            return fetch(path, { credentials: 'same-origin' }).then(function (response) {
+                if (response.status === 401) {
+                    window.location.href = '/admin/login';
+                    throw new Error('session');
+                }
+                if (!response.ok) throw new Error('http');
+                return response.json();
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             // Initiales de l'utilisateur
             const userName = /*[[${#authentication.principal.firstname + ' ' + #authentication.principal.lastname}]]*/ 'Admin';
@@ -866,11 +879,7 @@
 
             // Récupérer les statistiques du dashboard
             showLoading(); // Show spinner before fetch
-            fetch('/admin/api/dashboard-stats')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
+            fetchAdmin('/admin/api/dashboard-stats')
                 .then(data => {
                     document.getElementById('totalUsers').innerText = formatNumber(data.totalUsers);
                     document.getElementById('totalPhotos').innerText = formatNumber(data.totalPhotos);
@@ -880,12 +889,11 @@
                 })
                 .catch(error => {
                     console.error('Error fetching dashboard stats:', error);
-                    // Valeurs par défaut
-                    document.getElementById('totalUsers').innerText = '154';
-                    document.getElementById('totalPhotos').innerText = '2,345';
-                    document.getElementById('totalPendingOrders').innerText = '12';
-                    document.getElementById('totalRevenue').innerText = '4,250 FCFA';
-                    document.getElementById('averageOrderValue').innerText = '350 FCFA';
+                    document.getElementById('totalUsers').innerText = '—';
+                    document.getElementById('totalPhotos').innerText = '—';
+                    document.getElementById('totalPendingOrders').innerText = '—';
+                    document.getElementById('totalRevenue').innerText = '—';
+                    document.getElementById('averageOrderValue').innerText = '—';
                 })
                 .finally(() => {
                     hideLoading(); // Hide spinner after fetch completes (success or error)
@@ -914,8 +922,7 @@
 
         function fetchRecentActivity() {
             const activityList = document.querySelector('.activity-list');
-            fetch('/admin/api/recent-activity')
-                .then(response => response.json())
+            fetchAdmin('/admin/api/recent-activity')
                 .then(activities => {
                     activityList.innerHTML = ''; // Clear static content
                     if (activities.length === 0) {
@@ -977,13 +984,7 @@
         }
 
         function initializeChart() {
-            fetch('/admin/api/chart-data')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok for chart data');
-                    }
-                    return response.json();
-                })
+            fetchAdmin('/admin/api/chart-data')
                 .then(chartData => {
                     const ctx = document.getElementById('userActivityChart').getContext('2d');
                     new Chart(ctx, {
@@ -1043,11 +1044,7 @@
         }
 
         function initializeOrderStatusChart() {
-            fetch('/admin/api/chart/order-status')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok for order status chart data');
-                    return response.json();
-                })
+            fetchAdmin('/admin/api/chart/order-status')
                 .then(chartData => {
                     const ctx = document.getElementById('orderStatusChart').getContext('2d');
                     new Chart(ctx, {
@@ -1081,11 +1078,7 @@
         }
 
         function initializeBookingStatusChart() {
-            fetch('/admin/api/chart/booking-status')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok for booking status chart data');
-                    return response.json();
-                })
+            fetchAdmin('/admin/api/chart/booking-status')
                 .then(chartData => {
                     const ctx = document.getElementById('bookingStatusChart').getContext('2d');
                     new Chart(ctx, {
@@ -1119,11 +1112,7 @@
         }
 
         function initializeBookingsPerDayChart() {
-            fetch('/admin/api/chart/bookings-per-day')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok for bookings per day chart data');
-                    return response.json();
-                })
+            fetchAdmin('/admin/api/chart/bookings-per-day')
                 .then(chartData => {
                     const ctx = document.getElementById('bookingsPerDayChart').getContext('2d');
                     new Chart(ctx, {
@@ -1174,8 +1163,7 @@
         }
 
         function initializeTopClientsChart() {
-            fetch('/admin/api/top-clients')
-                .then(response => response.json())
+            fetchAdmin('/admin/api/top-clients')
                 .then(data => {
                     const ctx = document.getElementById('topClientsChart').getContext('2d');
                     new Chart(ctx, {
@@ -1203,8 +1191,7 @@
         }
 
         function initializeRevenueEvolutionChart() {
-            fetch('/admin/api/chart/revenue')
-                .then(response => response.json())
+            fetchAdmin('/admin/api/chart/revenue')
                 .then(chartData => {
                     const ctx = document.getElementById('revenueEvolutionChart').getContext('2d');
                     new Chart(ctx, {
@@ -1233,8 +1220,7 @@
         }
 
         function initializePhotoFormatsChart() {
-            fetch('/admin/api/chart/photo-formats')
-                .then(response => response.json())
+            fetchAdmin('/admin/api/chart/photo-formats')
                 .then(chartData => {
                     const ctx = document.getElementById('photoFormatsChart').getContext('2d');
                     new Chart(ctx, {
@@ -1259,8 +1245,7 @@
         }
 
         function initializeWeeklyActivityChart() {
-            fetch('/admin/api/chart/weekly-activity')
-                .then(response => response.json())
+            fetchAdmin('/admin/api/chart/weekly-activity')
                 .then(chartData => {
                     const ctx = document.getElementById('weeklyActivityChart').getContext('2d');
                     new Chart(ctx, {

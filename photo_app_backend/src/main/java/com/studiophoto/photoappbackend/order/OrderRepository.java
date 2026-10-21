@@ -53,4 +53,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findTop5ByOrderByCreatedAtDesc();
 
     List<Order> findByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime start, LocalDateTime end);
+
+    List<Order> findByUserIdAndCreatedAtAfterOrderByCreatedAtDesc(Integer userId, LocalDateTime after);
 }

@@ -17,6 +17,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
 import java.util.Arrays;
@@ -38,26 +39,29 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
                                 new AntPathRequestMatcher("/api/**"),
-                                new AntPathRequestMatcher("/payment/**"),
-                                new AntPathRequestMatcher("/api/payments/fedapay/webhook"),
+                                new AntPathRequestMatcher("/admin/api/**"),
                                 new AntPathRequestMatcher("/actuator/**")
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Public access for static resources
                         .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
-                        // Uploads should ideally be authenticated, but if needed for mobile <img> tags:
-                        // .requestMatchers("/uploads/**").permitAll() // Security by obscurity (UUIDs)
-                        .requestMatchers("/uploads/**").authenticated()
+                        // Photos commandes / preuves de paiement : accès authentifié uniquement
+                        .requestMatchers("/uploads/user_*/**").authenticated()
+                        .requestMatchers("/uploads/payment-proofs/**").authenticated()
+                        // Bannières promo, formats, etc. (fichiers à la racine /uploads/) : lecture publique
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/uploads/**").permitAll()
                         
                         // Public access for new public endpoints
                         .requestMatchers("/api/public/**", "/api/promotions/**", "/api/featured-content/**").permitAll()
-                        .requestMatchers("/payment/**").permitAll()
-                        .requestMatchers("/api/payments/fedapay/webhook").permitAll()
                         
                         // Public access for authentication and admin login page
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/admin/login").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        // Politique de confidentialité (Play Store)
+                        .requestMatchers(HttpMethod.GET, "/privacy", "/politique-de-confidentialite").permitAll()
                         
                         // Admin paths should be authenticated and role-based
                         .requestMatchers("/admin/**").hasRole("ADMIN")
@@ -66,6 +70,15 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
+                        .defaultAuthenticationEntryPointFor(
+                                (request, response, authException) -> {
+                                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                                    response.getWriter().write(
+                                            "{ \"message\": \"Session admin expirée. Reconnectez-vous.\" }");
+                                },
+                                new AntPathRequestMatcher("/admin/api/**")
+                        )
                         .defaultAuthenticationEntryPointFor(
                                 new LoginUrlAuthenticationEntryPoint("/admin/login"),
                                 new AntPathRequestMatcher("/admin/**")

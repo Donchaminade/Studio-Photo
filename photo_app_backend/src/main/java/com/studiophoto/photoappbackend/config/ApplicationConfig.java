@@ -1,6 +1,7 @@
 package com.studiophoto.photoappbackend.config;
 
 import com.studiophoto.photoappbackend.repository.UserRepository;
+import com.studiophoto.photoappbackend.util.PhoneUtils;
 import com.studiophoto.photoappbackend.storage.StorageProperties;
 import com.studiophoto.photoappbackend.storage.StorageService;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +16,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.client.RestTemplate; // Added import
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.Optional;
 
 @Configuration
 @RequiredArgsConstructor
@@ -27,9 +29,20 @@ public class ApplicationConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> repository.findByEmail(username)
-                .or(() -> repository.findByPhone(username))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + username));
+        return username -> {
+            if (username == null || username.isBlank()) {
+                throw new UsernameNotFoundException("Identifiant vide");
+            }
+            String trimmed = username.trim();
+            Optional<com.studiophoto.photoappbackend.model.User> user;
+            if (trimmed.contains("@")) {
+                user = repository.findByEmail(trimmed);
+            } else {
+                user = repository.findFirstByPhoneIn(PhoneUtils.lookupVariants(trimmed));
+            }
+            return user.orElseThrow(
+                    () -> new UsernameNotFoundException("User not found with identifier: " + trimmed));
+        };
     }
 
     @Bean
@@ -48,11 +61,6 @@ public class ApplicationConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
     }
 
     // NEW: Initialize StorageService on startup

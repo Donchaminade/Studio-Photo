@@ -1,103 +1,38 @@
-import 'dart:ui';
-
-import 'package:Picon/api_service.dart';
-import 'package:Picon/models/contact_info.dart';
-import 'package:Picon/utils/colors.dart';
-import 'package:Picon/utils/geometric_background.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:Picon/utils/colors.dart';
+import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ContactScreen extends StatefulWidget {
+class ContactScreen extends StatelessWidget {
   const ContactScreen({super.key});
-
-  @override
-  State<ContactScreen> createState() => _ContactScreenState();
-}
-
-class _ContactScreenState extends State<ContactScreen> {
-  late Future<ContactInfo> _contactInfoFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _contactInfoFuture = ApiService.fetchContactInfo();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Contactez-nous',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
-      ),
+      appBar: piconBar('Contactez-nous'),
       body: Stack(
         children: [
-          GeometricBackground(),
+          const GeometricBackground(),
           SafeArea(
-            child: FutureBuilder<ContactInfo>(
-              future: _contactInfoFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                      child:
-                          CircularProgressIndicator(color: AppColors.primary));
-                }
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Impossible de charger les informations : ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red, fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                  );
-                }
-                if (snapshot.hasData) {
-                  final contactInfo = snapshot.data!;
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 20),
-                        _buildInfoCard(context, contactInfo),
-                        const SizedBox(height: 30),
-                        Text(
-                          'Suivez-nous',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildSocialRow(contactInfo),
-                      ],
-                    ),
-                  );
-                }
-                return const Center(
-                  child: Text(
-                    'Aucune information de contact disponible.',
-                    style: TextStyle(color: AppColors.textSecondary),
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Reveal(child: _buildInfoCard(context)),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Suivez-nous',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.textPrimary),
                   ),
-                );
-              },
+                  const SizedBox(height: 14),
+                  const Reveal(index: 1, child: _SocialRow()),
+                ],
+              ),
             ),
           ),
         ],
@@ -105,82 +40,43 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
-  Widget _buildInfoCard(BuildContext context, ContactInfo info) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.3)),
+  Widget _buildInfoCard(BuildContext context) {
+    return PiconCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _ContactInfoTile(
+            icon: Icons.location_on_outlined,
+            title: 'Notre Studio',
+            subtitle: 'Rue de la Photo, Lomé, Togo',
+            onTap: () {},
           ),
-          child: Column(
-            children: [
-              _ContactInfoTile(
-                icon: Icons.location_on_outlined,
-                title: 'Notre Studio',
-                subtitle: info.address,
-                onTap: info.address.isNotEmpty
-                    ? () => _launchUrl(
-                        'https://maps.google.com/?q=${info.address}', context)
-                    : null,
-              ),
-              const Divider(
-                  height: 1, indent: 20, endIndent: 20, color: Colors.white30),
-              _ContactInfoTile(
-                icon: Icons.phone_outlined,
-                title: 'Téléphone',
-                subtitle: info.phoneNumber,
-                onTap: info.phoneNumber.isNotEmpty
-                    ? () => _launchUrl('tel:${info.phoneNumber}', context)
-                    : null,
-              ),
-              const Divider(
-                  height: 1, indent: 20, endIndent: 20, color: Colors.white30),
-              _ContactInfoTile(
-                icon: Icons.email_outlined,
-                title: 'Email',
-                subtitle: info.email,
-                onTap: info.email.isNotEmpty
-                    ? () => _launchUrl('mailto:${info.email}', context)
-                    : null,
-              ),
-              const Divider(
-                  height: 1, indent: 20, endIndent: 20, color: Colors.white30),
-              _ContactInfoTile(
-                icon: Icons.access_time,
-                title: 'Horaires d\'ouverture',
-                subtitle: info.openingHours,
-              ),
-            ],
+          const Divider(height: 1, indent: 20, endIndent: 20),
+          _ContactInfoTile(
+            icon: Icons.phone_outlined,
+            title: 'Téléphone',
+            subtitle: '+228 90 00 00 00',
+            onTap: () => _launchUrl('tel:+22890000000', context),
           ),
-        ),
+          const Divider(height: 1, indent: 20, endIndent: 20),
+          _ContactInfoTile(
+            icon: Icons.email_outlined,
+            title: 'Email',
+            subtitle: 'contact@studiophoto.com',
+            onTap: () => _launchUrl('mailto:contact@studiophoto.com', context),
+          ),
+          const Divider(height: 1, indent: 20, endIndent: 20),
+          const _ContactInfoTile(
+            icon: Icons.access_time,
+            title: "Horaires d'ouverture",
+            subtitle: 'Lundi - Samedi : 09:00 - 18:00',
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSocialRow(ContactInfo info) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        if (info.facebookUrl != null && info.facebookUrl!.isNotEmpty)
-          _SocialButton(
-              icon: FontAwesomeIcons.facebook, url: info.facebookUrl!),
-        if (info.twitterUrl != null && info.twitterUrl!.isNotEmpty)
-          _SocialButton(icon: FontAwesomeIcons.twitter, url: info.twitterUrl!),
-        if (info.instagramUrl != null && info.instagramUrl!.isNotEmpty)
-          _SocialButton(
-              icon: FontAwesomeIcons.instagram, url: info.instagramUrl!),
-        if (info.linkedinUrl != null && info.linkedinUrl!.isNotEmpty)
-          _SocialButton(
-              icon: FontAwesomeIcons.linkedin, url: info.linkedinUrl!),
-      ],
-    );
-  }
-
-  Future<void> _launchUrl(String url, BuildContext context) async {
+  static Future<void> _launchUrl(String url, BuildContext context) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!context.mounted) return;
@@ -188,6 +84,23 @@ class _ContactScreenState extends State<ContactScreen> {
         SnackBar(content: Text('Impossible d\'ouvrir $url')),
       );
     }
+  }
+}
+
+class _SocialRow extends StatelessWidget {
+  const _SocialRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _SocialButton(icon: FontAwesomeIcons.facebook, url: 'https://facebook.com/your-page'),
+        _SocialButton(icon: FontAwesomeIcons.twitter, url: 'https://twitter.com/your-handle'),
+        _SocialButton(icon: FontAwesomeIcons.instagram, url: 'https://instagram.com/your-profile'),
+        _SocialButton(icon: FontAwesomeIcons.linkedin, url: 'https://linkedin.com/in/your-profile'),
+      ],
+    );
   }
 }
 
@@ -208,26 +121,19 @@ class _ContactInfoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       onTap: onTap,
-      leading: Icon(icon, color: AppColors.primary, size: 30),
-      title: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: AppColors.textPrimary),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
         ),
+        child: Icon(icon, color: AppColors.primary, size: 22),
       ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-      ),
-      trailing: onTap != null
-          ? const Icon(Icons.arrow_forward_ios,
-              size: 16, color: AppColors.textSecondary)
-          : null,
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+      trailing: onTap != null ? const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary) : null,
     );
   }
 }
@@ -252,18 +158,17 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: url,
-      child: InkWell(
+      child: TapScale(
         onTap: () => _launchUrl(context),
-        borderRadius: BorderRadius.circular(50),
         child: Container(
-          width: 60,
-          height: 60,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.08),
           ),
           child: Center(
-            child: FaIcon(icon, color: AppColors.primary, size: 28),
+            child: FaIcon(icon, color: AppColors.primary, size: 22),
           ),
         ),
       ),

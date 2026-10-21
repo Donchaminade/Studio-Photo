@@ -1,7 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Paiement USSD : téléphone (groupe Permission.phone via permission_handler) -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <!-- API 26+ ; permission_handler ne la demande au runtime qu'à partir d'API 30+ -->
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
+
+    <!--
+      Politique Google Play (Photo Picker) : PAS de READ_MEDIA_* (accès large galerie).
+      Sur Android ≤ 12 (API 32), READ_EXTERNAL_STORAGE reste utile pour certains
+      chemins image_picker / OEM — limité via maxSdkVersion pour ne jamais
+      s'appliquer sur Android 13+ (où le Photo Picker suffit, sans permission).
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"
+        tools:replace="android:maxSdkVersion" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
 
     <application
         android:label="Picon"
@@ -22,13 +44,11 @@
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
 
-            <!-- LAUNCHER -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep Linking -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -56,7 +76,22 @@
             <data android:scheme="https" />
         </intent>
 
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="whatsapp" />
+        </intent>
+
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+
         <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+
+        <package android:name="com.google.android.dialer" />
+        <package android:name="com.android.dialer" />
+        <package android:name="com.samsung.android.dialer" />
     </queries>
 
 </manifest>

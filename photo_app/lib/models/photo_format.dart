@@ -13,6 +13,7 @@ class PhotoFormat with _$PhotoFormat {
     required String title,
     required String description,
     @Default(false) bool isPopular,
+    double? framePrice,
   }) = _PhotoFormat;
 
   factory PhotoFormat.fromJson(Map<String, Object?> json) => _$PhotoFormatFromJson(json);

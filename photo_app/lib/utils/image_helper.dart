@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:Picon/api_service.dart';
+import 'package:Picon/utils/print_quality_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:image_size_getter/image_size_getter.dart' as isg;
 import 'package:image_size_getter/file_input.dart';
@@ -9,49 +11,62 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as p;
 
 // ─────────────────────────────────────────────────────────────
-//  Lecture rapide des dimensions (headers seulement)
+//  Dimensions (EXIF pris en compte sur fichiers locaux)
 // ─────────────────────────────────────────────────────────────
 
-/// Retourne la taille (en pixels) d'une image locale en lisant
-/// uniquement les headers du fichier (JPEG, PNG, GIF, BMP, WebP).
-/// **Ne décode PAS l'image entière** — très rapide même pour 48 MP.
-///
-/// Si la lecture échoue (format non supporté, fichier corrompu),
-/// retombe sur le décodeur Flutter classique.
+/// Retourne la taille affichée (pixels) après orientation EXIF.
 Future<ui.Size> getImageDimensions(String path) async {
-  // Fichier distant (URL) → fallback Flutter classique
-  if (path.startsWith('http')) {
-    return _getImageDimensionsFallback(path);
+  final resolvedPath = ApiService.getFullImageUrl(path);
+
+  if (resolvedPath.startsWith('http')) {
+    final headers = <String, String>{};
+    if (ApiService.authToken != null) {
+      headers['Authorization'] = 'Bearer ${ApiService.authToken}';
+    }
+    return _getImageDimensionsFallback(resolvedPath, headers: headers);
   }
 
   try {
-    final file = File(path);
+    final file = File(resolvedPath);
     if (!await file.exists()) return const ui.Size(1, 1);
 
-    final imageSize = isg.ImageSizeGetter.getSize(FileInput(file));
-    if (imageSize.width > 0 && imageSize.height > 0) {
-      return ui.Size(imageSize.width.toDouble(), imageSize.height.toDouble());
-    }
-    // Dimensions nulles → fallback
-    return _getImageDimensionsFallback(path);
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) return const ui.Size(1, 1);
+
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    final size = ui.Size(image.width.toDouble(), image.height.toDouble());
+    image.dispose();
+    return size;
   } catch (_) {
-    // Format non supporté (ex: HEIC sur certains OS) → fallback
-    return _getImageDimensionsFallback(path);
+    try {
+      final file = File(resolvedPath);
+      final imageSize = isg.ImageSizeGetter.getSize(FileInput(file));
+      if (imageSize.width > 0 && imageSize.height > 0) {
+        return ui.Size(imageSize.width.toDouble(), imageSize.height.toDouble());
+      }
+    } catch (_) {}
+    return _getImageDimensionsFallback(resolvedPath);
   }
 }
 
-/// Fallback : décodage classique Flutter (charge l'image entière).
-Future<ui.Size> _getImageDimensionsFallback(String path) async {
+Future<ui.Size> _getImageDimensionsFallback(
+  String path, {
+  Map<String, String>? headers,
+}) async {
   final completer = Completer<ui.Size>();
   final ImageProvider provider = path.startsWith('http')
-      ? NetworkImage(path)
+      ? NetworkImage(path, headers: headers)
       : FileImage(File(path)) as ImageProvider;
   final stream = provider.resolve(const ImageConfiguration());
   late ImageStreamListener listener;
   listener = ImageStreamListener(
     (info, _) {
       final size = ui.Size(
-          info.image.width.toDouble(), info.image.height.toDouble());
+        info.image.width.toDouble(),
+        info.image.height.toDouble(),
+      );
       if (!completer.isCompleted) completer.complete(size);
       stream.removeListener(listener);
     },
@@ -65,50 +80,50 @@ Future<ui.Size> _getImageDimensionsFallback(String path) async {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Compression avant upload
+//  Compression HD avant upload (sans dégrader inutilement)
 // ─────────────────────────────────────────────────────────────
 
-/// Résolution maximale nécessaire pour l'impression :
-/// 20x30 cm à 300 DPI = 2362 x 3543 px.
-/// On arrondit à 3600 pour garder de la marge.
-const int kMaxPrintDimension = 3600;
+/// ~45 cm au grand côté à 300 DPI — marge pour grands formats studio.
+const int kMaxPrintDimension = 5200;
 
-/// Qualité JPEG de compression (90 = excellente qualité, ~3x plus léger).
-const int kJpegQuality = 90;
+/// JPEG haute qualité (léger allègement, pas de perte visible).
+const int kJpegQuality = 92;
 
-/// Compresse une image locale pour l'upload :
-/// - Redimensionne si un côté dépasse [kMaxPrintDimension]
-/// - Convertit en JPEG qualité [kJpegQuality]
-/// - Retourne le chemin du fichier compressé (dans le dossier temp)
-///
-/// Si la compression échoue (plateforme non supportée, format inconnu),
-/// retourne le chemin original sans compression.
+/// Limite cible si on ne connaît pas les formats (équivalent 20×30 cm @ 300 DPI).
+int _defaultMaxPixels() {
+  const refFormat = '20x30 cm';
+  final (w, h) = parseDimensionCm(refFormat);
+  final longCm = w > h ? w : h;
+  return ((longCm / kInchToCm) * 300).ceil();
+}
+
+/// Compresse pour l'upload : rotation EXIF, JPEG HQ, redimensionnement seulement si nécessaire.
 Future<String> compressForUpload(String originalPath) async {
   try {
     final file = File(originalPath);
     if (!await file.exists()) return originalPath;
 
-    // Déterminer les dimensions actuelles
     final dimensions = await getImageDimensions(originalPath);
-    final int origW = dimensions.width.round();
-    final int origH = dimensions.height.round();
+    int origW = dimensions.width.round();
+    int origH = dimensions.height.round();
 
-    // Si l'image est déjà petite, pas besoin de redimensionner
-    // mais on compresse quand même en JPEG pour réduire le poids
+    final maxPixels = _defaultMaxPixels();
+    final cap = maxPixels > kMaxPrintDimension ? maxPixels : kMaxPrintDimension;
+
     int targetW = origW;
     int targetH = origH;
 
-    if (origW > kMaxPrintDimension || origH > kMaxPrintDimension) {
-      if (origW > origH) {
-        targetW = kMaxPrintDimension;
-        targetH = (origH * kMaxPrintDimension / origW).round();
+    final longSide = origW > origH ? origW : origH;
+    if (longSide > cap) {
+      if (origW >= origH) {
+        targetW = cap;
+        targetH = (origH * cap / origW).round();
       } else {
-        targetH = kMaxPrintDimension;
-        targetW = (origW * kMaxPrintDimension / origH).round();
+        targetH = cap;
+        targetW = (origW * cap / origH).round();
       }
     }
 
-    // Chemin de sortie dans le dossier temporaire
     final tempDir = await Directory.systemTemp.createTemp('img_compress_');
     final baseName = p.basenameWithoutExtension(originalPath);
     final outputPath = '${tempDir.path}/$baseName.jpg';
@@ -119,6 +134,8 @@ Future<String> compressForUpload(String originalPath) async {
       quality: kJpegQuality,
       minWidth: targetW,
       minHeight: targetH,
+      keepExif: false,
+      autoCorrectionAngle: true,
       format: CompressFormat.jpeg,
     );
 
@@ -126,8 +143,7 @@ Future<String> compressForUpload(String originalPath) async {
       final origSize = await file.length();
       final compSize = await File(result.path).length();
       debugPrint(
-        '🗜️ Compression : ${_formatBytes(origSize)} → ${_formatBytes(compSize)} '
-        '(${(100 - compSize * 100 / origSize).round()}% réduit) '
+        '🗜️ HD : ${_formatBytes(origSize)} → ${_formatBytes(compSize)} '
         '| ${origW}x$origH → ${targetW}x$targetH',
       );
       return result.path;
@@ -139,8 +155,6 @@ Future<String> compressForUpload(String originalPath) async {
   }
 }
 
-/// Compresse une liste de fichiers en parallèle.
-/// Retourne la liste des chemins compressés (même ordre).
 Future<List<String>> compressBatch(List<dynamic> files) async {
   final futures = files.map((f) => compressForUpload(f.path));
   return Future.wait(futures);

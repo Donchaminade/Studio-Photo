@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Dimensions - Studio Photo Admin</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title>Gestion des Dimensions - Studio Photo Admin</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css">
@@ -249,7 +251,8 @@
                             <th>Nom (ex: 9x13)</th>
                             <th>Titre</th>
                             <th>Image</th>
-                            <th>Prix</th>
+                            <th>Prix tirage</th>
+                            <th>Prix cadre</th>
                             <th>Populaire</th>
                             <th>Actions</th>
                         </tr>
@@ -267,6 +270,11 @@
                             </td>
                             <td th:text="${#numbers.formatDecimal(dimension.price, 1, 'POINT', 2, 'COMMA')} + ' FCFA'">
                                 150.00 FCFA</td>
+                            <td>
+                                <span th:if="${dimension.framePrice != null and dimension.framePrice > 0}"
+                                      th:text="${#numbers.formatDecimal(dimension.framePrice, 1, 'POINT', 2, 'COMMA')} + ' FCFA'">2 000 FCFA</span>
+                                <span th:unless="${dimension.framePrice != null and dimension.framePrice > 0}" class="text-muted">—</span>
+                            </td>
                             <td>
                                 <span th:if="${dimension.isPopular}" class="badge badge-success">Oui</span>
                                 <span th:unless="${dimension.isPopular}" class="badge badge-secondary">Non</span>

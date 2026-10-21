@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Commandes - Studio Photo Admin</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title>Gestion des Commandes - Studio Photo Admin</title>
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -832,15 +834,26 @@
                                 th:text="${order.orderItems?.size() ?: 0} + ' article(s)'"></small>
                         </td>
                         <td th:data-filter="${order.status.name()}">
-                            <span th:if="${order.status.name() == 'PROCESSING'}"
+                            <span th:if="${order.refundStatus != null && order.refundStatus.name() == 'REFUNDED'}"
+                                class="status-badge badge-cancelled">Remboursée</span>
+                            <span th:if="${order.refundStatus != null && order.refundStatus.name() == 'REFUND_PENDING'}"
+                                class="status-badge badge-processing">Remb. en cours</span>
+                            <span th:if="${(order.refundStatus == null || order.refundStatus.name() == 'NONE') && order.status.name() == 'PROCESSING'}"
                                 class="status-badge badge-processing">Payé</span>
-                            <span th:unless="${order.status.name() == 'PROCESSING'}" class="status-badge"
+                            <span th:if="${(order.refundStatus == null || order.refundStatus.name() == 'NONE') && order.status.name() != 'PROCESSING'}"
+                                class="status-badge"
                                 th:classappend="'badge-' + ${#strings.toLowerCase(order.status.name())}"
                                 th:text="${order.status.displayName}">En attente</span>
                         </td>
                         <td>
                             <div th:text="${order.paymentMethod}">Mobile Money</div>
                             <small class="text-muted" th:text="${order.paymentStatus ?: ''}"></small>
+                            <small class="text-muted d-block"
+                                th:if="${order.paymentReference != null && !order.paymentReference.isEmpty()}"
+                                th:text="'Ref: ' + ${order.paymentReference}"></small>
+                            <small class="text-muted d-block"
+                                th:if="${order.paymentProofType != null && !order.paymentProofType.isEmpty()}"
+                                th:text="'Preuve: ' + ${order.paymentProofType}"></small>
                         </td>
                         <td>
                             <div th:text="${order.deliveryType}">Standard</div>
@@ -857,13 +870,28 @@
                                     class="btn btn-sm btn-outline-success" title="Confirmer">
                                     <i class="fas fa-check"></i>
                                 </a>
+                                <a th:if="${order.paymentStatus == 'CUSTOMER_REPORTED_PAID'}"
+                                    th:href="@{/admin/orders/{id}/confirm-payment(id=${order.id})}"
+                                    class="btn btn-sm btn-outline-success" title="Valider paiement">
+                                    <i class="fas fa-money-check"></i>
+                                </a>
                                 <button
-                                    th:if="${order.status.name() == 'PROCESSING' || order.status.name() == 'PENDING'}"
+                                    th:if="${order.status.name() == 'PROCESSING' && (order.refundStatus == null || order.refundStatus.name() == 'NONE')}"
                                     class="btn btn-sm btn-outline-primary btn-complete" th:data-id="${order.id}"
                                     title="Marquer comme terminée">
                                     <i class="fas fa-check-double"></i>
                                 </button>
-                                <a th:if="${order.status.name() != 'CANCELLED'}"
+                                <a th:if="${order.status.name() == 'PROCESSING' && order.paymentStatus == 'PAID' && (order.refundStatus == null || order.refundStatus.name() == 'NONE')}"
+                                    th:href="@{/admin/orders/{id}(id=${order.id})}"
+                                    class="btn btn-sm btn-outline-warning" title="Rembourser / annuler">
+                                    <i class="fas fa-undo"></i>
+                                </a>
+                                <a th:if="${order.refundStatus != null && order.refundStatus.name() == 'REFUND_PENDING'}"
+                                    th:href="@{/admin/orders/{id}(id=${order.id})}"
+                                    class="btn btn-sm btn-outline-success" title="Confirmer remboursement">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                <a th:if="${order.status.name() != 'CANCELLED' && !(order.status.name() == 'PROCESSING' && order.paymentStatus == 'PAID')}"
                                     th:href="@{/admin/orders/{id}/cancel(id=${order.id})}"
                                     class="btn btn-sm btn-outline-warning" title="Annuler">
                                     <i class="fas fa-times"></i>

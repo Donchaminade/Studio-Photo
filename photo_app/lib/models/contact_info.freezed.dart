@@ -22,6 +22,7 @@ ContactInfo _$ContactInfoFromJson(Map<String, dynamic> json) {
 mixin _$ContactInfo {
   String get address => throw _privateConstructorUsedError;
   String get phoneNumber => throw _privateConstructorUsedError;
+  String? get whatsappNumber => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
   String get openingHours => throw _privateConstructorUsedError;
   String? get facebookUrl => throw _privateConstructorUsedError;
@@ -48,6 +49,7 @@ abstract class $ContactInfoCopyWith<$Res> {
   $Res call(
       {String address,
       String phoneNumber,
+      String? whatsappNumber,
       String email,
       String openingHours,
       String? facebookUrl,
@@ -73,6 +75,7 @@ class _$ContactInfoCopyWithImpl<$Res, $Val extends ContactInfo>
   $Res call({
     Object? address = null,
     Object? phoneNumber = null,
+    Object? whatsappNumber = freezed,
     Object? email = null,
     Object? openingHours = null,
     Object? facebookUrl = freezed,
@@ -89,6 +92,10 @@ class _$ContactInfoCopyWithImpl<$Res, $Val extends ContactInfo>
           ? _value.phoneNumber
           : phoneNumber // ignore: cast_nullable_to_non_nullable
               as String,
+      whatsappNumber: freezed == whatsappNumber
+          ? _value.whatsappNumber
+          : whatsappNumber // ignore: cast_nullable_to_non_nullable
+              as String?,
       email: null == email
           ? _value.email
           : email // ignore: cast_nullable_to_non_nullable
@@ -128,6 +135,7 @@ abstract class _$$ContactInfoImplCopyWith<$Res>
   $Res call(
       {String address,
       String phoneNumber,
+      String? whatsappNumber,
       String email,
       String openingHours,
       String? facebookUrl,
@@ -151,6 +159,7 @@ class __$$ContactInfoImplCopyWithImpl<$Res>
   $Res call({
     Object? address = null,
     Object? phoneNumber = null,
+    Object? whatsappNumber = freezed,
     Object? email = null,
     Object? openingHours = null,
     Object? facebookUrl = freezed,
@@ -167,6 +176,10 @@ class __$$ContactInfoImplCopyWithImpl<$Res>
           ? _value.phoneNumber
           : phoneNumber // ignore: cast_nullable_to_non_nullable
               as String,
+      whatsappNumber: freezed == whatsappNumber
+          ? _value.whatsappNumber
+          : whatsappNumber // ignore: cast_nullable_to_non_nullable
+              as String?,
       email: null == email
           ? _value.email
           : email // ignore: cast_nullable_to_non_nullable
@@ -201,6 +214,7 @@ class _$ContactInfoImpl with DiagnosticableTreeMixin implements _ContactInfo {
   const _$ContactInfoImpl(
       {required this.address,
       required this.phoneNumber,
+      this.whatsappNumber,
       required this.email,
       required this.openingHours,
       this.facebookUrl,
@@ -216,6 +230,8 @@ class _$ContactInfoImpl with DiagnosticableTreeMixin implements _ContactInfo {
   @override
   final String phoneNumber;
   @override
+  final String? whatsappNumber;
+  @override
   final String email;
   @override
   final String openingHours;
@@ -230,7 +246,7 @@ class _$ContactInfoImpl with DiagnosticableTreeMixin implements _ContactInfo {
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'ContactInfo(address: $address, phoneNumber: $phoneNumber, email: $email, openingHours: $openingHours, facebookUrl: $facebookUrl, twitterUrl: $twitterUrl, instagramUrl: $instagramUrl, linkedinUrl: $linkedinUrl)';
+    return 'ContactInfo(address: $address, phoneNumber: $phoneNumber, whatsappNumber: $whatsappNumber, email: $email, openingHours: $openingHours, facebookUrl: $facebookUrl, twitterUrl: $twitterUrl, instagramUrl: $instagramUrl, linkedinUrl: $linkedinUrl)';
   }
 
   @override
@@ -240,6 +256,7 @@ class _$ContactInfoImpl with DiagnosticableTreeMixin implements _ContactInfo {
       ..add(DiagnosticsProperty('type', 'ContactInfo'))
       ..add(DiagnosticsProperty('address', address))
       ..add(DiagnosticsProperty('phoneNumber', phoneNumber))
+      ..add(DiagnosticsProperty('whatsappNumber', whatsappNumber))
       ..add(DiagnosticsProperty('email', email))
       ..add(DiagnosticsProperty('openingHours', openingHours))
       ..add(DiagnosticsProperty('facebookUrl', facebookUrl))
@@ -256,6 +273,8 @@ class _$ContactInfoImpl with DiagnosticableTreeMixin implements _ContactInfo {
             (identical(other.address, address) || other.address == address) &&
             (identical(other.phoneNumber, phoneNumber) ||
                 other.phoneNumber == phoneNumber) &&
+            (identical(other.whatsappNumber, whatsappNumber) ||
+                other.whatsappNumber == whatsappNumber) &&
             (identical(other.email, email) || other.email == email) &&
             (identical(other.openingHours, openingHours) ||
                 other.openingHours == openingHours) &&
@@ -271,8 +290,17 @@ class _$ContactInfoImpl with DiagnosticableTreeMixin implements _ContactInfo {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, address, phoneNumber, email,
-      openingHours, facebookUrl, twitterUrl, instagramUrl, linkedinUrl);
+  int get hashCode => Object.hash(
+      runtimeType,
+      address,
+      phoneNumber,
+      whatsappNumber,
+      email,
+      openingHours,
+      facebookUrl,
+      twitterUrl,
+      instagramUrl,
+      linkedinUrl);
 
   /// Create a copy of ContactInfo
   /// with the given fields replaced by the non-null parameter values.
@@ -294,6 +322,7 @@ abstract class _ContactInfo implements ContactInfo {
   const factory _ContactInfo(
       {required final String address,
       required final String phoneNumber,
+      final String? whatsappNumber,
       required final String email,
       required final String openingHours,
       final String? facebookUrl,
@@ -308,6 +337,8 @@ abstract class _ContactInfo implements ContactInfo {
   String get address;
   @override
   String get phoneNumber;
+  @override
+  String? get whatsappNumber;
   @override
   String get email;
   @override

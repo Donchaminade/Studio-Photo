@@ -2,9 +2,11 @@ package com.studiophoto.photoappbackend.admin;
 
 import com.studiophoto.photoappbackend.admin.dto.UserRequest;
 import com.studiophoto.photoappbackend.admin.dto.UserResponse;
+import com.studiophoto.photoappbackend.model.Role;
 import com.studiophoto.photoappbackend.model.Status; // Import Status enum
 import com.studiophoto.photoappbackend.model.User;
 import com.studiophoto.photoappbackend.booking.BookingRepository;
+import com.studiophoto.photoappbackend.notification.UserNotificationRepository;
 import com.studiophoto.photoappbackend.order.OrderRepository;
 import com.studiophoto.photoappbackend.repository.UserRepository;
 import com.studiophoto.photoappbackend.service.ActivityService;
@@ -15,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.slf4j.Slf4j;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -28,6 +32,7 @@ public class AdminUserService {
     private final PasswordEncoder passwordEncoder;
     private final OrderRepository orderRepository;
     private final BookingRepository bookingRepository;
+    private final UserNotificationRepository userNotificationRepository;
     private final ActivityService activityService;
 
     private String getCurrentAdminEmail() {
@@ -119,36 +124,60 @@ public class AdminUserService {
                 });
     }
 
+    /**
+     * Suppression admin sûre pour la prod studio photo :
+     * - soft-delete (INACTIVE) si commandes ou réservations existent (historique conservé)
+     * - hard-delete si aucun historique commercial (après nettoyage des notifications)
+     */
     @Transactional
-    public boolean deleteUser(Integer id) {
+    public Optional<Map<String, Object>> deleteUser(Integer id) {
         log.info("Tentative de suppression de l'utilisateur ID: {}", id);
-        return userRepository.findById(id)
-                .map(user -> {
-                    try {
-                        String userEmail = user.getEmail();
-                        // 1. Delete all bookings associated with this user
-                        log.debug("Suppression des réservations pour l'utilisateur {}", id);
-                        bookingRepository.deleteAll(bookingRepository.findByUser(user));
+        return userRepository.findById(id).map(user -> {
+            String currentAdminEmail = getCurrentAdminEmail();
+            if (user.getEmail() != null && user.getEmail().equalsIgnoreCase(currentAdminEmail)) {
+                throw new IllegalStateException("Vous ne pouvez pas supprimer votre propre compte.");
+            }
+            if (user.getRole() == Role.ADMIN) {
+                long otherActiveAdmins = userRepository.findAll().stream()
+                        .filter(u -> u.getRole() == Role.ADMIN)
+                        .filter(u -> u.getStatus() == Status.ACTIVE)
+                        .filter(u -> !u.getId().equals(id))
+                        .count();
+                if (otherActiveAdmins == 0) {
+                    throw new IllegalStateException(
+                            "Impossible de supprimer le dernier administrateur actif.");
+                }
+            }
 
-                        // 2. Delete all orders associated with this user
-                        log.debug("Suppression des commandes pour l'utilisateur {}", id);
-                        orderRepository.deleteAll(orderRepository.findByUserIdOrderByCreatedAtDesc(id));
+            boolean hasOrders = !orderRepository.findByUserIdOrderByCreatedAtDesc(id).isEmpty();
+            boolean hasBookings = !bookingRepository.findByUser(user).isEmpty();
+            Map<String, Object> result = new HashMap<>();
+            result.put("userId", id);
+            result.put("email", user.getEmail());
 
-                        // 3. Delete the user
-                        log.debug("Suppression de l'utilisateur {} de la base", id);
-                        userRepository.delete(user);
-                        log.info("Utilisateur {} supprimé avec succès", id);
-                        activityService.logActivity(getCurrentAdminEmail(), "USER_DELETE", "Suppression de l'utilisateur: " + userEmail);
-                        return true;
-                    } catch (Exception e) {
-                        log.error("Erreur lors de la suppression de l'utilisateur {}: {}", id, e.getMessage());
-                        throw new RuntimeException(
-                                "Impossible de supprimer l'utilisateur car il possède des données liées qui ne peuvent pas être effacées.");
-                    }
-                }).orElseGet(() -> {
-                    log.warn("Utilisateur ID {} non trouvé pour suppression", id);
-                    return false;
-                });
+            if (hasOrders || hasBookings) {
+                user.setStatus(Status.INACTIVE);
+                userRepository.save(user);
+                // Empêche la reconnexion JWT tant que le statut reste INACTIVE (isEnabled=false).
+                log.info("Utilisateur {} désactivé (soft-delete) — commandes/réservations conservées", id);
+                activityService.logActivity(currentAdminEmail, "USER_SOFT_DELETE",
+                        "Désactivation de l'utilisateur (historique conservé): " + user.getEmail());
+                result.put("mode", "soft");
+                result.put("message",
+                        "Compte désactivé. Les commandes et réservations ont été conservées ; l'utilisateur ne peut plus se connecter.");
+                return result;
+            }
+
+            // Aucun historique commercial : suppression définitive après nettoyage des FK.
+            userNotificationRepository.deleteByUserId(id);
+            userRepository.delete(user);
+            log.info("Utilisateur {} supprimé définitivement (hard-delete)", id);
+            activityService.logActivity(currentAdminEmail, "USER_DELETE",
+                    "Suppression définitive de l'utilisateur: " + result.get("email"));
+            result.put("mode", "hard");
+            result.put("message", "Utilisateur supprimé définitivement.");
+            return result;
+        });
     }
 
     public Optional<UserResponse> resetUserPassword(Integer id, String newPassword) {

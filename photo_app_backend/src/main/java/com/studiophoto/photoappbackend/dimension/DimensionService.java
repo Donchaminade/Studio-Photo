@@ -53,6 +53,7 @@ public class DimensionService {
                 .title(dimension.getTitle())
                 .description(dimension.getDescription())
                 .isPopular(dimension.isPopular())
+                .framePrice(dimension.getFramePrice())
                 .build();
     }
 }

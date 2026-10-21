@@ -128,7 +128,9 @@ public class DashboardService {
 
         List<com.studiophoto.photoappbackend.admin.dto.ActivityItemDTO> activities = new java.util.ArrayList<>();
 
-        recentUsers.forEach(user -> activities.add(
+        recentUsers.stream()
+                .filter(user -> user.getCreatedAt() != null)
+                .forEach(user -> activities.add(
                 com.studiophoto.photoappbackend.admin.dto.ActivityItemDTO.builder()
                         .description("Nouvel utilisateur: " + user.getFirstname())
                         .timestamp(user.getCreatedAt())
@@ -139,7 +141,9 @@ public class DashboardService {
                         .build()
         ));
 
-        recentOrders.forEach(order -> activities.add(
+        recentOrders.stream()
+                .filter(order -> order.getCreatedAt() != null)
+                .forEach(order -> activities.add(
                 com.studiophoto.photoappbackend.admin.dto.ActivityItemDTO.builder()
                         .description("Nouvelle commande #" + order.getId())
                         .timestamp(order.getCreatedAt())
@@ -259,8 +263,8 @@ public class DashboardService {
         List<String> backgroundColors = new java.util.ArrayList<>();
 
         for (Object[] result : results) {
-            labels.add((String) result[0]);
-            data.add((Long) result[1]);
+            labels.add(result[0] != null ? result[0].toString() : "—");
+            data.add(toLong(result.length > 1 ? result[1] : null));
             backgroundColors.add(colors.get(colorIndex % colors.size()));
             colorIndex++;
         }
@@ -279,6 +283,9 @@ public class DashboardService {
 
         List<com.studiophoto.photoappbackend.order.Order> allOrders = orderRepository.findAll();
         for (com.studiophoto.photoappbackend.order.Order order : allOrders) {
+            if (order.getCreatedAt() == null) {
+                continue;
+            }
             int dayOfWeek = order.getCreatedAt().getDayOfWeek().getValue(); // 1 (Mon) to 7 (Sun)
             activityData[dayOfWeek - 1]++;
         }
@@ -287,5 +294,19 @@ public class DashboardService {
                 .labels(labels)
                 .data(Arrays.asList(activityData))
                 .build();
+    }
+
+    private static long toLong(Object value) {
+        if (value == null) {
+            return 0L;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 }

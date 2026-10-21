@@ -15,4 +15,5 @@ public class DimensionDto {
     private String title;
     private String description;
     private boolean isPopular;
+    private BigDecimal framePrice;
 }

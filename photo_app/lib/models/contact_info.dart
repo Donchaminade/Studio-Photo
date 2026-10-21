@@ -8,6 +8,7 @@ class ContactInfo with _$ContactInfo {
   const factory ContactInfo({
     required String address,
     required String phoneNumber,
+    String? whatsappNumber,
     required String email,
     required String openingHours,
     String? facebookUrl,

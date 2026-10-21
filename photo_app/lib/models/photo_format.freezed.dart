@@ -26,6 +26,7 @@ mixin _$PhotoFormat {
   String get title => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   bool get isPopular => throw _privateConstructorUsedError;
+  double? get framePrice => throw _privateConstructorUsedError;
 
   /// Serializes this PhotoFormat to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -49,7 +50,8 @@ abstract class $PhotoFormatCopyWith<$Res> {
       List<String> images,
       String title,
       String description,
-      bool isPopular});
+      bool isPopular,
+      double? framePrice});
 }
 
 /// @nodoc
@@ -73,6 +75,7 @@ class _$PhotoFormatCopyWithImpl<$Res, $Val extends PhotoFormat>
     Object? title = null,
     Object? description = null,
     Object? isPopular = null,
+    Object? framePrice = freezed,
   }) {
     return _then(_value.copyWith(
       dimension: null == dimension
@@ -99,6 +102,10 @@ class _$PhotoFormatCopyWithImpl<$Res, $Val extends PhotoFormat>
           ? _value.isPopular
           : isPopular // ignore: cast_nullable_to_non_nullable
               as bool,
+      framePrice: freezed == framePrice
+          ? _value.framePrice
+          : framePrice // ignore: cast_nullable_to_non_nullable
+              as double?,
     ) as $Val);
   }
 }
@@ -117,7 +124,8 @@ abstract class _$$PhotoFormatImplCopyWith<$Res>
       List<String> images,
       String title,
       String description,
-      bool isPopular});
+      bool isPopular,
+      double? framePrice});
 }
 
 /// @nodoc
@@ -139,6 +147,7 @@ class __$$PhotoFormatImplCopyWithImpl<$Res>
     Object? title = null,
     Object? description = null,
     Object? isPopular = null,
+    Object? framePrice = freezed,
   }) {
     return _then(_$PhotoFormatImpl(
       dimension: null == dimension
@@ -165,6 +174,10 @@ class __$$PhotoFormatImplCopyWithImpl<$Res>
           ? _value.isPopular
           : isPopular // ignore: cast_nullable_to_non_nullable
               as bool,
+      framePrice: freezed == framePrice
+          ? _value.framePrice
+          : framePrice // ignore: cast_nullable_to_non_nullable
+              as double?,
     ));
   }
 }
@@ -178,7 +191,8 @@ class _$PhotoFormatImpl with DiagnosticableTreeMixin implements _PhotoFormat {
       required final List<String> images,
       required this.title,
       required this.description,
-      this.isPopular = false})
+      this.isPopular = false,
+      this.framePrice})
       : _images = images;
 
   factory _$PhotoFormatImpl.fromJson(Map<String, dynamic> json) =>
@@ -203,10 +217,12 @@ class _$PhotoFormatImpl with DiagnosticableTreeMixin implements _PhotoFormat {
   @override
   @JsonKey()
   final bool isPopular;
+  @override
+  final double? framePrice;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'PhotoFormat(dimension: $dimension, price: $price, images: $images, title: $title, description: $description, isPopular: $isPopular)';
+    return 'PhotoFormat(dimension: $dimension, price: $price, images: $images, title: $title, description: $description, isPopular: $isPopular, framePrice: $framePrice)';
   }
 
   @override
@@ -219,7 +235,8 @@ class _$PhotoFormatImpl with DiagnosticableTreeMixin implements _PhotoFormat {
       ..add(DiagnosticsProperty('images', images))
       ..add(DiagnosticsProperty('title', title))
       ..add(DiagnosticsProperty('description', description))
-      ..add(DiagnosticsProperty('isPopular', isPopular));
+      ..add(DiagnosticsProperty('isPopular', isPopular))
+      ..add(DiagnosticsProperty('framePrice', framePrice));
   }
 
   @override
@@ -235,7 +252,9 @@ class _$PhotoFormatImpl with DiagnosticableTreeMixin implements _PhotoFormat {
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.isPopular, isPopular) ||
-                other.isPopular == isPopular));
+                other.isPopular == isPopular) &&
+            (identical(other.framePrice, framePrice) ||
+                other.framePrice == framePrice));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -247,7 +266,8 @@ class _$PhotoFormatImpl with DiagnosticableTreeMixin implements _PhotoFormat {
       const DeepCollectionEquality().hash(_images),
       title,
       description,
-      isPopular);
+      isPopular,
+      framePrice);
 
   /// Create a copy of PhotoFormat
   /// with the given fields replaced by the non-null parameter values.
@@ -272,7 +292,8 @@ abstract class _PhotoFormat implements PhotoFormat {
       required final List<String> images,
       required final String title,
       required final String description,
-      final bool isPopular}) = _$PhotoFormatImpl;
+      final bool isPopular,
+      final double? framePrice}) = _$PhotoFormatImpl;
 
   factory _PhotoFormat.fromJson(Map<String, dynamic> json) =
       _$PhotoFormatImpl.fromJson;
@@ -289,6 +310,8 @@ abstract class _PhotoFormat implements PhotoFormat {
   String get description;
   @override
   bool get isPopular;
+  @override
+  double? get framePrice;
 
   /// Create a copy of PhotoFormat
   /// with the given fields replaced by the non-null parameter values.

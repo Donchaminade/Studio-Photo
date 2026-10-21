@@ -28,4 +28,7 @@ public class Dimension {
     private String description;
     private boolean isPopular;
     private String images; // Comma-separated image URLs
+
+    /** Prix du cadre proposé pour ce format (null = pas de cadre). */
+    private BigDecimal framePrice;
 }

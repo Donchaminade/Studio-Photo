@@ -1,12 +1,15 @@
 import 'dart:ui';
+
 import 'package:Picon/api_service.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
 import 'package:Picon/widgets/loading_button.dart';
-import 'package:country_code_picker/country_code_picker.dart';
+import 'package:Picon/widgets/music_wave_loader.dart';
+import 'package:Picon/widgets/phone_prefix.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
-
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -24,23 +27,58 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _isLoading = false;
+  String _selectedDialCode = '+228';
 
   Future<void> _signup() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // Don't set loading state here, it will be handled in the PIN sheet
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return _PinCreationSheet(
-            name: _nameController.text,
-            email: _emailController.text,
-            phone: _phoneController.text, // Make sure you have a phone controller
-            password: _passwordController.text,
-          );
-        },
-      );
+      _showPinCreationSheet(context);
     }
+  }
+
+  String _buildFullPhoneNumber(String rawPhone) {
+    var cleaned = rawPhone.trim().replaceAll(RegExp(r'[\s.\-()]'), '');
+    if (cleaned.startsWith('+')) return cleaned;
+    if (cleaned.startsWith('00')) return '+${cleaned.substring(2)}';
+    if (cleaned.startsWith('228') && cleaned.length >= 11) return '+$cleaned';
+    if (cleaned.startsWith('0') && cleaned.length == 9) {
+      cleaned = cleaned.substring(1);
+    }
+    return '$_selectedDialCode$cleaned';
+  }
+
+  void _showPinCreationSheet(BuildContext context) {
+    final reduced = reduceMotion(context);
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      transitionDuration: Duration(milliseconds: reduced ? 120 : 400),
+      pageBuilder: (BuildContext buildContext, Animation<double> animation, Animation<double> secondaryAnimation) {
+        return Align(
+          alignment: Alignment.center,
+          child: Material(
+            color: Colors.transparent,
+            child: _PinCreationSheet(
+              name: _nameController.text,
+              email: _emailController.text,
+              phone: _buildFullPhoneNumber(_phoneController.text),
+              password: _passwordController.text,
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+        if (reduced) return FadeTransition(opacity: animation, child: child);
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, -1),
+            end: const Offset(0, 0),
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+          child: child,
+        );
+      },
+    );
   }
 
   @override
@@ -56,40 +94,20 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          GeometricBackground(),
+          const GeometricBackground(),
           SafeArea(
             child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               child: Column(
                 children: [
-                  _buildHeader(),
-                  _buildForm(),
+                  const Reveal(child: BrandLogo(height: 88)),
+                  const SizedBox(height: 8),
+                  Reveal(index: 1, child: _buildForm()),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    final size = MediaQuery.of(context).size;
-    return SizedBox(
-      height: size.height * 0.25,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 30),
-          Flexible(
-            child: Image.asset(
-              'assets/images/pro.png',
-              height: 180, // Nominally 180, Flexible scales it down if needed
-              width: 180,
-              fit: BoxFit.contain,
             ),
           ),
         ],
@@ -98,123 +116,39 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildForm() {
-    final textTheme = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 24.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
+    return PiconCard(
+      padding: const EdgeInsets.fromLTRB(18, 22, 18, 12),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Créer un compte',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    'Créer un compte',
-                    textAlign: TextAlign.center,
-                    style: textTheme.headlineSmall?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _nameController,
-                    textInputAction: TextInputAction.next,
-                    decoration: _glassyInputDecoration('Nom complet',
-                        icon: Icons.person_outline),
-                    validator: (value) =>
-                        (value?.isEmpty ?? true) ? 'Champ requis' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
+            const SizedBox(height: 18),
+            TextFormField(
+              controller: _nameController,
+              decoration: piconField('Nom complet', icon: Icons.person_outline),
+              textInputAction: TextInputAction.next,
+              validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
+            ),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AfricanPhonePrefix(
+                  onChanged: (dial) => _selectedDialCode = dial,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
                     controller: _phoneController,
-                    decoration: _glassyInputDecoration(
-                      'Numéro de téléphone',
-                      prefix: CountryCodePicker(
-                        onChanged: (countryCode) {},
-                        initialSelection: 'TG',
-                        favorite: const ['+228', '+225', '+223'],
-                        countryFilter: const [
-                          'DZ',
-                          'AO',
-                          'BJ',
-                          'BW',
-                          'BF',
-                          'BI',
-                          'CM',
-                          'CV',
-                          'CF',
-                          'TD',
-                          'KM',
-                          'CG',
-                          'CD',
-                          'CI',
-                          'DJ',
-                          'EG',
-                          'GQ',
-                          'ER',
-                          'ET',
-                          'GA',
-                          'GM',
-                          'GH',
-                          'GN',
-                          'GW',
-                          'KE',
-                          'LS',
-                          'LR',
-                          'LY',
-                          'MG',
-                          'MW',
-                          'ML',
-                          'MR',
-                          'MU',
-                          'YT',
-                          'MA',
-                          'MZ',
-                          'NA',
-                          'NE',
-                          'NG',
-                          'RE',
-                          'RW',
-                          'SH',
-                          'ST',
-                          'SN',
-                          'SC',
-                          'SL',
-                          'SO',
-                          'ZA',
-                          'SS',
-                          'SD',
-                          'SZ',
-                          'TZ',
-                          'TG',
-                          'TN',
-                          'UG',
-                          'EH',
-                          'ZM',
-                          'ZW'
-                        ],
-                        textStyle: TextStyle(
-                            color: AppColors.textPrimary.withOpacity(0.9)),
-                        dialogTextStyle:
-                            const TextStyle(color: AppColors.textPrimary),
-                        searchStyle:
-                            const TextStyle(color: AppColors.textPrimary),
-                        dialogBackgroundColor: Colors.white.withOpacity(0.95),
-                        flagWidth: 25,
-                      ),
-                    ),
-                    textInputAction: TextInputAction.next,
+                    decoration: piconField('Numéro de téléphone'),
                     keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Numéro de téléphone requis';
@@ -222,146 +156,83 @@ class _SignupScreenState extends State<SignupScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: _glassyInputDecoration('Email',
-                        icon: Icons.email_outlined),
-                    textInputAction: TextInputAction.next,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Email requis';
-                      }
-                      if (!RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
-                          .hasMatch(value)) {
-                        return 'Veuillez entrer un email valide';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: _glassyInputDecoration('Mot de passe',
-                            icon: Icons.lock_outline)
-                        .copyWith(
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: AppColors.textPrimary.withOpacity(0.7)),
-                        onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty)
-                        return 'Mot de passe requis';
-                      if (value.length < 8)
-                        return 'Le mot de passe doit contenir au moins 8 caractères';
-                      if (!value.contains(RegExp(r'[A-Z]')))
-                        return 'Inclure au moins une majuscule';
-                      if (!value.contains(RegExp(r'[a-z]')))
-                        return 'Inclure au moins une minuscule';
-                      if (!value.contains(RegExp(r'[0-9]')))
-                        return 'Inclure au moins un chiffre';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscureConfirmPassword,
-                    decoration: _glassyInputDecoration(
-                            'Confirmer le mot de passe',
-                            icon: Icons.lock_outline)
-                        .copyWith(
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: AppColors.textPrimary.withOpacity(0.7)),
-                        onPressed: () => setState(() =>
-                            _obscureConfirmPassword = !_obscureConfirmPassword),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value != _passwordController.text)
-                        return 'Les mots de passe ne correspondent pas';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 32),
-                  LoadingButton(
-                    onPressed: _signup,
-                    text: 'S\'inscrire',
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text("J'ai un compte...",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: AppColors.textPrimary)),
-                        ),
-                      ),
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: TextButton(
-                            onPressed: () =>
-                                Navigator.pushReplacementNamed(context, '/login'),
-                            child: const Text('Acceder',
-                                style: TextStyle(color: AppColors.primary)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _emailController,
+              decoration: piconField('Email (facultatif)', icon: Icons.email_outlined),
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              validator: (value) {
+                if (value != null &&
+                    value.isNotEmpty &&
+                    !RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)) {
+                  return 'Veuillez entrer un email valide';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              textInputAction: TextInputAction.next,
+              decoration: piconField('Mot de passe', icon: Icons.lock_outline).copyWith(
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.textSecondary,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Mot de passe requis';
+                if (value.length < 8) return 'Le mot de passe doit contenir au moins 8 caractères';
+                if (!value.contains(RegExp(r'[A-Z]'))) return 'Inclure au moins une majuscule';
+                if (!value.contains(RegExp(r'[a-z]'))) return 'Inclure au moins une minuscule';
+                if (!value.contains(RegExp(r'[0-9]'))) return 'Inclure au moins un chiffre';
+                return null;
+              },
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _confirmPasswordController,
+              obscureText: _obscureConfirmPassword,
+              textInputAction: TextInputAction.done,
+              decoration: piconField('Confirmer le mot de passe', icon: Icons.lock_outline).copyWith(
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.textSecondary,
+                  ),
+                  onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                ),
+              ),
+              validator: (value) {
+                if (value != _passwordController.text) return 'Les mots de passe ne correspondent pas';
+                return null;
+              },
+            ),
+            const SizedBox(height: 22),
+            LoadingButton(
+              onPressed: _signup,
+              text: "S'inscrire",
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Déjà un compte ?', style: TextStyle(color: AppColors.textPrimary)),
+                TextButton(
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                  child: const Text('Connectez-vous', style: TextStyle(color: AppColors.primary)),
+                ),
+              ],
+            ),
+          ],
         ),
-      ),
-    );
-  }
-
-  InputDecoration _glassyInputDecoration(String label,
-      {IconData? icon, Widget? prefix}) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: prefix ??
-          (icon != null
-              ? Icon(icon, color: AppColors.textPrimary.withOpacity(0.7))
-              : null),
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.3),
-      labelStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.7)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.4)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.primary),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
       ),
     );
   }
@@ -387,20 +258,35 @@ class _PinCreationSheet extends StatefulWidget {
 class _PinCreationSheetState extends State<_PinCreationSheet> {
   final _pinController = TextEditingController();
   final _pinFocusNode = FocusNode();
-  bool _isLoading = false; // Add a loading state
+
+  void _showLoader(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Center(
+            child: MusicWaveLoader(),
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _validatePin() async {
-    if (_pinController.text.length != 6) {
+    if (!RegExp(r'^\d{4}$').hasMatch(_pinController.text)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez entrer un code PIN à 6 chiffres.'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Veuillez entrer un code secret à 4 chiffres.'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
+    _showLoader(context);
     try {
       await ApiService.signup(
         widget.name,
@@ -409,37 +295,21 @@ class _PinCreationSheetState extends State<_PinCreationSheet> {
         widget.password,
         _pinController.text,
       );
-
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Dismiss sheet
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Compte créé avec succès ! Vous pouvez maintenant vous connecter.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Compte créé avec succès ! Vous pouvez maintenant vous connecter.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.of(context).pushReplacementNamed('/login');
     } catch (e) {
-      if (mounted) {
-        // Pop the dialog to show the error on the main screen's scaffold
-        Navigator.of(context, rootNavigator: true).pop();
-        
-        String errorMessage = e.toString();
-        if (errorMessage.startsWith('Exception: ')) {
-          errorMessage = errorMessage.substring(11);
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      Navigator.of(context).pop();
+      await showAppError(context, e);
     }
   }
 
@@ -452,67 +322,79 @@ class _PinCreationSheetState extends State<_PinCreationSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final pinWidth = ((width - 96) / 4).clamp(36.0, 64.0);
+    final base = PinTheme(
+      width: pinWidth,
+      height: 56,
+      textStyle: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w700),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+        boxShadow: [
+          BoxShadow(color: AppColors.accent.withValues(alpha: 0.18), blurRadius: 12),
+        ],
+      ),
+    );
+
     return Dialog(
-      backgroundColor: Colors.white, // Solid white background
+      backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(16),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
+              color: const Color(0xCC102044),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
             ),
             child: SingleChildScrollView(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.vpn_key_outlined, color: Colors.white),
+                  ),
+                  const SizedBox(height: 12),
                   const Text(
                     'Créez votre code secret',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     'Ce code sécurisera vos transactions et connexions futures.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.35),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 22),
                   Pinput(
-                    length: 6,
+                    length: 4,
                     controller: _pinController,
                     focusNode: _pinFocusNode,
-                    defaultPinTheme: PinTheme(
-                      width: MediaQuery.of(context).size.width < 360 ? 40 : 56,
-                      height: MediaQuery.of(context).size.width < 360 ? 40 : 56,
-                      textStyle: const TextStyle(fontSize: 20, color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.primary.withOpacity(0.5)),
-                        borderRadius: BorderRadius.circular(12),
+                    defaultPinTheme: base,
+                    focusedPinTheme: base.copyWith(
+                      decoration: base.decoration!.copyWith(
+                        border: Border.all(color: AppColors.accent, width: 1.6),
                       ),
                     ),
+                    separatorBuilder: (index) => const SizedBox(width: 6),
                   ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _validatePin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 80),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Valider', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  const SizedBox(height: 22),
+                  PiconButton(
+                    label: 'Valider',
+                    onPressed: _validatePin,
                   ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),

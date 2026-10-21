@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${featuredContent.id == null ? 'Nouveau Contenu Mis en Avant' : 'Modifier Contenu Mis en Avant'}">Featured Content Form - Studio Photo Admin</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title th:text="${featuredContent.id == null ? 'Nouveau Contenu Mis en Avant' : 'Modifier Contenu Mis en Avant'}">Featured Content Form - Studio Photo Admin</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
@@ -337,7 +339,8 @@
 
                             <input type="file" id="fileInput" name="file" class="form-control-file" accept="image/*" />
 
-                            <small class="form-text text-muted">Sélectionnez une image (JPG, PNG).</small>
+                            <small class="form-text text-muted">JPG, PNG. Images &gt; 1 Mo compressées automatiquement.</small>
+                            <small id="uploadStatus" class="form-text text-primary"></small>
 
                             <div th:if="${featuredContent.imageUrl != null and featuredContent.imageUrl != ''}" class="mt-2">
 
@@ -436,12 +439,15 @@
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <!-- Inclure SweetAlert2 -->
+        <th:block th:replace="~{admin/fragments/image-compress-script :: image-compress-script}"></th:block>
 
         <script th:inline="javascript">
 
             /*<![CDATA[*/
 
             $(document).ready(function() {
+        AdminImageUpload.attach({ form: 'form', input: '#fileInput', statusSelector: '#uploadStatus' });
+
         // Loading overlay
         function showLoading() {
             $('#loadingOverlay').fadeIn();

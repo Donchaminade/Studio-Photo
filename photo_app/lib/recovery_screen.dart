@@ -1,12 +1,13 @@
-import 'dart:ui';
 import 'package:Picon/api_service.dart';
+import 'package:Picon/models/contact_info.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
+import 'package:Picon/widgets/app_error_feedback.dart';
+import 'package:Picon/widgets/phone_prefix.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 import 'package:flutter/material.dart';
-
 import 'package:pinput/pinput.dart';
-import 'package:country_code_picker/country_code_picker.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 
 class RecoveryScreen extends StatefulWidget {
   const RecoveryScreen({super.key});
@@ -17,54 +18,44 @@ class RecoveryScreen extends StatefulWidget {
 
 class _RecoveryScreenState extends State<RecoveryScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(); // Changed from _nameController
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _pinController = TextEditingController();
-  bool _isRecoveryWithEmail = true; // Changed from _isRecoveryWithName
+  bool _isRecoveryWithEmail = true;
   bool _isLoading = false;
+  String _selectedDialCode = '+228';
 
   Future<void> _recoverPassword() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      String identifier;
-      if (_isRecoveryWithEmail) {
-        identifier = _emailController.text;
-      } else {
-        identifier = _phoneController.text;
-      }
-
-      try {
-        final response = await ApiService.verifyPinForPasswordReset(
-          email: _isRecoveryWithEmail ? identifier : null,
-          phone: !_isRecoveryWithEmail ? identifier : null,
-          pin: _pinController.text,
-        );
-
-        if (mounted) {
-          final resetToken = response['resetToken'];
-          _showNewPasswordDialog(resetToken);
-        }
-        } catch (e) {
-        if (mounted) {
-          String errorMessage = e.toString();
-          if (errorMessage.startsWith('Exception: ')) {
-            errorMessage = errorMessage.substring(11);
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
+    setState(() => _isLoading = true);
+    try {
+      final identifier = _isRecoveryWithEmail
+          ? _emailController.text.trim()
+          : _buildFullPhoneNumber(_phoneController.text);
+      final response = await ApiService.verifyPinForPasswordReset(
+        email: _isRecoveryWithEmail ? identifier : null,
+        phone: !_isRecoveryWithEmail ? identifier : null,
+        pin: _pinController.text,
+      );
+      if (!mounted) return;
+      _showNewPasswordDialog(response['resetToken'] as String);
+    } catch (e) {
+      if (mounted) await showAppError(context, e);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _buildFullPhoneNumber(String rawPhone) {
+    var cleaned = rawPhone.trim().replaceAll(RegExp(r'[\s.\-()]'), '');
+    if (cleaned.startsWith('+')) return cleaned;
+    if (cleaned.startsWith('00')) return '+${cleaned.substring(2)}';
+    if (cleaned.startsWith('228') && cleaned.length >= 11) return '+$cleaned';
+    if (cleaned.startsWith('0') && cleaned.length == 9) {
+      cleaned = cleaned.substring(1);
+    }
+    return '$_selectedDialCode$cleaned';
   }
 
   void _showNewPasswordDialog(String resetToken) {
@@ -79,23 +70,47 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Contacter l\'administrateur'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Pour réinitialiser votre code secret, veuillez contacter l\'administrateur via :'),
-            SizedBox(height: 16),
-            Text('Email: admin@example.com'),
-            SizedBox(height: 8),
-            Text('Tél: +228 90 00 00 00 / +225 01 02 03 04'),
-          ],
+        content: FutureBuilder<ContactInfo>(
+          future: ApiService.fetchContactInfo(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 120,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final info = snapshot.data;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Pour réinitialiser votre code secret, veuillez contacter l\'administrateur :',
+                ),
+                const SizedBox(height: 16),
+                Text('Email: ${info?.email ?? '—'}'),
+                const SizedBox(height: 8),
+                Text('Tél: ${info?.phoneNumber ?? '—'}'),
+              ],
+            );
+          },
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Fermer'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final info = await ApiService.fetchContactInfo();
+              final uri = Uri.parse('mailto:${info.email}');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+              }
+            },
+            child: const Text('Écrire'),
           ),
         ],
       ),
@@ -104,7 +119,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose(); // Changed from _nameController
+    _emailController.dispose();
     _phoneController.dispose();
     _pinController.dispose();
     super.dispose();
@@ -113,52 +128,24 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
-      ),
+      extendBodyBehindAppBar: false,
       backgroundColor: Colors.transparent,
+      appBar: piconBar('Récupération'),
       body: Stack(
         children: [
-          GeometricBackground(),
+          const GeometricBackground(),
           SafeArea(
+            top: false,
             child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               child: Column(
                 children: [
-                  _buildHeader(),
-                  _buildForm(),
+                  const Reveal(child: BrandLogo(height: 84)),
+                  const SizedBox(height: 8),
+                  Reveal(index: 1, child: _buildForm()),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return SizedBox(
-      height: 220,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 30),
-          Image.asset(
-            'assets/images/pro.png',
-            height: 180, // Adjust height as needed
-            width: 180, // Adjust width as needed
-            fit: BoxFit.contain,
           ),
         ],
       ),
@@ -166,202 +153,112 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   }
 
   Widget _buildForm() {
-    final textTheme = Theme.of(context).textTheme;
+    final width = MediaQuery.sizeOf(context).width;
+    final pinWidth = ((width - 120) / 4).clamp(34.0, 56.0);
     final defaultPinTheme = PinTheme(
-      width: 45,
-      height: 50,
-      textStyle: const TextStyle(fontSize: 20, color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+      width: pinWidth,
+      height: 52,
+      textStyle: const TextStyle(
+        fontSize: 18,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w700,
+      ),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primary.withOpacity(0.5)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 24.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'Récupération du compte',
-                      textAlign: TextAlign.center,
-                      style: textTheme.headlineSmall?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Entrez vos informations pour continuer',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildRecoveryMethodToggle(),
-                  const SizedBox(height: 24),
-
-                  if (_isRecoveryWithEmail)
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: _glassyInputDecoration('Email', icon: Icons.email_outlined),
-                      textInputAction: TextInputAction.next,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return 'Champ requis';
-                        if (!RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)) return 'Email invalide';
-                        return null;
-                      },
-                    )
-                  else
-                    TextFormField(
-                      controller: _phoneController,
-                      decoration: _glassyInputDecoration(
-                        'Numéro de téléphone',
-                        prefix: CountryCodePicker(
-                          onChanged: (countryCode) {},
-                          initialSelection: 'TG',
-                          favorite: const ['+228', '+225', '+223'],
-                          countryFilter: const ['DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CM', 'CV', 'CF', 'TD', 'KM', 'CG', 'CD', 'CI', 'DJ', 'EG', 'GQ', 'ER', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW', 'KE', 'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'YT', 'MA', 'MZ', 'NA', 'NE', 'NG', 'RE', 'RW', 'SH', 'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SS', 'SD', 'SZ', 'TZ', 'TG', 'TN', 'UG', 'EH', 'ZM', 'ZW'],
-                          textStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.9)),
-                        ),
-                      ),
-                      textInputAction: TextInputAction.next,
-                      keyboardType: TextInputType.phone,
-                      validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
-                    ),
-
-                  const SizedBox(height: 16),
-                  Pinput(
-                    controller: _pinController,
-                    length: 6,
-                    defaultPinTheme: defaultPinTheme,
-                    focusedPinTheme: defaultPinTheme.copyWith(
-                      decoration: defaultPinTheme.decoration!.copyWith(border: Border.all(color: AppColors.primary)),
-                    ),
-                    validator: (s) => (s?.length ?? 0) < 6 ? 'Code secret invalide' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: _showContactAdminPopup,
-                      child: const Text('Code secret oublié ?'),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _recoverPassword, // Disable when loading
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Valider', style: TextStyle(color: Colors.white, fontSize: 16)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecoveryMethodToggle() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isRecoveryWithEmail = true),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: _isRecoveryWithEmail ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Text(
-                  'Email', // Changed from 'Nom'
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _isRecoveryWithEmail ? Colors.white : AppColors.textPrimary.withOpacity(0.7),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isRecoveryWithEmail = false),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: !_isRecoveryWithEmail ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Text(
-                  'Téléphone',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: !_isRecoveryWithEmail ? Colors.white : AppColors.textPrimary.withOpacity(0.7),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.28)),
+        boxShadow: [
+          BoxShadow(color: AppColors.accent.withValues(alpha: 0.12), blurRadius: 10),
         ],
       ),
     );
-  }
 
-  InputDecoration _glassyInputDecoration(String label, {IconData? icon, Widget? prefix}) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: prefix ?? (icon != null ? Icon(icon, color: AppColors.textPrimary.withOpacity(0.7)) : null),
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.3),
-      labelStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.7)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.4)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.primary),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+    return PiconCard(
+      padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Récupération du compte',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Entrez vos informations pour continuer',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 18),
+            PillToggle(
+              labels: const ['Email', 'Téléphone'],
+              index: _isRecoveryWithEmail ? 0 : 1,
+              onChanged: (i) => setState(() => _isRecoveryWithEmail = i == 0),
+            ),
+            const SizedBox(height: 18),
+            if (_isRecoveryWithEmail)
+              TextFormField(
+                controller: _emailController,
+                decoration: piconField('Email', icon: Icons.email_outlined),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                validator: (value) =>
+                    (value?.isEmpty ?? true) ? 'Champ requis' : null,
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AfricanPhonePrefix(
+                    onChanged: (dial) => _selectedDialCode = dial,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _phoneController,
+                      decoration: piconField('Numéro de téléphone'),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) =>
+                          (value?.isEmpty ?? true) ? 'Champ requis' : null,
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 16),
+            Pinput(
+              controller: _pinController,
+              length: 4,
+              defaultPinTheme: defaultPinTheme,
+              focusedPinTheme: defaultPinTheme.copyWith(
+                decoration: defaultPinTheme.decoration!.copyWith(
+                  border: Border.all(color: AppColors.primary, width: 1.6),
+                ),
+              ),
+              errorPinTheme: defaultPinTheme.copyWith(
+                decoration: defaultPinTheme.decoration!.copyWith(
+                  border: Border.all(color: AppColors.error),
+                ),
+              ),
+              separatorBuilder: (index) => const SizedBox(width: 6),
+              validator: (s) =>
+                  (s?.length ?? 0) < 4 ? 'Code secret invalide' : null,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _showContactAdminPopup,
+                child: const Text('Code secret oublié ?'),
+              ),
+            ),
+            PiconButton(
+              label: 'Valider',
+              onPressed: _isLoading ? null : _recoverPassword,
+              loading: _isLoading,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -383,159 +280,143 @@ class _NewPasswordDialogState extends State<_NewPasswordDialog> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
+  bool _success = false;
 
   Future<void> _resetPassword() async {
-    if (_formKey.currentState?.validate() ?? false) {
-       setState(() {
-        _isLoading = true;
-      });
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      try {
-        await ApiService.resetPasswordWithToken(
-          token: widget.resetToken,
-          newPassword: _passwordController.text,
-        );
-
-        if (mounted) {
-          Navigator.of(context).pop(); // Dismiss dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Mot de passe réinitialisé avec succès !'), backgroundColor: Colors.green),
-          );
-          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur de réinitialisation: $e'), backgroundColor: Colors.red),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+    setState(() => _isLoading = true);
+    try {
+      await ApiService.resetPasswordWithToken(
+        token: widget.resetToken,
+        newPassword: _passwordController.text,
+      );
+      if (!mounted) return;
+      setState(() => _success = true);
+      if (!reduceMotion(context)) {
+        await Future<void>.delayed(const Duration(milliseconds: 280));
       }
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mot de passe réinitialisé avec succès !'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+    } catch (e) {
+      if (mounted) await showAppError(context, e);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       insetPadding: const EdgeInsets.all(16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
-            ),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: const Text(
-                        'Créer un nouveau mot de passe',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.next,
-                      decoration: _glassyInputDecoration('Nouveau mot de passe').copyWith(
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textPrimary.withOpacity(0.7)),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) return 'Champ requis';
-                        if (value.length < 8) return '8 caractères minimum';
-                        if (!value.contains(RegExp(r'[A-Z]'))) return '1 majuscule minimum';
-                        if (!value.contains(RegExp(r'[a-z]'))) return '1 minuscule minimum';
-                        if (!value.contains(RegExp(r'[0-9]'))) return '1 chiffre minimum';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _confirmPasswordController,
-                      obscureText: _obscureConfirmPassword,
-                      decoration: _glassyInputDecoration('Confirmer le mot de passe').copyWith(
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textPrimary.withOpacity(0.7)),
-                          onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value != _passwordController.text) return 'Les mots de passe ne correspondent pas';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _resetPassword,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text('Valider', style: TextStyle(color: Colors.white, fontSize: 16)),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Annuler', style: TextStyle(color: AppColors.textPrimary)),
-                    ),
-                  ],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 22, 18, 12),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Créer un nouveau mot de passe',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 18),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: piconField('Nouveau mot de passe').copyWith(
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: AppColors.textSecondary,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Champ requis';
+                    if (value.length < 8) return '8 caractères minimum';
+                    if (!value.contains(RegExp(r'[A-Z]'))) {
+                      return '1 majuscule minimum';
+                    }
+                    if (!value.contains(RegExp(r'[a-z]'))) {
+                      return '1 minuscule minimum';
+                    }
+                    if (!value.contains(RegExp(r'[0-9]'))) {
+                      return '1 chiffre minimum';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirmPassword,
+                  decoration: piconField('Confirmer le mot de passe').copyWith(
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        color: AppColors.textSecondary,
+                      ),
+                      onPressed: () => setState(
+                        () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                      ),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value != _passwordController.text) {
+                      return 'Les mots de passe ne correspondent pas';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 18),
+                PiconButton(
+                  label: 'Valider',
+                  onPressed: _isLoading ? null : _resetPassword,
+                  loading: _isLoading,
+                  success: _success,
+                ),
+                TextButton(
+                  onPressed:
+                      _isLoading ? null : () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Annuler',
+                    style: TextStyle(color: AppColors.textPrimary),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  InputDecoration _glassyInputDecoration(String label) {
-     return InputDecoration(
-      labelText: label,
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.3),
-      labelStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.7)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.4)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.primary),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
       ),
     );
   }

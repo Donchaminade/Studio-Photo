@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui';
 import 'package:Picon/api_service.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +5,10 @@ import 'package:flutter/material.dart';
 import 'payment_customer_info_screen.dart';
 import 'utils/colors.dart';
 import 'utils/geometric_background.dart';
+import 'utils/order_line_pricing.dart';
+import 'widgets/auth_network_image.dart';
+import 'widgets/safe_photo_thumbnail.dart';
+import 'widgets/app_error_feedback.dart';
 
 class OrderSummaryScreen extends StatefulWidget {
   final Map<String, Map<String, dynamic>> orderDetails;
@@ -28,6 +31,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
   double _totalPrice = 0;
 
   Map<String, double>? _prices;
+  Map<String, double?>? _framePrices;
   bool _isLoading = true;
 
   @override
@@ -47,14 +51,16 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       if (mounted) {
         setState(() {
           _prices = {for (var dim in dimensions) dim.dimension: dim.price};
+          _framePrices = {
+            for (var dim in dimensions) dim.dimension: dim.framePrice
+          };
           _calculatePrices();
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Erreur de chargement des prix: $e")));
+        await showAppError(context, e);
         setState(() {
           _isLoading = false;
         });
@@ -69,8 +75,11 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     int photoCount = _editableOrderDetails.keys.length;
 
     _editableOrderDetails.forEach((key, details) {
-      final price = _prices?[details['size']] ?? 0;
-      newSubtotal += price * (details['quantity'] as int);
+      newSubtotal += OrderLinePricing.lineTotal(
+        details,
+        _prices!,
+        _framePrices ?? const {},
+      );
     });
 
     double newDeliveryFee = 0;
@@ -164,7 +173,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                     Flexible(
                       child: Image.asset(
                         'assets/images/pro.png',
-                        height: 75,
+                        height: 40,
                         fit: BoxFit.contain,
                       ),
                     ),
@@ -185,8 +194,15 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
   }
 
   Widget _buildCartItem(String imageUrl, Map<String, dynamic> details) {
-    final isLocalFile = !imageUrl.startsWith('http');
-    final price = _prices?[details['size']] ?? 0;
+    final size = details['size'] as String? ?? '';
+    final printPrice = _prices?[size] ?? 0;
+    final withFrame = details['withFrame'] == true;
+    final framePrice = withFrame ? (_framePrices?[size] ?? 0) : 0;
+    final unitTotal = OrderLinePricing.unitTotal(
+      printPrice: printPrice,
+      framePrice: _framePrices?[size],
+      withFrame: withFrame,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
@@ -210,13 +226,12 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
             padding: const EdgeInsets.all(12.0),
             child: Row(
               children: [
-                ClipRRect(
+                SafePhotoThumbnail(
+                  imageUrl,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
                   borderRadius: BorderRadius.circular(12),
-                  child: isLocalFile
-                      ? Image.file(File(imageUrl),
-                          width: 80, height: 80, fit: BoxFit.cover)
-                      : Image.network(imageUrl,
-                          width: 80, height: 80, fit: BoxFit.cover),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -230,10 +245,38 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${price.toStringAsFixed(0)} FCFA / u.',
+                        '${unitTotal.toStringAsFixed(0)} FCFA / u.',
                         style: const TextStyle(
                             color: AppColors.primary, fontWeight: FontWeight.w600),
                       ),
+                      if (withFrame) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            if (details['frameImageUrl'] != null)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: AuthNetworkImage(
+                                  details['frameImageUrl'] as String,
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            if (details['frameImageUrl'] != null)
+                              const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Cadre: ${details['frameName'] ?? 'Oui'} (+${framePrice.toStringAsFixed(0)} F)',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

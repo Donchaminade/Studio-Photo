@@ -52,6 +52,37 @@ public class Order {
     private String paymentStatus;
 
     @Column
+    private String paymentReference;
+
+    @Column
+    private String paymentProofType;
+
+    @Column(columnDefinition = "TEXT")
+    private String paymentProofText;
+
+    @Column
+    private String paymentProofImageUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 32)
+    @Builder.Default
+    private RefundStatus refundStatus = RefundStatus.NONE;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal refundAmount;
+
+    @Column(columnDefinition = "TEXT")
+    private String refundReason;
+
+    @Column
+    private String refundReference;
+
+    private LocalDateTime refundedAt;
+
+    @Column
+    private String refundedBy;
+
+    @Column
     private String deliveryAddress;
 
     @Column(nullable = false)

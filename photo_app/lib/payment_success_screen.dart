@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:Picon/api_service.dart';
 import 'package:Picon/history_screen.dart';
 import 'package:Picon/home_screen.dart';
+import 'package:Picon/models/contact_info.dart';
 import 'package:Picon/receipt_screen.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
@@ -57,9 +58,18 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   Future<void> _sendWhatsAppSummary(BuildContext context) async {
     try {
-      final contact = await ApiService.fetchContactInfo();
+      ContactInfo contact;
+      try {
+        contact = await ApiService.fetchContactInfo();
+      } catch (_) {
+        contact = ApiService.defaultContactInfo;
+      }
       // On garde uniquement les chiffres pour WhatsApp (incluant le code pays)
-      final phone = contact.phoneNumber.replaceAll(RegExp(r'\D'), '');
+      final raw = (contact.whatsappNumber?.trim().isNotEmpty == true)
+          ? contact.whatsappNumber!
+          : contact.phoneNumber;
+      final phone = raw.replaceAll(RegExp(r'\D'), '');
+      if (phone.isEmpty) return;
 
       final buffer = StringBuffer();
       buffer.writeln("🎉 *Nouvelle Commande Reçue * 🎉");
@@ -314,7 +324,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                                 gradient: const LinearGradient(
                                   colors: [
                                     AppColors.primary,
-                                    Color(0xFF5C6BC0)
+                                    AppColors.primaryLight
                                   ],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,

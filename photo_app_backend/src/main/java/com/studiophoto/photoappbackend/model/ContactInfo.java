@@ -20,6 +20,7 @@ public class ContactInfo {
 
     private String address;
     private String phoneNumber;
+    private String whatsappNumber;
     private String email;
     private String openingHours;
     private String facebookUrl;

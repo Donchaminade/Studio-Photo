@@ -27,8 +27,6 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
-      FEDAPAY_PUBLIC_KEY: ${FEDAPAY_PUBLIC_KEY}
-      FEDAPAY_SECRET_KEY: ${FEDAPAY_SECRET_KEY}
       BACKEND_BASE_URL: https://${DOMAIN_NAME:-localhost}
     volumes:
       - ./uploads:/app/uploads

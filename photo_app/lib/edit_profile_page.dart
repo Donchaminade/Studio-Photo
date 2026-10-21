@@ -1,8 +1,8 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:Picon/utils/colors.dart';
 import 'package:Picon/utils/geometric_background.dart';
-import 'package:flutter/material.dart';
-import 'package:country_code_picker/country_code_picker.dart';
+import 'package:Picon/widgets/phone_prefix.dart';
+import 'package:Picon/widgets/picon_ui.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String currentName;
@@ -13,7 +13,7 @@ class EditProfilePage extends StatefulWidget {
     super.key,
     required this.currentName,
     required this.currentEmail,
-    required this.currentPhone, required String currentLastName,
+    required this.currentPhone,
   });
 
   @override
@@ -60,7 +60,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (_passwordController.text.isNotEmpty) {
         returnData['password'] = _passwordController.text;
       }
-      
+
       Navigator.of(context).pop(returnData);
     }
   }
@@ -68,195 +68,122 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
-      backgroundColor: AppColors.background,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Modifier le profil',
-          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-        ),
-      ),
+      backgroundColor: Colors.transparent,
+      appBar: piconBar('Modifier le profil'),
       body: Stack(
         children: [
-          GeometricBackground(),
+          const GeometricBackground(),
           SafeArea(
+            top: false,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 0),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               child: Form(
                 key: _formKey,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 40),
-                    _buildGlassmorphicForm(),
-                    const SizedBox(height: 30),
-                  ],
+                child: PiconCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: piconField('Nom complet', icon: Icons.person_outline),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const AfricanPhonePrefix(),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _phoneController,
+                              decoration: piconField('Numéro de téléphone'),
+                              keyboardType: TextInputType.phone,
+                              textInputAction: TextInputAction.next,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Numéro de téléphone requis';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: piconField('Adresse e-mail', icon: Icons.email_outlined),
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || !RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)) {
+                            return 'Veuillez entrer un email valide';
+                          }
+                          return null;
+                        },
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Divider(),
+                      ),
+                      const Text(
+                        'Changer le mot de passe (optionnel)',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: piconField('Nouveau mot de passe', icon: Icons.lock_outline).copyWith(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: AppColors.textSecondary,
+                            ),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty && value.length < 8) {
+                            return '8 caractères minimum';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        obscureText: _obscureConfirmPassword,
+                        decoration: piconField('Confirmer le mot de passe', icon: Icons.lock_outline).copyWith(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: AppColors.textSecondary,
+                            ),
+                            onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (_passwordController.text.isNotEmpty && value != _passwordController.text) {
+                            return 'Les mots de passe ne correspondent pas';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 22),
+                      PiconButton(
+                        label: 'SAUVEGARDER',
+                        onPressed: _saveProfile,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildGlassmorphicForm() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.all(24.0),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.3)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              TextFormField(
-                controller: _nameController,
-                textInputAction: TextInputAction.next,
-                decoration: _glassyInputDecoration('Nom complet', icon: Icons.person_outline),
-                validator: (value) => (value?.isEmpty ?? true) ? 'Champ requis' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneController,
-                decoration: _glassyInputDecoration(
-                  'Numéro de téléphone',
-                  prefix: CountryCodePicker(
-                    onChanged: (countryCode) {},
-                    initialSelection: 'TG',
-                    favorite: const ['+228', '+225', '+223'],
-                    textStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.9)),
-                    dialogTextStyle: const TextStyle(color: AppColors.textPrimary),
-                    searchStyle: const TextStyle(color: AppColors.textPrimary),
-                    dialogBackgroundColor: Colors.white.withOpacity(0.95),
-                    flagWidth: 25,
-                  ),
-                ),
-                textInputAction: TextInputAction.next,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Numéro de téléphone requis';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _emailController,
-                decoration: _glassyInputDecoration('Adresse e-mail', icon: Icons.email_outlined),
-                textInputAction: TextInputAction.next,
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || !RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)) {
-                    return 'Veuillez entrer un email valide';
-                  }
-                  return null;
-                },
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: Divider(color: Colors.white30),
-              ),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: const Text("Changer le mot de passe (optionnel)", style: TextStyle(color: AppColors.textSecondary)),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                textInputAction: TextInputAction.next,
-                decoration: _glassyInputDecoration('Nouveau mot de passe', icon: Icons.lock_outline).copyWith(
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textPrimary.withOpacity(0.7)),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
-                validator: (value) {
-                  if (value != null && value.isNotEmpty && value.length < 8) {
-                    return '8 caractères minimum';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _confirmPasswordController,
-                obscureText: _obscureConfirmPassword,
-                decoration: _glassyInputDecoration('Confirmer le mot de passe', icon: Icons.lock_outline).copyWith(
-                   suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textPrimary.withOpacity(0.7)),
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                  ),
-                ),
-                validator: (value) {
-                  if (_passwordController.text.isNotEmpty && value != _passwordController.text) {
-                    return 'Les mots de passe ne correspondent pas';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32), // Spacing before the button
-              ElevatedButton(
-                onPressed: _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: const Text('SAUVEGARDER', style: TextStyle(color: Colors.white, fontSize: 16)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  InputDecoration _glassyInputDecoration(String label, {IconData? icon, Widget? prefix}) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: prefix ?? (icon != null ? Icon(icon, color: AppColors.textPrimary.withOpacity(0.7)) : null),
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.3),
-      labelStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.7)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.4)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.primary),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
       ),
     );
   }

@@ -50,4 +50,11 @@ public class AuthenticationController {
         service.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthenticationResponse> refresh(
+            @RequestBody Map<String, String> body
+    ) {
+        return ResponseEntity.ok(service.refresh(body.get("refreshToken")));
+    }
 }

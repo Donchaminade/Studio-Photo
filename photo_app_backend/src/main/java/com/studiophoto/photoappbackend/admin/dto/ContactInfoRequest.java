@@ -20,6 +20,8 @@ public class ContactInfoRequest {
     @NotBlank(message = "Le numéro de téléphone est requis")
     private String phoneNumber;
 
+    private String whatsappNumber;
+
     @NotBlank(message = "L'email est requis")
     @Email(message = "L'email doit être une adresse email valide")
     private String email;

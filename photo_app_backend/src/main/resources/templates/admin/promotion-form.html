@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${promotion.id == null ? 'Nouvelle Promotion' : 'Modifier Promotion'}">Promotion Form - Studio Photo Admin</title>
+    
+    <th:block th:replace="~{admin/fragments/favicon :: favicon}"></th:block>
+<title th:text="${promotion.id == null ? 'Nouvelle Promotion' : 'Modifier Promotion'}">Promotion Form - Studio Photo Admin</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
@@ -323,7 +325,8 @@
                 <div class="form-group">
                     <label for="fileInput">Image de la promotion</label>
                     <input type="file" id="fileInput" name="file" class="form-control-file" accept="image/*" />
-                    <small class="form-text text-muted">Sélectionnez une image (JPG, PNG).</small>
+                    <small class="form-text text-muted">JPG, PNG. Images &gt; 1 Mo compressées automatiquement.</small>
+                    <small id="uploadStatus" class="form-text text-primary"></small>
                     <div th:if="${promotion.imageUrl != null and promotion.imageUrl != ''}" class="mt-2">
                         <p>Image actuelle:</p>
                         <img th:src="${promotion.imageUrl}" id="currentImagePreview" alt="Image actuelle" style="max-width: 200px; height: auto; border: 1px solid #ddd; border-radius: 4px; padding: 5px;">
@@ -363,9 +366,12 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <!-- Inclure SweetAlert2 -->
+<th:block th:replace="~{admin/fragments/image-compress-script :: image-compress-script}"></th:block>
 <script th:inline="javascript">
     /*<![CDATA[*/
     $(document).ready(function() {
+        AdminImageUpload.attach({ form: 'form', input: '#fileInput', statusSelector: '#uploadStatus' });
+
         // Loading overlay
         function showLoading() {
             $('#loadingOverlay').fadeIn();
