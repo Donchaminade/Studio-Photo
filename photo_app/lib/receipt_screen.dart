@@ -4,7 +4,8 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:Picon/utils/picon_pdf.dart';
+import 'package:Picon/utils/picon_pdf_assets.dart';
 
 import 'package:printing/printing.dart';
 import 'package:Picon/widgets/picon_premium.dart';
@@ -41,86 +42,33 @@ class ReceiptScreen extends StatelessWidget {
     return subtotal;
   }
 
-  Future<Uint8List> _generatePdf() async {
-    final pdf = pw.Document();
+  Future<Uint8List> _generatePdf([PdfPageFormat? format]) async {
     final totalPrice = _calculateTotalPrice(orderDetails, paymentMethod);
-
-    pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('Reçu de Commande', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 20),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('Commande ID:', style: pw.TextStyle(fontSize: 16)),
-                  pw.Expanded(
-                    child: pw.Text(
-                      orderId,
-                      textAlign: pw.TextAlign.right,
-                      style: pw.TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ],
-              ),
-              pw.Text('Date: ${DateFormat('dd MMMM yyyy, HH:mm').format(DateTime.now())}', style: pw.TextStyle(fontSize: 16)),
-              pw.SizedBox(height: 10),
-              pw.Text('Client: $userName'),
-              pw.Text('Contact: $userPhone'),
-              pw.SizedBox(height: 20),
-              pw.Text('Articles Commandés:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              pw.Divider(),
-              pw.ListView.separated(
-                itemCount: orderDetails.length,
-                itemBuilder: (context, index) {
-                  final entry = orderDetails.entries.elementAt(index);
-                  final item = entry.value;
-                  final itemPrice = prices[item['size']] ?? 0;
-                  return pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Expanded(child: pw.Text('${item['quantity']}x ${item['size']}')),
-                      pw.Text('${(itemPrice * (item['quantity'] as int)).toStringAsFixed(0)} FCFA'),
-                    ],
-                  );
-                },
-                separatorBuilder: (context, index) => pw.Divider(height: 10, borderStyle: pw.BorderStyle.dashed),
-              ),
-              pw.Divider(height: 20),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text('Mode de paiement:'),
-                  pw.Text(paymentMethod),
-                ],
-              ),
-              pw.SizedBox(height: 10),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.end,
-                children: [
-                  pw.Text('TOTAL: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18)),
-                  pw.Text('${totalPrice.toStringAsFixed(0)} FCFA', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18)),
-                ],
-              ),
-              pw.Spacer(),
-              pw.Center(
-                child: pw.BarcodeWidget(
-                  barcode: pw.Barcode.qrCode(),
-                  data: orderId,
-                  width: 100,
-                  height: 100,
-                ),
-              ),
-              pw.Center(child: pw.Text('Merci pour votre confiance !')),
-            ],
-          );
-        },
-      ),
+    final items = orderDetails.values
+        .map((i) => PiconPdfItem('${i['size']}', i['quantity'] as int, prices[i['size']] ?? 0))
+        .toList();
+    final sub = items.fold<double>(0, (a, b) => a + b.total);
+    final data = PiconPdfData(
+      title: 'Reçu de commande',
+      status: 'Commande enregistrée',
+      tone: PiconPdfTone.review,
+      info: [
+        MapEntry('Commande n°', orderId),
+        MapEntry('Date', DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())),
+        MapEntry('Client', userName),
+        MapEntry('Contact', userPhone),
+        MapEntry('Moyen de paiement', paymentMethod),
+      ],
+      items: items,
+      extraTotals: [
+        MapEntry('Sous-total', piconFcfa(sub)),
+        if (totalPrice > sub) MapEntry('Livraison express', piconFcfa(totalPrice - sub)),
+      ],
+      total: totalPrice,
+      barcodeData: orderId,
+      thanks: 'Merci pour votre confiance !',
     );
-    return pdf.save();
+    return buildPiconPdf(data, await loadPiconPdfAssets(), format: format);
   }
 
   @override
@@ -300,7 +248,7 @@ class ReceiptScreen extends StatelessWidget {
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () => Printing.layoutPdf(onLayout: (format) => _generatePdf()),
+            onPressed: () => Printing.layoutPdf(onLayout: (format) => _generatePdf(format)),
             icon: const Icon(Icons.print),
             label: FittedBox(fit: BoxFit.scaleDown, child: const Text('Imprimer')),
             style: ElevatedButton.styleFrom(
@@ -552,7 +500,7 @@ class _PrintedReceiptViewState extends State<_PrintedReceiptView> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => Printing.layoutPdf(onLayout: (format) => r._generatePdf()),
+                          onPressed: () => Printing.layoutPdf(onLayout: (format) => r._generatePdf(format)),
                           icon: const Icon(Icons.print_rounded),
                           label: const Text('PDF'),
                           style: OutlinedButton.styleFrom(

@@ -1,7 +1,7 @@
 name: Picon
 description: "Faites vous imprimer vos photos facilement depuis votre mobile."
 publish_to: 'none'
-version: 1.0.3+11
+version: 1.0.3+12
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -81,6 +81,7 @@ flutter:
     - assets/logos/mixbyyass.jpg
     - assets/logos/pro.png
     - assets/logos/image.png
+    - assets/fonts/
     - assets/logos/picon-mark.png
 
 flutter_launcher_icons:

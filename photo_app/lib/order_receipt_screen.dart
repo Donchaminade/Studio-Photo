@@ -9,7 +9,8 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:Picon/utils/picon_pdf.dart';
+import 'package:Picon/utils/picon_pdf_assets.dart';
 import 'package:printing/printing.dart';
 
 /// Variante du reçu, déduite uniquement du statut renvoyé par l'API.
@@ -214,38 +215,37 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
   }
 
   Future<Uint8List> _pdf(PdfPageFormat format) async {
-    final doc = pw.Document();
     final paid = _variant == ReceiptVariant.paid;
-    pw.Widget row(String a, String b, {bool bold = false}) => pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(vertical: 3),
-          child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-            pw.Text(a, style: pw.TextStyle(fontWeight: bold ? pw.FontWeight.bold : null)),
-            pw.Text(b, style: pw.TextStyle(fontWeight: bold ? pw.FontWeight.bold : null)),
-          ]),
-        );
-    doc.addPage(pw.Page(
-      pageFormat: format,
-      build: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: [
-        pw.Text('PICON - $_title', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-        pw.SizedBox(height: 12),
-        if (!paid)
-          pw.Text(_variant == ReceiptVariant.rejected ? 'PAIEMENT REFUSÉ' : 'EN VÉRIFICATION',
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-        if (paid) row('Reçu n°', _receiptNo),
-        row('Commande', '#${widget.orderId}'),
-        row('Date', _d(_date(_order!['createdAt']))),
-        pw.Divider(),
-        for (final i in _items) row(i.label, '${i.amount.toStringAsFixed(0)} F'),
-        pw.Divider(),
-        row('Total', '${_total.toStringAsFixed(0)} FCFA', bold: true),
-        row('Moyen de paiement', _method),
-        row('Preuve envoyée', _d(_proofDate)),
-        if (paid) row('Validé le', _d(_validatedAt)),
-        pw.SizedBox(height: 16),
-        pw.Text(paid ? 'PAYÉ - Merci pour votre confiance !' : 'Ce document n\'est pas une preuve de paiement validé.'),
-      ]),
-    ));
-    return doc.save();
+    final rejected = _variant == ReceiptVariant.rejected;
+    final o = _order!;
+    final client = [o['customerName'], o['userName'], o['fullName']]
+        .map((v) => v?.toString().trim() ?? '')
+        .firstWhere((v) => v.isNotEmpty, orElse: () => '');
+    final items = (o['orderItems'] as List? ?? const []).whereType<Map>().map((m) => PiconPdfItem(
+          (m['photoSize'] ?? '').toString(),
+          (m['quantity'] as num?)?.toInt() ?? 1,
+          (m['pricePerUnit'] as num?)?.toDouble() ?? 0,
+        ));
+    final data = PiconPdfData(
+      title: _title,
+      status: paid ? 'Payé' : (rejected ? 'Paiement refusé' : 'En vérification'),
+      tone: paid ? PiconPdfTone.paid : (rejected ? PiconPdfTone.rejected : PiconPdfTone.review),
+      info: [
+        if (paid) MapEntry('Reçu n°', _receiptNo),
+        MapEntry('Commande n°', '#${widget.orderId}'),
+        MapEntry('Date', _d(_date(o['createdAt']))),
+        if (client.isNotEmpty) MapEntry('Client', client),
+        MapEntry('Moyen de paiement', _method),
+        MapEntry('Preuve envoyée', _d(_proofDate)),
+        if (paid) MapEntry('Validé le', _d(_validatedAt)),
+      ],
+      items: items.toList(),
+      total: _total,
+      note: paid ? null : "Ce document n'est pas une preuve de paiement validée.",
+      barcodeData: paid ? _receiptNo : null,
+      thanks: paid ? 'Merci pour votre confiance !' : null,
+    );
+    return buildPiconPdf(data, await loadPiconPdfAssets(), format: format);
   }
 
   ButtonStyle get _outline => OutlinedButton.styleFrom(
