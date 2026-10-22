@@ -77,7 +77,7 @@ class PiconHeroScaffold extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [AppColors.primaryDark, AppColors.primary, Color(0xFF1F5FB8)],
+                      colors: [AppColors.primaryDark, AppColors.primary, AppColors.accent],
                     ),
                     borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
                   ),
@@ -299,7 +299,7 @@ class PiconPayBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.navyDeep,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: const [BoxShadow(color: Color(0x40032A85), blurRadius: 24, offset: Offset(0, 10))],
+            boxShadow: const [BoxShadow(color: Color(0x400B1A3A), blurRadius: 24, offset: Offset(0, 10))],
           ),
           child: Row(children: [
             Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -515,14 +515,14 @@ class _PrintedReceiptState extends State<PrintedReceipt> with TickerProviderStat
         height: 16,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          gradient: const LinearGradient(colors: [Color(0xFFB8C3D6), Color(0xFFEFF3F9), Color(0xFFB8C3D6)]),
+          gradient: const LinearGradient(colors: [AppColors.navyMist, AppColors.surfaceTint, AppColors.navyMist]),
           boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 10, offset: Offset(0, 4))],
         ),
         child: Center(
           child: Container(
             height: 4,
             margin: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(color: const Color(0xFF1B2333), borderRadius: BorderRadius.circular(3)),
+            decoration: BoxDecoration(color: AppColors.textPrimary, borderRadius: BorderRadius.circular(3)),
           ),
         ),
       ),
@@ -632,7 +632,7 @@ class TicketDashes extends StatelessWidget {
           final n = (c.maxWidth / 8).floor();
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(n, (_) => Container(width: 4, height: 1.2, color: const Color(0xFF9AA4B5))),
+            children: List.generate(n, (_) => Container(width: 4, height: 1.2, color: AppColors.navyMuted)),
           );
         }),
       );
@@ -643,6 +643,6 @@ const TextStyle kTicketMono = TextStyle(
   fontFamily: 'monospace',
   fontFamilyFallback: ['RobotoMono', 'Courier', 'Courier New'],
   fontSize: 13,
-  color: Color(0xFF1B2333),
+  color: AppColors.textPrimary,
   height: 1.35,
 );

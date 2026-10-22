@@ -80,14 +80,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'ORDER_COMPLETED':
       case 'BOOKING_CONFIRMED':
       case 'REFUND_CONFIRMED':
-        return Colors.green.shade700;
+        return AppColors.success;
       case 'CANCELLATION_REFUSED':
       case 'ORDER_CANCELLED':
       case 'BOOKING_CANCELLED':
-        return Colors.red.shade700;
+        return AppColors.error;
       case 'REFUND_PENDING':
       case 'PAYMENT_UNDER_REVIEW':
-        return Colors.orange.shade700;
+        return AppColors.warning;
       default:
         return AppColors.primary;
     }
@@ -207,7 +207,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Supprimer'),
           ),
         ],
@@ -350,11 +350,11 @@ class _NotificationTile extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(2),
                             decoration: BoxDecoration(
-                              color: Colors.green.shade50,
+                              color: AppColors.surfaceTint,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(Icons.check,
-                                size: 16, color: Colors.green.shade700),
+                                size: 16, color: AppColors.success),
                           )
                         else
                           Container(

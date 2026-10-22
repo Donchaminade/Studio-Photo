@@ -457,7 +457,7 @@ class FillBar extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                const ColoredBox(color: Color(0xFFE6EAF2)),
+                const ColoredBox(color: AppColors.line),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: FractionallySizedBox(
@@ -789,8 +789,8 @@ class _PiconSkeletonState extends State<PiconSkeleton> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    final base = widget.dark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE6EBF3);
-    final shine = widget.dark ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFF6F8FC);
+    final base = widget.dark ? Colors.white.withValues(alpha: 0.08) : AppColors.line;
+    final shine = widget.dark ? Colors.white.withValues(alpha: 0.18) : AppColors.fieldFill;
     return RepaintBoundary(
       child: AnimatedBuilder(
         animation: _c,

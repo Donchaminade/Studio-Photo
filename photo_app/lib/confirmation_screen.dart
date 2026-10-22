@@ -102,7 +102,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
               : 'Mode test Google : parcours simulé côté app (sans USSD réel). '
                   'La commande peut rester en attente côté serveur.',
         ),
-        backgroundColor: backendConfirmed ? Colors.green : Colors.orange,
+        backgroundColor: backendConfirmed ? AppColors.success : AppColors.warning,
         duration: const Duration(seconds: 6),
       ),
     );
@@ -147,7 +147,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
           content: Text(
             'Impossible de récupérer le code de paiement. Vérifiez votre connexion et réessayez.',
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           duration: const Duration(seconds: 5),
         ),
       );
@@ -177,9 +177,9 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         content: Text(result.message),
         backgroundColor: result.success
             ? (result.permissionDenied
-                ? const Color(0xFFE65100)
-                : const Color(0xFF2E7D32))
-            : Colors.red,
+                ? AppColors.warning
+                : AppColors.success)
+            : AppColors.error,
         duration: Duration(seconds: result.permissionDenied ? 6 : 4),
         action: result.permissionDenied && !result.success
             ? SnackBarAction(
@@ -199,7 +199,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('La capture d\'écran est obligatoire pour confirmer le paiement.'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -233,7 +233,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
           content: Text(
             'Confirmation reçue. Paiement en cours de validation par nos équipes.',
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
 
@@ -249,7 +249,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Impossible de confirmer le paiement: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     } finally {
@@ -350,7 +350,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             content: Text(
               'Paiement enregistré. Le récapitulatif WhatsApp n\'a pas pu s\'ouvrir.',
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.warning,
           ),
         );
       }
@@ -461,8 +461,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-              gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF1F5FB8)]),
-              boxShadow: const [BoxShadow(color: Color(0x33032A85), blurRadius: 18, offset: Offset(0, 8))],
+              gradient: const LinearGradient(colors: [AppColors.primary, AppColors.accent]),
+              boxShadow: const [BoxShadow(color: Color(0x330B1A3A), blurRadius: 18, offset: Offset(0, 8))],
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               const Row(children: [
@@ -512,11 +512,11 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
         if (isGooglePlayTester()) ...[
           const SizedBox(height: 14),
           PiconCard(
-            color: const Color(0xFFFFF3E0),
+            color: AppColors.surfaceTint,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               const Text(
                 'Compte testeur Google Play détecté. Vous pouvez terminer la commande sans paiement USSD réel.',
-                style: TextStyle(fontSize: 13, color: Color(0xFFE65100), height: 1.35),
+                style: TextStyle(fontSize: 13, color: AppColors.warning, height: 1.35),
               ),
               const SizedBox(height: 10),
               OutlinedButton.icon(
@@ -526,8 +526,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                     : const Icon(Icons.science_outlined),
                 label: const Text('Continuer (mode test Google)'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFE65100),
-                  side: const BorderSide(color: Color(0xFFE65100)),
+                  foregroundColor: AppColors.warning,
+                  side: const BorderSide(color: AppColors.warning),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
@@ -693,7 +693,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade700,
+                  color: AppColors.textSecondary,
                   height: 1.35,
                 ),
               ),
@@ -778,16 +778,16 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF3E0),
+                    color: AppColors.surfaceTint,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFFB74D)),
+                    border: Border.all(color: AppColors.navyMist),
                   ),
                   child: const Text(
                     'Compte testeur Google Play détecté. '
                     'Vous pouvez terminer la commande sans paiement USSD réel.',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFFE65100),
+                      color: AppColors.warning,
                       height: 1.35,
                     ),
                   ),
@@ -805,8 +805,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                       : const Icon(Icons.science_outlined),
                   label: const Text('Continuer (mode test Google)'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFE65100),
-                    side: const BorderSide(color: Color(0xFFE65100)),
+                    foregroundColor: AppColors.warning,
+                    side: const BorderSide(color: AppColors.warning),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),

@@ -257,7 +257,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       labelStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.7)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.4)),
+        borderSide: BorderSide(color: AppColors.navyMuted.withOpacity(0.4)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -265,11 +265,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderSide: const BorderSide(color: AppColors.error),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+        borderSide: const BorderSide(color: AppColors.error, width: 2),
       ),
     );
   }

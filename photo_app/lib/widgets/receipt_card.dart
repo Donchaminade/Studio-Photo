@@ -56,7 +56,7 @@ class ReceiptCard extends StatelessWidget {
             decoration: const BoxDecoration(
               borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
               gradient: LinearGradient(
-                colors: [AppColors.primary, Color(0xFF0A4CB5)],
+                colors: [AppColors.primary, AppColors.accent],
               ),
             ),
             child: Column(

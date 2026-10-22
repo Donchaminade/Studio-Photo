@@ -84,7 +84,7 @@ class _GeometricPainter extends CustomPainter {
       );
 
       final panelPaint = Paint()
-        ..color = const Color.fromARGB(255, 0, 112, 163).withOpacity(0.03);
+        ..color = const Color(0xFF0B1A3A).withOpacity(0.03);
 
       canvas.drawRRect(
         RRect.fromRectAndRadius(rect, const Radius.circular(12)),

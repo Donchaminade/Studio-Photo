@@ -65,7 +65,7 @@ class _PremiumSplashState extends State<SplashScreen> with SingleTickerProviderS
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.primaryDark, AppColors.primary, Color(0xFF1F5FB8)],
+                colors: [AppColors.primaryDark, AppColors.primary, AppColors.accent],
               ),
             ),
             child: SafeArea(

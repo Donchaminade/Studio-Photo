@@ -100,7 +100,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Color(0x55000000), Colors.transparent, Color(0xCC071433)],
+                        colors: [Color(0x55000000), Colors.transparent, Color(0xCC040A1A)],
                       ),
                     ),
                   ),

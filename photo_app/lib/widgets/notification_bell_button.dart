@@ -1,3 +1,4 @@
+import '../utils/colors.dart';
 import 'package:Picon/api_service.dart';
 import 'package:Picon/notifications_screen.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +51,7 @@ class NotificationBellButtonState extends State<NotificationBellButton> {
   Widget build(BuildContext context) {
     return Badge(
       isLabelVisible: _unreadCount > 0,
-      backgroundColor: Colors.red,
+      backgroundColor: AppColors.error,
       label: Text(
         _unreadCount > 99 ? '99+' : '$_unreadCount',
         style: const TextStyle(

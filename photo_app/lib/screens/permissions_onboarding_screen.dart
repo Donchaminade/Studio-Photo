@@ -156,17 +156,17 @@ class _PermissionsOnboardingScreenState
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFEBEE),
+                              color: AppColors.errorTint,
                               borderRadius: BorderRadius.circular(10),
                               border:
-                                  Border.all(color: const Color(0xFFE57373)),
+                                  Border.all(color: AppColors.error),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Icon(
                                   Icons.error_outline,
-                                  color: Color(0xFFC62828),
+                                  color: AppColors.error,
                                   size: 22,
                                 ),
                                 const SizedBox(width: 10),
@@ -175,7 +175,7 @@ class _PermissionsOnboardingScreenState
                                     _errorMessage!,
                                     style: const TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFFC62828),
+                                      color: AppColors.error,
                                       height: 1.35,
                                     ),
                                   ),

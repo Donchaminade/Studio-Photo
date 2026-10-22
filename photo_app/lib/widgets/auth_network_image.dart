@@ -1,3 +1,4 @@
+import '../utils/colors.dart';
 import 'package:Picon/api_service.dart';
 import 'package:flutter/material.dart';
 
@@ -40,7 +41,7 @@ class AuthNetworkImage extends StatelessWidget {
       errorBuilder: (context, error, stackTrace) =>
           errorWidget ??
           const Center(
-            child: Icon(Icons.broken_image, color: Colors.grey, size: 30),
+            child: Icon(Icons.broken_image, color: AppColors.navyMuted, size: 30),
           ),
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
@@ -52,7 +53,7 @@ class AuthNetworkImage extends StatelessWidget {
                         loadingProgress.expectedTotalBytes!
                     : null,
                 strokeWidth: 2,
-                color: Colors.grey,
+                color: AppColors.navyMuted,
               ),
             );
       },

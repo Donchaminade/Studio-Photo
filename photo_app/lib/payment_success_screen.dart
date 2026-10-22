@@ -114,7 +114,7 @@ class PaymentSuccessScreen extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text("Erreur WhatsApp : $e"),
-              backgroundColor: Colors.orange),
+              backgroundColor: AppColors.warning),
         );
       }
     }
@@ -179,7 +179,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                                 height: 100,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.green.withOpacity(0.2),
+                                  color: AppColors.success.withOpacity(0.2),
                                 ),
                               ).animate().scale(
                                   duration: 800.ms, curve: Curves.easeOutBack),
@@ -189,9 +189,9 @@ class PaymentSuccessScreen extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
                                     colors: [
-                                      Color(0xFF388E3C),
-                                      Color(0xFF4CAF50),
-                                      Color(0xFF81C784)
+                                      AppColors.success,
+                                      AppColors.success,
+                                      AppColors.navyMist
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -199,7 +199,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.green.withOpacity(0.5),
+                                      color: AppColors.success.withOpacity(0.5),
                                       blurRadius: 24,
                                       spreadRadius: 4,
                                       offset: const Offset(0, 8),

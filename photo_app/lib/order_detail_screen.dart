@@ -24,14 +24,14 @@ class OrderDetailScreen extends StatelessWidget {
   Map<String, dynamic> _getStatusInfo(String status) {
     switch (status) {
       case 'COMPLETED':
-        return {'text': 'Terminée', 'color': Colors.green.shade700, 'icon': Icons.check_circle};
+        return {'text': 'Terminée', 'color': AppColors.success, 'icon': Icons.check_circle};
       case 'PROCESSING':
         return {'text': 'En cours', 'color': AppColors.primary, 'icon': Icons.sync};
       case 'CANCELLED':
-        return {'text': 'Annulée', 'color': Colors.red.shade700, 'icon': Icons.cancel};
+        return {'text': 'Annulée', 'color': AppColors.error, 'icon': Icons.cancel};
       case 'PENDING':
       default:
-        return {'text': 'En attente', 'color': Colors.orange.shade700, 'icon': Icons.hourglass_top};
+        return {'text': 'En attente', 'color': AppColors.warning, 'icon': Icons.hourglass_top};
     }
   }
 

@@ -395,15 +395,15 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
   Map<String, dynamic> _getStatusInfo(String status) {
     switch (status) {
       case 'CONFIRMED':
-        return {'text': 'Confirmée', 'color': Colors.green.shade700, 'icon': Icons.check_circle};
+        return {'text': 'Confirmée', 'color': AppColors.success, 'icon': Icons.check_circle};
       case 'PENDING':
-        return {'text': 'En attente', 'color': Colors.orange.shade700, 'icon': Icons.hourglass_top};
+        return {'text': 'En attente', 'color': AppColors.warning, 'icon': Icons.hourglass_top};
       case 'CANCELLED':
-        return {'text': 'Annulée', 'color': Colors.red.shade700, 'icon': Icons.cancel};
+        return {'text': 'Annulée', 'color': AppColors.error, 'icon': Icons.cancel};
       case 'COMPLETED':
         return {'text': 'Terminée', 'color': AppColors.primary, 'icon': Icons.task_alt};
       default:
-        return {'text': status, 'color': Colors.grey.shade700, 'icon': Icons.help_outline};
+        return {'text': status, 'color': AppColors.textSecondary, 'icon': Icons.help_outline};
     }
   }
 }

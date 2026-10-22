@@ -203,10 +203,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           _statItem('Total', visibleOrders.length.toString(),
               Icons.receipt_outlined, AppColors.primary),
           const SizedBox(width: 12),
-          _statItem('Actives', ongoing.toString(), Icons.sync, Colors.orange),
+          _statItem('Actives', ongoing.toString(), Icons.sync, AppColors.warning),
           const SizedBox(width: 12),
           _statItem('Terminées', completed.toString(),
-              Icons.check_circle_outline, Colors.green),
+              Icons.check_circle_outline, AppColors.success),
         ],
       ),
     );
@@ -371,7 +371,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       IconButton(
                         onPressed: () => _confirmSoftDeleteWarning(order),
                         icon:
-                            const Icon(Icons.delete_outline, color: Colors.red),
+                            const Icon(Icons.delete_outline, color: AppColors.error),
                         tooltip: 'Masquer la commande',
                       ),
                     ],
@@ -688,7 +688,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 'CONFIRMED':
         return {
           'text': 'Terminée',
-          'color': Colors.green.shade700,
+          'color': AppColors.success,
           'icon': Icons.check_circle
         };
       case 'PROCESSING':
@@ -700,43 +700,43 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 'PENDING_PAYMENT':
         return {
           'text': 'En attente de paiement',
-          'color': Colors.orange.shade700,
+          'color': AppColors.warning,
           'icon': Icons.payments_outlined
         };
       case 'PENDING_PAYMENT_REVIEW':
         return {
           'text': 'En vérification',
-          'color': Colors.deepOrange.shade700,
+          'color': AppColors.warning,
           'icon': Icons.verified_user_outlined
         };
       case 'REFUND_PENDING':
         return {
           'text': 'Remboursement en cours',
-          'color': Colors.amber.shade800,
+          'color': AppColors.warning,
           'icon': Icons.hourglass_top
         };
       case 'REFUNDED':
         return {
           'text': 'Remboursée',
-          'color': Colors.teal.shade700,
+          'color': AppColors.success,
           'icon': Icons.undo
         };
       case 'PENDING':
         return {
           'text': 'En attente',
-          'color': Colors.orange.shade700,
+          'color': AppColors.warning,
           'icon': Icons.hourglass_top
         };
       case 'CANCELLED':
         return {
           'text': 'Annulée',
-          'color': Colors.red.shade700,
+          'color': AppColors.error,
           'icon': Icons.cancel
         };
       default:
         return {
           'text': status,
-          'color': Colors.grey.shade700,
+          'color': AppColors.textSecondary,
           'icon': Icons.help_outline
         };
     }
@@ -946,18 +946,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: AppColors.warning.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                    Icon(Icons.info_outline, color: AppColors.warning, size: 20),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Modification et annulation impossibles (délai de 48h dépassé).',
                         style: TextStyle(
-                            color: Colors.orange,
+                            color: AppColors.warning,
                             fontSize: 13,
                             fontWeight: FontWeight.w500),
                       ),
@@ -1019,7 +1019,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.delete_sweep_outlined, color: Colors.red),
+            const Icon(Icons.delete_sweep_outlined, color: AppColors.error),
             const SizedBox(width: 8),
             Expanded(
                 child: Text(
@@ -1039,7 +1039,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           TextButton(
               onPressed: () => Navigator.pop(context),
               child:
-                  const Text('Annuler', style: TextStyle(color: Colors.grey))),
+                  const Text('Annuler', style: TextStyle(color: AppColors.navyMuted))),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
@@ -1051,7 +1051,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text(
                           'Commande supprimée définitivement avec succès.'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.success,
                       duration: Duration(seconds: 2),
                     ));
                   }
@@ -1072,14 +1072,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Suppression impossible: $e'),
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppColors.error,
                     ),
                   );
                 }
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
             ),
             child: Text(canDeleteFromDatabase ? 'Supprimer' : 'Masquer'),

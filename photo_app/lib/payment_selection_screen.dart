@@ -77,7 +77,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
   Future<bool> _showPaymentInstructionsDialog() async {
     const highlight = TextStyle(
       fontWeight: FontWeight.w700,
-      color: Colors.deepOrange,
+      color: AppColors.warning,
     );
 
     return await showDialog<bool>(
@@ -246,7 +246,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: const Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Color(0xFFE65100)),
+                Icon(Icons.warning_amber_rounded, color: AppColors.warning),
                 SizedBox(width: 8),
                 Expanded(child: Text('Numéro et paiement')),
               ],
@@ -294,7 +294,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(mismatch.message),
-          backgroundColor: const Color(0xFFE65100),
+          backgroundColor: AppColors.warning,
           duration: const Duration(seconds: 5),
           action: SnackBarAction(
             label: 'OK',
@@ -487,10 +487,10 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
     final yas = _selectedMethodName == _mixxName;
     final flooz = _selectedMethodName == _floozName;
     final colors = yas
-        ? const [Color(0xFF032A85), Color(0xFF0B4FC2), Color(0xFFF5B700)]
+        ? const [AppColors.primary, AppColors.accent, AppColors.primaryLight]
         : flooz
-            ? const [Color(0xFF032A85), Color(0xFF1E6FD9), Color(0xFF3498DB)]
-            : const [AppColors.navyDeep, AppColors.primary, Color(0xFF1F5FB8)];
+            ? const [AppColors.primary, AppColors.accent, AppColors.accent]
+            : const [AppColors.navyDeep, AppColors.primary, AppColors.accent];
     final reduced = reduceMotion(context);
     return AnimatedContainer(
       duration: Duration(milliseconds: reduced ? 1 : 450),
@@ -539,7 +539,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
             height: 28,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(6),
-              gradient: const LinearGradient(colors: [Color(0xFFE8D48A), Color(0xFFC9A54A)]),
+              gradient: const LinearGradient(colors: [AppColors.navyMist, AppColors.primaryLight]),
             ),
           ),
           const SizedBox(height: 12),
@@ -802,7 +802,7 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected ? AppColors.primary : Colors.grey.withValues(alpha: 0.35),
+              color: selected ? AppColors.primary : AppColors.navyMuted.withValues(alpha: 0.35),
               width: selected ? 2 : 1,
             ),
           ),
@@ -841,9 +841,9 @@ class _PaymentSelectionScreenState extends State<PaymentSelectionScreen> {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           foregroundColor: AppColors.textOnPrimary,
-          backgroundColor: canConfirm ? AppColors.primary : Colors.grey,
+          backgroundColor: canConfirm ? AppColors.primary : AppColors.navyMuted,
           disabledForegroundColor: Colors.white70,
-          disabledBackgroundColor: Colors.grey.shade400,
+          disabledBackgroundColor: AppColors.navyMuted,
           minimumSize: const Size(double.infinity, 54),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),

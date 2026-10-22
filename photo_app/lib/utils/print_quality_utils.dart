@@ -1,3 +1,4 @@
+import '../utils/colors.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
@@ -266,22 +267,22 @@ IconData qualityIcon(PrintQuality q) {
 Color qualityColor(PrintQuality q) {
   switch (q) {
     case PrintQuality.perfect:
-      return const Color(0xFF2E7D32);
+      return AppColors.success;
     case PrintQuality.correct:
-      return const Color(0xFFE65100);
+      return AppColors.warning;
     case PrintQuality.tooSmall:
-      return const Color(0xFFC62828);
+      return AppColors.error;
   }
 }
 
 Color qualityLightColor(PrintQuality q) {
   switch (q) {
     case PrintQuality.perfect:
-      return const Color(0xFFE8F5E9);
+      return AppColors.surfaceTint;
     case PrintQuality.correct:
-      return const Color(0xFFFFF3E0);
+      return AppColors.surfaceTint;
     case PrintQuality.tooSmall:
-      return const Color(0xFFFFEBEE);
+      return AppColors.errorTint;
   }
 }
 

@@ -1,3 +1,4 @@
+import '../utils/colors.dart';
 import 'dart:io';
 
 import 'package:Picon/api_service.dart';
@@ -44,11 +45,11 @@ class SafePhotoThumbnail extends StatelessWidget {
         Container(
           width: width,
           height: height,
-          color: Colors.grey.shade200,
+          color: AppColors.line,
           alignment: Alignment.center,
           child: Icon(
             Icons.broken_image_outlined,
-            color: Colors.grey.shade500,
+            color: AppColors.navyMuted,
             size: fallbackSize.clamp(16.0, 80.0),
           ),
         );
@@ -59,7 +60,7 @@ class SafePhotoThumbnail extends StatelessWidget {
         Container(
           width: width,
           height: height,
-          color: Colors.grey.shade100,
+          color: AppColors.fieldFill,
           alignment: Alignment.center,
           child: const SizedBox(
             width: 20,

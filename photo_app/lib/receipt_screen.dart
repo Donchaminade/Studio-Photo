@@ -186,7 +186,7 @@ class ReceiptScreen extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 30,
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
           child: Icon(Icons.check, color: Colors.white, size: 40),
         ),
         SizedBox(height: 16),
@@ -353,7 +353,7 @@ class ReceiptScreen extends StatelessWidget {
 }
 
 class DashedSeparator extends StatelessWidget {
-  const DashedSeparator({super.key, this.height = 1, this.color = Colors.grey});
+  const DashedSeparator({super.key, this.height = 1, this.color = AppColors.navyMuted});
   final double height;
   final Color color;
 
@@ -434,7 +434,7 @@ class _PrintedReceiptViewState extends State<_PrintedReceiptView> {
       clipper: const ZigZagClipper(tooth: 9),
       child: Container(
         width: double.infinity,
-        color: const Color(0xFFFAFAFA),
+        color: AppColors.fieldFill,
         padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const Center(child: PiconWordmark(height: 34)),
@@ -464,7 +464,7 @@ class _PrintedReceiptViewState extends State<_PrintedReceiptView> {
               width: 210,
               height: 54,
               drawText: false,
-              color: const Color(0xFF1B2333),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -485,7 +485,7 @@ class _PrintedReceiptViewState extends State<_PrintedReceiptView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF0A1C4A), AppColors.navyDeep, Color(0xFF03060F)],
+            colors: [AppColors.primaryDark, AppColors.navyDeep, AppColors.navyDeep],
           ),
         ),
         child: SafeArea(

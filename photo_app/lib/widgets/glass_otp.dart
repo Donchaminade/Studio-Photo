@@ -252,8 +252,8 @@ class GlassOtpPanel extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: ok
-                  ? const [Color(0xE60B2E3A), Color(0xE6071433)]
-                  : const [Color(0xE6102A6B), Color(0xE6071433)],
+                  ? const [Color(0xE607122B), Color(0xE6040A1A)]
+                  : const [Color(0xE607122B), Color(0xE6040A1A)],
             ),
             border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
             boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.18), blurRadius: 40, offset: const Offset(0, 18))],

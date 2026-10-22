@@ -125,7 +125,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
 
   Widget _banner() {
     final rejected = _variant == ReceiptVariant.rejected;
-    final color = rejected ? AppColors.error : const Color(0xFFE67E22);
+    final color = rejected ? AppColors.error : AppColors.warning;
     return Container(
       margin: const EdgeInsets.only(top: 4, bottom: 6),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
@@ -164,7 +164,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
       clipper: const ZigZagClipper(tooth: 9),
       child: Container(
         width: double.infinity,
-        color: const Color(0xFFFAFAFA),
+        color: AppColors.fieldFill,
         padding: const EdgeInsets.fromLTRB(20, 22, 20, 30),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const Center(child: PiconWordmark(height: 34)),
@@ -194,7 +194,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
                 width: 210,
                 height: 54,
                 drawText: false,
-                color: const Color(0xFF1B2333),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
@@ -206,7 +206,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
               'Ce document n\'est pas une preuve de paiement validé.',
               textAlign: TextAlign.center,
               style: mono(12, FontWeight.w800).copyWith(
-                  color: _variant == ReceiptVariant.rejected ? AppColors.error : const Color(0xFFB9640F)),
+                  color: _variant == ReceiptVariant.rejected ? AppColors.error : AppColors.warning),
             ),
         ]),
       ),
@@ -264,7 +264,7 @@ class _OrderReceiptScreenState extends State<OrderReceiptScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF0A1C4A), AppColors.navyDeep, Color(0xFF03060F)],
+            colors: [AppColors.primaryDark, AppColors.navyDeep, AppColors.navyDeep],
           ),
         ),
         child: SafeArea(

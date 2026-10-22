@@ -134,9 +134,9 @@ class _ContactScreenState extends State<ContactScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.primary, Color(0xFF0B3FA8)],
+          colors: [AppColors.primary, AppColors.accent],
         ),
-        boxShadow: const [BoxShadow(color: Color(0x33032A85), blurRadius: 24, offset: Offset(0, 12))],
+        boxShadow: const [BoxShadow(color: Color(0x330B1A3A), blurRadius: 24, offset: Offset(0, 12))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

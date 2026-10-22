@@ -232,7 +232,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Choisissez un cadre parmi les images proposées.'),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
             ),
           );
           return;
@@ -263,7 +263,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: const [
-            Icon(Icons.warning_amber_rounded, color: Color(0xFFE65100)),
+            Icon(Icons.warning_amber_rounded, color: AppColors.warning),
             SizedBox(width: 8),
             Text('Qualité insuffisante'),
           ],
@@ -279,7 +279,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFC62828),
+              backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -316,7 +316,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
           SizedBox(width: 8),
           Expanded(child: Text('Formats optimaux attribués à chaque photo !')),
         ]),
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 2),
@@ -334,7 +334,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Impossible d'ouvrir la galerie. Vérifiez les permissions."),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -400,7 +400,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
         alignment: alignment,
         headers: headers,
         errorBuilder: (context, error, stackTrace) => const Center(
-          child: Icon(Icons.broken_image, color: Colors.grey, size: 30),
+          child: Icon(Icons.broken_image, color: AppColors.navyMuted, size: 30),
         ),
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -420,7 +420,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
         fit: fit,
         alignment: alignment,
         errorBuilder: (context, error, stackTrace) => const Center(
-          child: Icon(Icons.broken_image, color: Colors.grey, size: 30),
+          child: Icon(Icons.broken_image, color: AppColors.navyMuted, size: 30),
         ),
       );
     }
@@ -474,7 +474,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.primaryDark, AppColors.primary, Color(0xFF1F5FB8)],
+              colors: [AppColors.primaryDark, AppColors.primary, AppColors.accent],
             ),
             borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
           ),
@@ -732,7 +732,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                         },
                         child: Container(
                           decoration: const BoxDecoration(
-                            color: Colors.redAccent,
+                            color: AppColors.error,
                             borderRadius: BorderRadius.only(topRight: Radius.circular(8)),
                           ),
                           padding: const EdgeInsets.all(2),
@@ -878,7 +878,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                                 child: imageUrl != null
                                     ? AuthNetworkImage(imageUrl, width: 96, fit: BoxFit.cover)
                                     : const ColoredBox(
-                                        color: Color(0xFFEEEEEE),
+                                        color: AppColors.line,
                                         child: Icon(Icons.image_outlined),
                                       ),
                               ),
@@ -1033,7 +1033,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                           border: Border.all(
                             color: isSelected
                                 ? AppColors.primary
-                                : Colors.grey.shade300,
+                                : AppColors.navyMist,
                             width: isSelected ? 3 : 1,
                           ),
                           boxShadow: isSelected
@@ -1064,7 +1064,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
                                       )
                                     : Container(
                                         width: 110,
-                                        color: Colors.grey.shade200,
+                                        color: AppColors.line,
                                         child: const Icon(Icons.image_outlined,
                                             size: 32),
                                       ),
@@ -1261,7 +1261,7 @@ class _PhotoPreviewScreenState extends State<PhotoPreviewScreen>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.grey.shade700,
+                color: AppColors.textSecondary,
                 height: 1.35,
               ),
             ),

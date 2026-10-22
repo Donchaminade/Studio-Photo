@@ -357,7 +357,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SnackBar(
             content: Text(
                 "Impossible d'ouvrir la galerie. Vérifiez les permissions."),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -385,7 +385,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               content: Text(
                 'Les formats ne sont pas disponibles. Réessayez dans un instant.',
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
           return;
@@ -425,7 +425,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+            SnackBar(content: Text(errorMessage), backgroundColor: AppColors.error),
           );
         }
       } finally {
@@ -457,11 +457,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
+            child: const Text('Annuler', style: TextStyle(color: AppColors.navyMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () => Navigator.of(context).pop(true),
@@ -511,7 +511,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: const [
-                      BoxShadow(color: Color(0x33032A85), blurRadius: 30, offset: Offset(0, 14)),
+                      BoxShadow(color: Color(0x330B1A3A), blurRadius: 30, offset: Offset(0, 14)),
                     ],
                   ),
                   child: const Column(
@@ -567,10 +567,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.primary, Color(0xFF0B3FA8)],
+              colors: [AppColors.primary, AppColors.accent],
             ),
             boxShadow: const [
-              BoxShadow(color: Color(0x33032A85), blurRadius: 18, offset: Offset(0, 8)),
+              BoxShadow(color: Color(0x330B1A3A), blurRadius: 18, offset: Offset(0, 8)),
             ],
             borderRadius:
                 const BorderRadius.vertical(bottom: Radius.circular(20)),
@@ -1103,7 +1103,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         icon: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: const BoxDecoration(
-                            color: Color.fromARGB(255, 236, 7, 7),
+                            color: AppColors.error,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.delete,
@@ -1354,13 +1354,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: hasIssues
-                ? const Color(0xFFFFF8E1)
-                : const Color(0xFFE8F5E9),
+                ? AppColors.surfaceTint
+                : AppColors.surfaceTint,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: hasIssues
-                  ? const Color(0xFFFFB300).withOpacity(0.5)
-                  : const Color(0xFF2E7D32).withOpacity(0.4),
+                  ? AppColors.primaryLight.withOpacity(0.5)
+                  : AppColors.success.withOpacity(0.4),
             ),
           ),
           child: Row(
@@ -1384,7 +1384,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.check_circle,
-                          size: 15, color: Color(0xFF2E7D32)),
+                          size: 15, color: AppColors.success),
                       const SizedBox(width: 4),
                       Flexible(
                         child: FittedBox(
@@ -1392,7 +1392,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                            child: const Text('Toutes les photos sont compatibles !',
                              style: TextStyle(
                                  fontSize: 12,
-                                 color: Color(0xFF2E7D32),
+                                 color: AppColors.success,
                                  fontWeight: FontWeight.bold)),
                         ),
                       ),
@@ -1443,7 +1443,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   width: 40, height: 4,
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: AppColors.navyMist,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1463,7 +1463,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       Text(
                         'Ces ${unsuitablePhotos.length} photo(s) sont incompatibles avec "$globalDim". '
                         'Voici la meilleure dimension pour chacune.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -1500,11 +1500,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Conservation : $keep%',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                                style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                             if (q == PrintQuality.tooSmall)
                               const Text(
                                 'Aucun format pleinement compatible — moins mauvaise option',
-                                style: TextStyle(fontSize: 10, color: Color(0xFFC62828)),
+                                style: TextStyle(fontSize: 10, color: AppColors.error),
                               ),
                           ],
                         ),
@@ -1605,7 +1605,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           TextSpan(
                             text: '1500 FCFA',
                             style: TextStyle(
-                              color: Color.fromARGB(255, 255, 140, 0),
+                              color: AppColors.primaryLight,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1831,11 +1831,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.primary, Color(0xFF0B3FA8), AppColors.accent],
+            colors: [AppColors.primary, AppColors.accent, AppColors.accent],
             stops: [0, 0.6, 1],
           ),
           boxShadow: const [
-            BoxShadow(color: Color(0x33032A85), blurRadius: 24, offset: Offset(0, 12)),
+            BoxShadow(color: Color(0x330B1A3A), blurRadius: 24, offset: Offset(0, 12)),
           ],
         ),
         child: Row(
@@ -2784,7 +2784,7 @@ class _BatchPhotoTile extends StatelessWidget {
             child: GestureDetector(
               onTap: onRemove,
               child: Container(
-                decoration: BoxDecoration(color: const Color(0xFFEE2106), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.all(4),
                 child: const Icon(Icons.close, size: 12, color: Colors.white),
               ),

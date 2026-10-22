@@ -15,9 +15,9 @@ class GeometricBackground extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFF8FAFC),
-                Color(0xFFE7F2FB),
-                Color(0xFFF5F6F8),
+                AppColors.fieldFill,
+                AppColors.surfaceTint,
+                AppColors.background,
               ],
             ),
           ),

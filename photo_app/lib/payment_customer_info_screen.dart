@@ -497,7 +497,7 @@ class _PaymentCustomerInfoScreenState extends State<PaymentCustomerInfoScreen> {
                                   side: BorderSide(
                                     color: selected
                                         ? AppColors.primary
-                                        : Colors.grey.withOpacity(0.4),
+                                        : AppColors.navyMuted.withOpacity(0.4),
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -646,7 +646,7 @@ class _PaymentCustomerInfoScreenState extends State<PaymentCustomerInfoScreen> {
       labelStyle: TextStyle(color: AppColors.textPrimary.withOpacity(0.7)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: Colors.grey.withOpacity(0.4)),
+        borderSide: BorderSide(color: AppColors.navyMuted.withOpacity(0.4)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -654,11 +654,11 @@ class _PaymentCustomerInfoScreenState extends State<PaymentCustomerInfoScreen> {
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderSide: const BorderSide(color: AppColors.error),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+        borderSide: const BorderSide(color: AppColors.error, width: 2),
       ),
     );
   }

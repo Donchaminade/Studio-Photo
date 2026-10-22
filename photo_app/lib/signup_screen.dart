@@ -294,7 +294,7 @@ class _PinCreationSheetState extends State<_PinCreationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez entrer un code secret à 4 chiffres.'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -318,7 +318,7 @@ class _PinCreationSheetState extends State<_PinCreationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Compte créé avec succès ! Vous pouvez maintenant vous connecter.'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
       Navigator.of(context).pushReplacementNamed('/login');

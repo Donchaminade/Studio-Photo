@@ -338,7 +338,7 @@ class _NewPasswordDialogState extends State<_NewPasswordDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Mot de passe réinitialisé avec succès !'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);

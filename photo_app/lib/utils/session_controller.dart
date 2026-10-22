@@ -1,3 +1,4 @@
+import '../utils/colors.dart';
 import 'package:Picon/api_service.dart';
 import 'package:flutter/material.dart';
 
@@ -26,7 +27,7 @@ class SessionController {
         messenger?.showSnackBar(
           SnackBar(
             content: Text(text),
-            backgroundColor: const Color(0xFF01163E),
+            backgroundColor: AppColors.primaryDark,
           ),
         );
       });

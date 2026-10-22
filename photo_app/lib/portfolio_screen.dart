@@ -208,7 +208,7 @@ class _TileInfo extends StatelessWidget {
                   child: Text(
                     currencyFormatter.format(format.price),
                     style: const TextStyle(
-                        color: Colors.orangeAccent,
+                        color: AppColors.primaryLight,
                         fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -335,7 +335,7 @@ class _DimensionDetailDialogState extends State<DimensionDetailDialog> {
                                       .format(widget.format.price),
                                   style: const TextStyle(
                                       fontSize: 18,
-                                      color: Colors.orangeAccent,
+                                      color: AppColors.primaryLight,
                                       fontWeight: FontWeight.bold),
                                 ),
                               ),

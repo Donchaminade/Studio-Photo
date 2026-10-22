@@ -1,3 +1,4 @@
+import '../utils/colors.dart';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -70,10 +71,10 @@ Widget _fallback(double? width, double? height, {bool broken = true}) {
     width: width,
     height: height,
     child: ColoredBox(
-      color: const Color(0xFFE8EDF5),
+      color: AppColors.surfaceTint,
       child: broken
           ? const Center(
-              child: Icon(Icons.broken_image_outlined, color: Color(0xFF9AA3B2)),
+              child: Icon(Icons.broken_image_outlined, color: AppColors.navyMuted),
             )
           : const SizedBox.expand(),
     ),
